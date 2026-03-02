@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Environment
+.env
+*.local
+
+# Database
+backend/data/*.db
+
+# Uploads
+backend/uploads/repository/*
+backend/uploads/logos/*
+!backend/uploads/repository/.gitkeep
+!backend/uploads/logos/.gitkeep
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Claude
+.claude/
+
+# Personal files
+TODO personale.txt
+msg avvio nuova chat.txt
+rossi.jpg

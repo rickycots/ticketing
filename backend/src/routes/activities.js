@@ -1,0 +1,338 @@
+const express = require('express');
+const db = require('../db/database');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+
+const router = express.Router({ mergeParams: true });
+
+// Middleware: check project visibility for tecnico
+function checkProjectAccess(req, res, next) {
+  if (req.user.ruolo === 'admin') return next();
+  const visible = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(req.params.id, req.user.id);
+  if (!visible) return res.status(403).json({ error: 'Accesso non consentito' });
+  next();
+}
+
+// GET /api/projects/:id/activities — list activities
+router.get('/', authenticateToken, checkProjectAccess, (req, res) => {
+  const activities = db.prepare(`
+    SELECT a.*, u.nome as assegnato_nome
+    FROM attivita a
+    LEFT JOIN utenti u ON a.assegnato_a = u.id
+    WHERE a.progetto_id = ?
+    ORDER BY a.ordine ASC,
+      CASE a.priorita WHEN 'alta' THEN 1 WHEN 'media' THEN 2 WHEN 'bassa' THEN 3 END,
+      a.created_at ASC
+  `).all(req.params.id);
+
+  res.json(activities);
+});
+
+// GET /api/projects/:id/activities/:activityId — single activity detail
+router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => {
+  const activity = db.prepare(`
+    SELECT a.*, u.nome as assegnato_nome
+    FROM attivita a
+    LEFT JOIN utenti u ON a.assegnato_a = u.id
+    WHERE a.id = ? AND a.progetto_id = ?
+  `).get(req.params.activityId, req.params.id);
+
+  if (!activity) {
+    return res.status(404).json({ error: 'Attività non trovata' });
+  }
+
+  // Project info
+  const project = db.prepare(`
+    SELECT p.id, p.nome, p.stato, c.nome_azienda as cliente_nome, c.id as cliente_id,
+           c.email as cliente_email, c.telefono as cliente_telefono, c.referente as cliente_referente
+    FROM progetti p
+    LEFT JOIN clienti c ON p.cliente_id = c.id
+    WHERE p.id = ?
+  `).get(req.params.id);
+
+  // Notes
+  const note_attivita = db.prepare(`
+    SELECT n.*, u.nome as utente_nome
+    FROM note_attivita n
+    LEFT JOIN utenti u ON n.utente_id = u.id
+    WHERE n.attivita_id = ?
+    ORDER BY n.created_at ASC
+  `).all(req.params.activityId);
+
+  // Dependency info
+  let dipendenza = null;
+  if (activity.dipende_da) {
+    dipendenza = db.prepare('SELECT id, nome, stato FROM attivita WHERE id = ?').get(activity.dipende_da);
+  }
+
+  // Dependents (activities that depend on this one)
+  const dipendenti = db.prepare('SELECT id, nome, stato FROM attivita WHERE dipende_da = ?').all(req.params.activityId);
+
+  // Blocking email
+  const email_bloccante = db.prepare(
+    'SELECT id, oggetto FROM email WHERE attivita_id = ? AND is_bloccante = 1'
+  ).get(req.params.activityId);
+
+  // Associated emails
+  const emails = db.prepare(`
+    SELECT * FROM email WHERE attivita_id = ? ORDER BY data_ricezione ASC
+  `).all(req.params.activityId);
+
+  res.json({
+    ...activity,
+    progetto: project,
+    note_attivita,
+    dipendenza,
+    dipendenti,
+    email_bloccante: email_bloccante || null,
+    emails
+  });
+});
+
+// POST /api/projects/:id/activities — create activity (admin only)
+router.post('/', authenticateToken, requireAdmin, (req, res) => {
+  const progettoId = req.params.id;
+  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da } = req.body;
+
+  if (!nome) {
+    return res.status(400).json({ error: 'Campo obbligatorio: nome' });
+  }
+
+  const project = db.prepare('SELECT id FROM progetti WHERE id = ?').get(progettoId);
+  if (!project) {
+    return res.status(404).json({ error: 'Progetto non trovato' });
+  }
+
+  // Validate dipende_da is in same project
+  if (dipende_da) {
+    const dep = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?').get(dipende_da, progettoId);
+    if (!dep) {
+      return res.status(400).json({ error: 'Attività dipendenza non trovata nello stesso progetto' });
+    }
+  }
+
+  // Ordine: only for primary activities (no dipende_da)
+  let finalOrdine = null;
+  if (!dipende_da) {
+    finalOrdine = ordine;
+    if (finalOrdine === undefined || finalOrdine === null || finalOrdine === '') {
+      // Auto: next after max ordine of primary activities in this project
+      const maxOrd = db.prepare('SELECT MAX(ordine) as m FROM attivita WHERE progetto_id = ? AND (dipende_da IS NULL OR dipende_da = 0)').get(progettoId);
+      finalOrdine = (maxOrd && maxOrd.m != null) ? maxOrd.m + 1 : 1;
+    } else {
+      // Explicit ordine: shift existing primary activities >= this ordine
+      finalOrdine = parseInt(finalOrdine);
+      db.prepare('UPDATE attivita SET ordine = ordine + 1 WHERE progetto_id = ? AND (dipende_da IS NULL OR dipende_da = 0) AND ordine >= ?').run(progettoId, finalOrdine);
+    }
+  }
+
+  const result = db.prepare(`
+    INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    progettoId,
+    nome,
+    descrizione || null,
+    assegnato_a || null,
+    stato || 'da_fare',
+    avanzamento || 0,
+    priorita || 'media',
+    data_scadenza || null,
+    note || null,
+    data_inizio || null,
+    finalOrdine,
+    dipende_da || null
+  );
+
+  db.prepare("UPDATE progetti SET updated_at = datetime('now') WHERE id = ?").run(progettoId);
+
+  const activity = db.prepare(`
+    SELECT a.*, u.nome as assegnato_nome
+    FROM attivita a
+    LEFT JOIN utenti u ON a.assegnato_a = u.id
+    WHERE a.id = ?
+  `).get(result.lastInsertRowid);
+
+  res.status(201).json(activity);
+});
+
+// PUT /api/projects/:id/activities/:activityId — update activity
+// Admin: can update everything. Tecnico: can update stato and note on assigned activities.
+router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => {
+  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da } = req.body;
+
+  const activity = db.prepare('SELECT * FROM attivita WHERE id = ? AND progetto_id = ?')
+    .get(req.params.activityId, req.params.id);
+
+  if (!activity) {
+    return res.status(404).json({ error: 'Attività non trovata' });
+  }
+
+  // If activity is blocked by a blocking email, prevent status changes
+  if (stato && stato !== activity.stato) {
+    const blockingEmail = db.prepare(
+      'SELECT id FROM email WHERE attivita_id = ? AND is_bloccante = 1'
+    ).get(req.params.activityId);
+    if (blockingEmail) {
+      return res.status(400).json({ error: "L'attività è bloccata da un'email bloccante. Rimuovi prima il blocco dall'email." });
+    }
+  }
+
+  // Tecnico can only update stato and note on activities assigned to them
+  if (req.user.ruolo === 'tecnico') {
+    if (activity.assegnato_a !== req.user.id) {
+      return res.status(403).json({ error: 'Puoi modificare solo le attività assegnate a te' });
+    }
+    // Only allow stato and note updates
+    const allowedStato = stato || activity.stato;
+    const allowedNote = note !== undefined ? note : activity.note;
+
+    // Auto-manage data_completamento
+    let dataCompletamento = activity.data_completamento;
+    if (allowedStato === 'completata' && activity.stato !== 'completata') {
+      dataCompletamento = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    } else if (allowedStato !== 'completata' && activity.stato === 'completata') {
+      dataCompletamento = null;
+    }
+
+    db.prepare(`
+      UPDATE attivita SET
+        stato = ?,
+        note = ?,
+        data_completamento = ?,
+        updated_at = datetime('now')
+      WHERE id = ?
+    `).run(allowedStato, allowedNote, dataCompletamento, req.params.activityId);
+  } else {
+    // Admin: full update
+    // Auto-manage data_completamento
+    const newStato = stato || activity.stato;
+    let dataCompletamento = activity.data_completamento;
+    if (newStato === 'completata' && activity.stato !== 'completata') {
+      dataCompletamento = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    } else if (newStato !== 'completata' && activity.stato === 'completata') {
+      dataCompletamento = null;
+    }
+
+    // Validate dipende_da is in same project
+    if (dipende_da !== undefined && dipende_da !== null && dipende_da !== '' && dipende_da !== 0) {
+      const dep = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?').get(dipende_da, req.params.id);
+      if (!dep) {
+        return res.status(400).json({ error: 'Attività dipendenza non trovata nello stesso progetto' });
+      }
+    }
+
+    // Determine final dipende_da
+    const finalDipendeDa = dipende_da !== undefined ? (dipende_da || null) : activity.dipende_da;
+
+    // Determine final ordine based on dependency status
+    let finalOrdine;
+    if (finalDipendeDa) {
+      // Dependent activity: no ordine
+      finalOrdine = null;
+    } else if (ordine !== undefined && ordine !== null && ordine !== '') {
+      // Primary with explicit ordine: shift others
+      finalOrdine = parseInt(ordine);
+      if (finalOrdine !== activity.ordine) {
+        db.prepare('UPDATE attivita SET ordine = ordine + 1 WHERE progetto_id = ? AND id != ? AND (dipende_da IS NULL OR dipende_da = 0) AND ordine >= ?')
+          .run(req.params.id, req.params.activityId, finalOrdine);
+      }
+    } else {
+      // Primary, keep current ordine (or auto-assign if was dependent before)
+      if (activity.dipende_da && !finalDipendeDa) {
+        // Was dependent, becoming primary: auto-assign next ordine
+        const maxOrd = db.prepare('SELECT MAX(ordine) as m FROM attivita WHERE progetto_id = ? AND (dipende_da IS NULL OR dipende_da = 0)').get(req.params.id);
+        finalOrdine = (maxOrd && maxOrd.m != null) ? maxOrd.m + 1 : 1;
+      } else {
+        finalOrdine = activity.ordine;
+      }
+    }
+
+    db.prepare(`
+      UPDATE attivita SET
+        nome = COALESCE(?, nome),
+        descrizione = COALESCE(?, descrizione),
+        assegnato_a = ?,
+        stato = COALESCE(?, stato),
+        avanzamento = COALESCE(?, avanzamento),
+        priorita = COALESCE(?, priorita),
+        data_scadenza = COALESCE(?, data_scadenza),
+        data_completamento = ?,
+        note = COALESCE(?, note),
+        data_inizio = COALESCE(?, data_inizio),
+        ordine = ?,
+        dipende_da = ?,
+        updated_at = datetime('now')
+      WHERE id = ?
+    `).run(
+      nome || null,
+      descrizione || null,
+      assegnato_a !== undefined ? assegnato_a : activity.assegnato_a,
+      stato || null,
+      avanzamento !== undefined ? avanzamento : null,
+      priorita || null,
+      data_scadenza || null,
+      dataCompletamento,
+      note || null,
+      data_inizio || null,
+      finalOrdine,
+      finalDipendeDa,
+      req.params.activityId
+    );
+  }
+
+  db.prepare("UPDATE progetti SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+
+  const updated = db.prepare(`
+    SELECT a.*, u.nome as assegnato_nome
+    FROM attivita a
+    LEFT JOIN utenti u ON a.assegnato_a = u.id
+    WHERE a.id = ?
+  `).get(req.params.activityId);
+
+  res.json(updated);
+});
+
+// POST /api/projects/:id/activities/:activityId/notes — add note to activity
+router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, res) => {
+  const { testo } = req.body;
+  if (!testo || !testo.trim()) {
+    return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
+  }
+
+  const activity = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?')
+    .get(req.params.activityId, req.params.id);
+  if (!activity) {
+    return res.status(404).json({ error: 'Attività non trovata' });
+  }
+
+  const result = db.prepare(`
+    INSERT INTO note_attivita (attivita_id, utente_id, testo)
+    VALUES (?, ?, ?)
+  `).run(req.params.activityId, req.user.id, testo.trim());
+
+  const nota = db.prepare(`
+    SELECT n.*, u.nome as utente_nome
+    FROM note_attivita n
+    LEFT JOIN utenti u ON n.utente_id = u.id
+    WHERE n.id = ?
+  `).get(result.lastInsertRowid);
+
+  res.status(201).json(nota);
+});
+
+// DELETE /api/projects/:id/activities/:activityId (admin only)
+router.delete('/:activityId', authenticateToken, requireAdmin, (req, res) => {
+  const activity = db.prepare('SELECT * FROM attivita WHERE id = ? AND progetto_id = ?')
+    .get(req.params.activityId, req.params.id);
+
+  if (!activity) {
+    return res.status(404).json({ error: 'Attività non trovata' });
+  }
+
+  db.prepare('DELETE FROM attivita WHERE id = ?').run(req.params.activityId);
+  db.prepare("UPDATE progetti SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+
+  res.json({ message: 'Attività eliminata' });
+});
+
+module.exports = router;
