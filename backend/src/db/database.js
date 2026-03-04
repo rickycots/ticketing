@@ -41,6 +41,12 @@ function runMigrations() {
     "ALTER TABLE attivita ADD COLUMN dipende_da INTEGER REFERENCES attivita(id)",
     "ALTER TABLE email ADD COLUMN rilevanza TEXT DEFAULT NULL",
     "ALTER TABLE ticket ADD COLUMN letta INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE email ADD COLUMN message_id TEXT",
+    "ALTER TABLE email ADD COLUMN allegati TEXT DEFAULT '[]'",
+    "ALTER TABLE ticket ADD COLUMN creatore_email TEXT",
+    "ALTER TABLE utenti_cliente ADD COLUMN ruolo TEXT NOT NULL DEFAULT 'user'",
+    "ALTER TABLE clienti ADD COLUMN sla_reazione TEXT DEFAULT 'nb'",
+    "ALTER TABLE ticket ADD COLUMN data_evasione TEXT",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }
@@ -75,6 +81,7 @@ function runMigrations() {
     )
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_email_attivita ON email(attivita_id)');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_email_message_id ON email(message_id) WHERE message_id IS NOT NULL');
   db.exec('CREATE INDEX IF NOT EXISTS idx_email_rilevanza ON email(rilevanza)');
 
   // Auto-populate portale_slug for existing clients without one

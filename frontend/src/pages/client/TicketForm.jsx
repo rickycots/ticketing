@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, Paperclip, X } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 
 const categorie = [
@@ -18,9 +18,24 @@ export default function TicketForm() {
     priorita: 'media',
     descrizione: '',
   })
+  const [files, setFiles] = useState([])
+  const fileInputRef = useRef(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
   const [error, setError] = useState('')
+
+  function handleFilesChange(e) {
+    const selected = Array.from(e.target.files)
+    setFiles(prev => {
+      const combined = [...prev, ...selected]
+      return combined.slice(0, 5) // max 5 files
+    })
+    e.target.value = ''
+  }
+
+  function removeFile(index) {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -28,9 +43,10 @@ export default function TicketForm() {
     setSubmitting(true)
 
     try {
-      const result = await clientTickets.create(form)
+      const result = await clientTickets.create(form, files.length > 0 ? files : null)
       setSuccess(result)
       setForm({ oggetto: '', categoria: '', priorita: 'media', descrizione: '' })
+      setFiles([])
     } catch (err) {
       setError(err.message || 'Errore durante l\'invio del ticket')
     } finally {
@@ -136,6 +152,42 @@ export default function TicketForm() {
               placeholder="Descrivi il problema nel dettaglio..."
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+
+          {/* Allegati */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Allegati</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.zip"
+              onChange={handleFilesChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={files.length >= 5}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 cursor-pointer transition-colors"
+            >
+              <Paperclip size={14} /> Aggiungi file {files.length > 0 && `(${files.length}/5)`}
+            </button>
+            <p className="text-xs text-gray-400 mt-1">Max 5 file, 10MB ciascuno. Formati: jpg, png, gif, pdf, doc, docx, txt, xlsx, zip</p>
+            {files.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {files.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 text-sm">
+                    <Paperclip size={12} className="text-gray-400" />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className="text-xs text-gray-400">{(f.size / 1024).toFixed(0)} KB</span>
+                    <button type="button" onClick={() => removeFile(i)} className="text-red-400 hover:text-red-600 cursor-pointer">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="pt-2">

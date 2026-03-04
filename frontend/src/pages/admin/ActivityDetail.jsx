@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Percent, CalendarDays, Users, Layers } from 'lucide-react'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft } from 'lucide-react'
 import { activities, users } from '../../api/client'
 
 const actStatoColors = {
@@ -38,6 +38,7 @@ export default function ActivityDetail() {
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [notesOpen, setNotesOpen] = useState(true)
+  const [emailTab, setEmailTab] = useState('tutte')
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -223,27 +224,65 @@ export default function ActivityDetail() {
             </div>
           )}
 
-          {/* Associated Emails */}
-          {activity.emails && activity.emails.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <Mail size={18} className="text-blue-500" />
-                <h2 className="font-semibold">Email Associate</h2>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {activity.emails.map(e => (
-                  <div key={e.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">{e.mittente}</p>
-                      <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                    </div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">{e.oggetto}</p>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+          {/* Associated Emails with tabs */}
+          {activity.emails && activity.emails.length > 0 && (() => {
+            const allEmails = activity.emails
+            const bloccanti = allEmails.filter(e => e.is_bloccante)
+            const rilevanti = allEmails.filter(e => e.rilevanza === 'rilevante')
+            const contesto = allEmails.filter(e => e.rilevanza === 'di_contesto')
+            const tabs = [
+              { key: 'tutte', label: 'Tutte', count: allEmails.length },
+              { key: 'bloccanti', label: 'Bloccanti', count: bloccanti.length },
+              { key: 'rilevanti', label: 'Rilevanti', count: rilevanti.length },
+              { key: 'contesto', label: 'Di contesto', count: contesto.length },
+            ]
+            const filtered = emailTab === 'bloccanti' ? bloccanti
+              : emailTab === 'rilevanti' ? rilevanti
+              : emailTab === 'contesto' ? contesto
+              : allEmails
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                  <Mail size={18} className="text-blue-500" />
+                  <h2 className="font-semibold">Email Associate</h2>
+                  <span className="text-xs text-gray-400">({allEmails.length})</span>
+                </div>
+                <div className="flex border-b border-gray-100">
+                  {tabs.map(t => (
+                    <button key={t.key} onClick={() => setEmailTab(t.key)}
+                      className={`flex-1 px-3 py-2 text-xs font-medium text-center cursor-pointer transition-colors ${
+                        emailTab === t.key
+                          ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}>
+                      {t.label} {t.count > 0 && <span className="ml-1 text-[10px] bg-gray-200 text-gray-600 rounded-full px-1.5">{t.count}</span>}
+                    </button>
+                  ))}
+                </div>
+                {filtered.length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {filtered.map(e => (
+                      <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-red-50/50' : e.rilevanza === 'rilevante' ? 'bg-amber-50/50' : ''}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{e.mittente}</p>
+                            {e.is_bloccante && <span className="text-[10px] font-semibold bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">Bloccante</span>}
+                            {e.rilevanza === 'rilevante' && <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">Rilevante</span>}
+                            {e.rilevanza === 'di_contesto' && <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">Contesto</span>}
+                          </div>
+                          <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
+                        </div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">{e.oggetto}</p>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="p-6 text-center text-sm text-gray-400">Nessuna email in questa categoria</div>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Notes */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -333,63 +372,6 @@ export default function ActivityDetail() {
             </div>
           </div>
 
-          {/* Dates */}
-          {isAdmin && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <CalendarDays size={16} className="text-gray-400" /> Date
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Data Inizio</label>
-                  <input type="date" value={activity.data_inizio || ''}
-                    onChange={(e) => handleFieldChange('data_inizio', e.target.value || null)}
-                    className={selectCls} />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Fine Prevista</label>
-                  <input type="date" value={activity.data_scadenza || ''}
-                    onChange={(e) => handleFieldChange('data_scadenza', e.target.value || null)}
-                    className={selectCls} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Info card */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Layers size={16} className="text-gray-400" /> Dettagli
-            </h3>
-            <div className="space-y-2 text-sm">
-              {activity.ordine != null && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Ordine</span>
-                  <span className="font-medium">{activity.ordine}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Progetto</span>
-                <Link to={`/admin/projects/${projectId}`} className="font-medium text-blue-600 hover:underline">{prog.nome}</Link>
-              </div>
-              {prog.cliente_nome && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Cliente</span>
-                  <span className="font-medium">{prog.cliente_nome}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Creata il</span>
-                <span className="font-medium">{activity.created_at ? new Date(activity.created_at).toLocaleDateString('it-IT') : '—'}</span>
-              </div>
-              {activity.updated_at && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Aggiornata</span>
-                  <span className="font-medium">{new Date(activity.updated_at).toLocaleDateString('it-IT')}</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>

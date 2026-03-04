@@ -15,7 +15,7 @@ export default function ClientDetail() {
   const [users, setUsers] = useState([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti' })
+  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti' })
   const fileRef = useRef()
 
   // Knowledge Base state
@@ -46,6 +46,7 @@ export default function ClientDetail() {
           indirizzo: c.indirizzo || '',
           citta: c.citta || '',
           provincia: c.provincia || '',
+          sla_reazione: c.sla_reazione || 'nb',
           note: c.note || '',
         })
       })
@@ -124,10 +125,10 @@ export default function ClientDetail() {
   function openUserForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setUserForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili })
+      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili })
     } else {
       setEditingUser(null)
-      setUserForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti' })
+      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti' })
     }
     setShowUserForm(true)
   }
@@ -282,6 +283,14 @@ export default function ClientDetail() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
                   <input type="text" value={form.provincia || ''} onChange={e => setForm(f => ({ ...f, provincia: e.target.value }))} maxLength={2} placeholder="es. MI" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 uppercase" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SLA Reazione</label>
+                  <select value={form.sla_reazione || 'nb'} onChange={e => setForm(f => ({ ...f, sla_reazione: e.target.value }))} className="w-full rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none focus:ring-1 focus:ring-yellow-500">
+                    <option value="nb">NB (nessun vincolo)</option>
+                    <option value="1g">1 giorno</option>
+                    <option value="3g">3 giorni</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
@@ -350,18 +359,29 @@ export default function ClientDetail() {
                   <input type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} required={!editingUser} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
-                <div className="flex gap-4">
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
-                    Ticket
-                  </label>
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
-                    Progetti
-                  </label>
+              <div className="flex gap-6 items-start">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
+                  <select value={userForm.ruolo} onChange={e => setUserForm(f => ({ ...f, ruolo: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
+                {userForm.ruolo === 'user' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
+                    <div className="flex gap-4">
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
+                        Ticket
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
+                        Progetti
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">
@@ -385,6 +405,7 @@ export default function ClientDetail() {
                 <tr className="text-left text-gray-500 border-b border-gray-100">
                   <th className="px-4 py-3 font-medium">Nome</th>
                   <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Ruolo</th>
                   <th className="px-4 py-3 font-medium">Schede</th>
                   <th className="px-4 py-3 font-medium">Creato il</th>
                   <th className="px-4 py-3 font-medium">Attivo</th>
@@ -397,13 +418,22 @@ export default function ClientDetail() {
                     <td className="px-4 py-3 font-medium text-gray-900">{u.nome}</td>
                     <td className="px-4 py-3 text-gray-600">{u.email}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        {u.schede_visibili.split(',').map(s => (
-                          <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
-                            {s === 'ticket' ? 'Ticket' : 'Progetti'}
-                          </span>
-                        ))}
-                      </div>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${u.ruolo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {u.ruolo === 'admin' ? 'Admin' : 'User'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.ruolo === 'admin' ? (
+                        <span className="text-xs text-gray-400">Tutte</span>
+                      ) : (
+                        <div className="flex gap-1">
+                          {u.schede_visibili.split(',').map(s => (
+                            <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
+                              {s === 'ticket' ? 'Ticket' : 'Progetti'}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {u.created_at ? new Date(u.created_at).toLocaleDateString('it-IT') : '-'}

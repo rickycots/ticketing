@@ -21,6 +21,7 @@ import ClientTicketList from './pages/client/TicketList'
 import ClientTicketDetail from './pages/client/TicketDetail'
 import ProjectsView from './pages/client/ProjectsView'
 import ClientProjectDetail from './pages/client/ClientProjectDetail'
+import ClientUserManagement from './pages/client/UserManagement'
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token')
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="tickets/:id" element={<ClientTicketDetail />} />
         <Route path="projects" element={<ProjectsView />} />
         <Route path="projects/:id" element={<ClientProjectDetail />} />
+        <Route path="users" element={<ClientUserManagement />} />
       </Route>
 
       {/* Default redirect */}

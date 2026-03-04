@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart3, Building2 } from 'lucide-react'
-import { projects, clients as clientsApi } from '../../api/client'
+import { BarChart3, Building2, Plus, X } from 'lucide-react'
+import { projects, clients as clientsApi, users as usersApi } from '../../api/client'
 
 const DAY_WIDTH = 13
 const ROW_HEIGHT = 40
@@ -39,12 +39,16 @@ export default function TimelineList() {
   const [tooltip, setTooltip] = useState(null)
   const [clientList, setClientList] = useState([])
   const [filterCliente, setFilterCliente] = useState('')
+  const [showNewProject, setShowNewProject] = useState(false)
+  const [userList, setUserList] = useState([])
+  const [newProject, setNewProject] = useState({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [] })
+  const [creating, setCreating] = useState(false)
   const containerRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
-  useEffect(() => {
+  function loadProjects() {
     const params = { limit: 200 }
     if (filterCliente) params.cliente_id = filterCliente
     setLoading(true)
@@ -52,10 +56,17 @@ export default function TimelineList() {
       .then(res => setList(res.data || []))
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadProjects()
   }, [filterCliente])
 
   useEffect(() => {
-    if (isAdmin) clientsApi.list({ limit: 1000 }).then(res => setClientList(res.data || [])).catch(() => {})
+    if (isAdmin) {
+      clientsApi.list({ limit: 1000 }).then(res => setClientList(res.data || [])).catch(() => {})
+      usersApi.list().then(setUserList).catch(() => {})
+    }
   }, [])
 
   const { timelineStart, months, bars, totalDays } = useMemo(() => {
@@ -144,18 +155,28 @@ export default function TimelineList() {
           <BarChart3 size={24} className="text-blue-600" />
           <h1 className="text-2xl font-bold">Timeline Progetti</h1>
         </div>
-        {isAdmin && clientList.length > 0 && (
-          <select
-            value={filterCliente}
-            onChange={(e) => setFilterCliente(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Tutti i clienti</option>
-            {clientList.map(c => (
-              <option key={c.id} value={c.id}>{c.nome_azienda}</option>
-            ))}
-          </select>
-        )}
+        <div className="flex items-center gap-3">
+          {isAdmin && clientList.length > 0 && (
+            <select
+              value={filterCliente}
+              onChange={(e) => setFilterCliente(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Tutti i clienti</option>
+              {clientList.map(c => (
+                <option key={c.id} value={c.id}>{c.nome_azienda}</option>
+              ))}
+            </select>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setShowNewProject(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              <Plus size={16} /> Nuovo Progetto
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Client filter banner */}
@@ -326,6 +347,134 @@ export default function TimelineList() {
               <p className="mt-1 text-gray-400">Click per aprire Gantt</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal Nuovo Progetto */}
+      {showNewProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowNewProject(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <h2 className="text-lg font-bold">Nuovo Progetto</h2>
+              <button onClick={() => setShowNewProject(false)} className="p-1 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              if (!newProject.cliente_id || !newProject.nome.trim()) return
+              setCreating(true)
+              try {
+                await projects.create({
+                  ...newProject,
+                  cliente_id: Number(newProject.cliente_id),
+                  tecnici: newProject.tecnici,
+                })
+                setNewProject({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [] })
+                setShowNewProject(false)
+                loadProjects()
+              } catch (err) { alert(err.message) }
+              finally { setCreating(false) }
+            }} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+                <select
+                  value={newProject.cliente_id}
+                  onChange={(e) => setNewProject(p => ({ ...p, cliente_id: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Seleziona cliente...</option>
+                  {clientList.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome_azienda}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Progetto *</label>
+                <input
+                  type="text"
+                  value={newProject.nome}
+                  onChange={(e) => setNewProject(p => ({ ...p, nome: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="Nome del progetto"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <textarea
+                  value={newProject.descrizione}
+                  onChange={(e) => setNewProject(p => ({ ...p, descrizione: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                  rows={3}
+                  placeholder="Descrizione opzionale..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
+                  <input
+                    type="date"
+                    value={newProject.data_inizio}
+                    onChange={(e) => setNewProject(p => ({ ...p, data_inizio: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Scadenza</label>
+                  <input
+                    type="date"
+                    value={newProject.data_scadenza}
+                    onChange={(e) => setNewProject(p => ({ ...p, data_scadenza: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tecnici Assegnati</label>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {userList.filter(u => u.ruolo === 'tecnico' && u.attivo).map(u => (
+                    <label key={u.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={newProject.tecnici.includes(u.id)}
+                        onChange={(e) => {
+                          setNewProject(p => ({
+                            ...p,
+                            tecnici: e.target.checked
+                              ? [...p.tecnici, u.id]
+                              : p.tecnici.filter(id => id !== u.id)
+                          }))
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{u.nome}</span>
+                    </label>
+                  ))}
+                  {userList.filter(u => u.ruolo === 'tecnico' && u.attivo).length === 0 && (
+                    <p className="text-xs text-gray-400">Nessun tecnico disponibile</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewProject(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating || !newProject.cliente_id || !newProject.nome.trim()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <Plus size={16} /> {creating ? 'Creazione...' : 'Crea Progetto'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

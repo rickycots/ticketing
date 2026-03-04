@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive } from 'lucide-react'
+import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 
 const statoConfig = {
@@ -85,21 +85,36 @@ export default function ClientTicketDetail() {
         <div className="p-4 border-b border-gray-100">
           <h2 className="font-semibold">Conversazione</h2>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-3 p-3">
           {ticket.emails && ticket.emails.length > 0 ? (
             ticket.emails.map(e => {
-              const isAdmin = e.mittente === 'admin@ticketing.local'
+              const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+              const isAdmin = systemAddrs.includes(e.mittente.toLowerCase())
+              let allegati = []
+              try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
               return (
-                <div key={e.id} className={`p-4 ${isAdmin ? 'bg-blue-50/50' : ''}`}>
+                <div key={e.id} className={`p-4 rounded-lg ${isAdmin ? 'bg-blue-50/50' : 'bg-gray-50'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <p className={`text-sm font-medium ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
                       {isAdmin ? 'Assistenza' : 'Tu'}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs font-semibold text-gray-400">
                       {new Date(e.data_ricezione).toLocaleString('it-IT')}
                     </p>
                   </div>
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+                  {allegati.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                      {allegati.map((a, i) => (
+                        <a key={i} href={`/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                          className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                          <FileDown size={12} className="text-gray-400" />
+                          <span>{a.nome}</span>
+                          <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })

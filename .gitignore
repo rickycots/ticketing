@@ -15,8 +15,13 @@ backend/data/*.db
 # Uploads
 backend/uploads/repository/*
 backend/uploads/logos/*
+backend/uploads/tickets/*
 !backend/uploads/repository/.gitkeep
 !backend/uploads/logos/.gitkeep
+!backend/uploads/tickets/.gitkeep
+
+# Screenshots
+IMG/
 
 # Logs
 logs

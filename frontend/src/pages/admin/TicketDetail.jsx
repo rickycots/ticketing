@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown } from 'lucide-react'
 import { tickets, emails, users, schede as schedeApi, ai } from '../../api/client'
 
 const prioritaColors = {
@@ -23,6 +23,8 @@ export default function TicketDetail() {
   const [loading, setLoading] = useState(true)
   const [replyText, setReplyText] = useState('')
   const [setInAttesa, setSetInAttesa] = useState(true)
+  const [replyFiles, setReplyFiles] = useState([])
+  const replyFileRef = useRef(null)
   const [sending, setSending] = useState(false)
   const [userList, setUserList] = useState([])
   const [noteText, setNoteText] = useState('')
@@ -67,16 +69,17 @@ export default function TicketDetail() {
     setSending(true)
     try {
       await emails.create({
-        tipo: 'ticket', mittente: 'admin@ticketing.local', destinatario: ticket.cliente_email,
+        tipo: 'ticket', destinatario: ticket.creatore_email || ticket.cliente_email,
         oggetto: `Re: [TICKET #${ticket.codice}] ${ticket.oggetto}`,
         corpo: replyText.trim(), cliente_id: ticket.cliente_id, ticket_id: ticket.id,
         thread_id: `thread-${ticket.codice}`,
-      })
+      }, replyFiles.length > 0 ? replyFiles : null)
       if (setInAttesa && ticket.stato !== 'chiuso' && ticket.stato !== 'risolto') {
         await tickets.update(id, { stato: 'in_attesa' })
       }
       setTicket(await tickets.get(id))
       setReplyText('')
+      setReplyFiles([])
     } catch (err) { console.error(err) }
     finally { setSending(false) }
   }
@@ -118,55 +121,38 @@ export default function TicketDetail() {
         <ArrowLeft size={16} /> Torna alla lista
       </Link>
 
-      {/* Page title: Codice + data apertura */}
-      <h1 className="text-2xl font-bold text-blue-600 mb-4">
-        {ticket.codice} <span className="text-blue-400 font-normal text-lg ml-2">del {new Date(ticket.created_at).toLocaleDateString('it-IT')}</span>
-      </h1>
-
-      {/* Client Banner */}
-      <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-              <Building2 size={20} className="text-teal-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-teal-900">{ticket.cliente_nome}</h2>
-              <div className="flex items-center gap-4 text-sm text-teal-700 mt-0.5">
-                {ticket.cliente_email && (
-                  <span className="flex items-center gap-1"><Mail size={13} /> {ticket.cliente_email}</span>
-                )}
-                {ticket.cliente_telefono && (
-                  <span className="flex items-center gap-1"><Phone size={13} /> {ticket.cliente_telefono}</span>
-                )}
-                {ticket.cliente_referente && (
-                  <span className="flex items-center gap-1"><User size={13} /> {ticket.cliente_referente}</span>
-                )}
-              </div>
-            </div>
-          </div>
-          {schedeList.length > 0 && (
-            <Link to={`/admin/clients/${ticket.cliente_id}`} className="text-sm text-teal-700 hover:text-teal-900 font-medium">
-              Vedi schede cliente &rarr;
-            </Link>
-          )}
+      {/* Client banner */}
+      <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+          <Building2 size={16} className="text-teal-600" />
         </div>
+        <span className="text-sm font-bold text-teal-900">{ticket.cliente_nome}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           {/* Header */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-lg font-bold">{ticket.oggetto}</h2>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">{ticket.codice} — {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
+                <h2 className="text-lg font-bold">{ticket.oggetto}</h2>
+              </div>
               <div className="flex gap-2">
                 <span className={`${badgeCls} ${prioritaColors[ticket.priorita]}`}>{ticket.priorita}</span>
                 <span className={`${badgeCls} ${statoColors[ticket.stato]}`}>{statoLabels[ticket.stato]}</span>
               </div>
             </div>
-            <p className="text-gray-700 whitespace-pre-wrap">{ticket.descrizione || 'Nessuna descrizione'}</p>
-            <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500">
               <span>Categoria: <b className="text-gray-700">{ticket.categoria}</b></span>
+              {ticket.data_evasione ? (() => {
+                const ev = new Date(ticket.data_evasione + 'T00:00:00');
+                const today = new Date(); today.setHours(0,0,0,0);
+                const diffMs = ev.getTime() - today.getTime();
+                const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                const color = diffDays < 0 ? 'text-red-600 font-bold' : diffDays <= 1 ? 'text-orange-500 font-semibold' : 'text-gray-600 font-medium';
+                return <span className={color}>Evasione: {ev.toLocaleDateString('it-IT')}</span>
+              })() : null}
             </div>
           </div>
 
@@ -177,16 +163,36 @@ export default function TicketDetail() {
                 <Mail size={18} className="text-blue-500" />
                 <h2 className="font-semibold">Thread Email</h2>
               </div>
-              <div className="divide-y divide-gray-100">
-                {ticket.emails.map(e => (
-                  <div key={e.id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">{e.mittente}</p>
-                      <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
+              <div className="space-y-3 p-3">
+                {ticket.emails.map(e => {
+                  const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+                  const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
+                  let allegati = []
+                  try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+                  return (
+                    <div key={e.id} className={`p-4 rounded-lg ${isOurs ? 'bg-blue-50' : 'bg-amber-50'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className={`text-sm font-medium ${isOurs ? 'text-blue-700' : 'text-amber-700'}`}>
+                          {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                        </p>
+                        <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
+                      {allegati.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                          {allegati.map((a, i) => (
+                            <a key={i} href={`/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                              className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                              <FileDown size={12} className="text-gray-400" />
+                              <span>{a.nome}</span>
+                              <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -202,6 +208,37 @@ export default function TicketDetail() {
                 <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Scrivi la risposta al cliente..." rows={4}
                   className={`${selectCls} resize-none`} />
+                {/* Allegati */}
+                <div>
+                  <input ref={replyFileRef} type="file" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.zip"
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.files || [])
+                      if (selected.length > 0) {
+                        setReplyFiles(prev => [...prev, ...selected].slice(0, 5))
+                      }
+                      // reset per permettere ri-selezione stesso file
+                      setTimeout(() => { if (replyFileRef.current) replyFileRef.current.value = '' }, 100)
+                    }}
+                    className="hidden" />
+                  <button type="button" onClick={() => replyFileRef.current?.click()} disabled={replyFiles.length >= 5}
+                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 cursor-pointer transition-colors">
+                    <Paperclip size={14} /> Allega file {replyFiles.length > 0 && `(${replyFiles.length}/5)`}
+                  </button>
+                  {replyFiles.length > 0 && (
+                    <div className="mt-1.5 space-y-1">
+                      {replyFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 text-sm">
+                          <Paperclip size={12} className="text-gray-400" />
+                          <span className="flex-1 truncate">{f.name}</span>
+                          <span className="text-xs text-gray-400">{(f.size / 1024).toFixed(0)} KB</span>
+                          <button type="button" onClick={() => setReplyFiles(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 cursor-pointer">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" checked={setInAttesa} onChange={(e) => setSetInAttesa(e.target.checked)}
@@ -270,12 +307,6 @@ export default function TicketDetail() {
                 <label className="block text-xs font-medium text-gray-500 mb-1">Stato</label>
                 <select value={ticket.stato} onChange={(e) => handleFieldChange('stato', e.target.value)} className={selectCls}>
                   {Object.entries(statoLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Priorità</label>
-                <select value={ticket.priorita} onChange={(e) => handleFieldChange('priorita', e.target.value)} className={selectCls}>
-                  {['urgente', 'alta', 'media', 'bassa'].map(v => <option key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</option>)}
                 </select>
               </div>
               <div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info } from 'lucide-react'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2 } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 
@@ -190,7 +190,6 @@ export default function EmailInbox() {
       const cliente = clientList.find(c => c.id === Number(composeForm.cliente_id))
       await emails.create({
         tipo: 'email_cliente',
-        mittente: 'admin@ticketing.local',
         destinatario: cliente?.email || composeForm.cliente_id,
         oggetto: composeForm.oggetto,
         corpo: composeForm.corpo,
@@ -211,7 +210,6 @@ export default function EmailInbox() {
       const threadId = selected.thread_id || `thread-email-${selected.id}`
       await emails.create({
         tipo: selected.tipo,
-        mittente: 'admin@ticketing.local',
         destinatario: selected.mittente,
         oggetto: selected.oggetto.startsWith('Re:') ? selected.oggetto : `Re: ${selected.oggetto}`,
         corpo: replyText.trim(),
@@ -302,6 +300,19 @@ export default function EmailInbox() {
           </button>
         )}
       </div>
+
+      {/* Client filter banner */}
+      {filterCliente && (() => {
+        const cl = clientList.find(c => String(c.id) === String(filterCliente))
+        return cl ? (
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+              <Building2 size={16} className="text-teal-600" />
+            </div>
+            <span className="text-sm font-bold text-teal-900">{cl.nome_azienda}</span>
+          </div>
+        ) : null
+      })()}
 
       {/* Compose Form */}
       {showCompose && (
@@ -580,9 +591,9 @@ export default function EmailInbox() {
                     <h3 className="text-sm font-semibold mb-3">Thread ({selected.thread.length} messaggi)</h3>
                     <div className="space-y-3">
                       {selected.thread.map(t => (
-                        <div key={t.id} className={`p-3 rounded-lg ${t.id === selected.id ? 'bg-blue-50 border border-blue-200' : t.mittente === 'admin@ticketing.local' ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                        <div key={t.id} className={`p-3 rounded-lg ${t.id === selected.id ? 'bg-blue-50 border border-blue-200' : t.mittente.includes('@stmdomotica.it') ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-medium">{t.mittente === 'admin@ticketing.local' ? 'Tu (admin)' : t.mittente}</p>
+                            <p className="text-xs font-medium">{t.mittente.includes('@stmdomotica.it') ? 'Tu (admin)' : t.mittente}</p>
                             <p className="text-xs text-gray-400">{new Date(t.data_ricezione).toLocaleString('it-IT')}</p>
                           </div>
                           <p className="text-sm text-gray-600">{t.corpo}</p>

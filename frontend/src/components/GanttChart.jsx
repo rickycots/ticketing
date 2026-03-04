@@ -187,6 +187,11 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                   )}
                   {bar.assegnato_nome && <span className="block truncate text-gray-400 text-[10px]">{bar.assegnato_nome}</span>}
                 </div>
+                {bar.stato === 'bloccata' && (
+                  <span title="Attività bloccata" className="shrink-0 text-orange-500">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                  </span>
+                )}
               </div>
             )
           })}

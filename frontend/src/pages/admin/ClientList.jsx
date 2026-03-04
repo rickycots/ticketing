@@ -8,7 +8,7 @@ export default function ClientList() {
   const [clientList, setClientList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nome_azienda: '', referente: '', email: '', telefono: '', indirizzo: '', citta: '', provincia: '', note: '' })
+  const [form, setForm] = useState({ nome_azienda: '', referente: '', email: '', telefono: '', indirizzo: '', citta: '', provincia: '', sla_reazione: 'nb', note: '' })
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 25 })
   const navigate = useNavigate()
@@ -26,7 +26,7 @@ export default function ClientList() {
   async function handleCreate(e) {
     e.preventDefault()
     await clients.create(form)
-    setForm({ nome_azienda: '', referente: '', email: '', telefono: '', indirizzo: '', citta: '', provincia: '', note: '' })
+    setForm({ nome_azienda: '', referente: '', email: '', telefono: '', indirizzo: '', citta: '', provincia: '', sla_reazione: 'nb', note: '' })
     setShowForm(false)
     loadClients()
   }
@@ -119,6 +119,18 @@ export default function ClientList() {
                   />
                 </div>
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">SLA Reazione</label>
+              <select
+                value={form.sla_reazione}
+                onChange={(e) => setForm(f => ({ ...f, sla_reazione: e.target.value }))}
+                className="w-full rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm focus:border-yellow-500 focus:outline-none focus:ring-1 focus:ring-yellow-500"
+              >
+                <option value="nb">NB (nessun vincolo)</option>
+                <option value="1g">1 giorno</option>
+                <option value="3g">3 giorni</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Navigate, useParams } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users } from 'lucide-react'
 
 export default function ClientLayout() {
   const navigate = useNavigate()
@@ -11,6 +11,7 @@ export default function ClientLayout() {
   const schede = (clientUser.schede_visibili || '').split(',').filter(Boolean)
   const hasTicket = schede.includes('ticket')
   const hasProgetti = schede.includes('progetti')
+  const isClientAdmin = clientUser.ruolo === 'admin'
 
   const logoUrl = clientUser.logo ? `/uploads/logos/${clientUser.logo}` : null
 
@@ -74,6 +75,19 @@ export default function ClientLayout() {
                 >
                   <FolderKanban size={16} />
                   I Miei Progetti
+                </NavLink>
+              )}
+              {isClientAdmin && (
+                <NavLink
+                  to={`/client/${slug}/users`}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  <Users size={16} />
+                  Utenti
                 </NavLink>
               )}
             </nav>

@@ -119,7 +119,29 @@ export const emails = {
     return request(`/emails${qs ? `?${qs}` : ''}`);
   },
   get: (id) => request(`/emails/${id}`),
-  create: (data) => request('/emails', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data, files) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([k, v]) => { if (v != null) formData.append(k, v); });
+    if (files && files.length > 0) {
+      files.forEach(f => formData.append('allegati', f));
+    }
+    const token = getToken();
+    return fetch(`${API_BASE}/emails`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async r => {
+      if (r.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('Non autenticato');
+      }
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Errore del server');
+      return d;
+    });
+  },
   update: (id, data) => request(`/emails/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
@@ -241,7 +263,39 @@ export const clientTickets = {
   get: (clienteId, ticketId) => clientRequest(`/tickets/client/${clienteId}/${ticketId}`),
   reply: (clienteId, ticketId, corpo) =>
     clientRequest(`/tickets/client/${clienteId}/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ corpo }) }),
-  create: (data) => clientRequest('/tickets', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data, files) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([k, v]) => { if (v != null) formData.append(k, v); });
+    if (files && files.length > 0) {
+      files.forEach(f => formData.append('allegati', f));
+    }
+    const token = getClientToken();
+    return fetch(`${API_BASE}/tickets`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async r => {
+      if (r.status === 401) {
+        localStorage.removeItem('clientToken');
+        localStorage.removeItem('clientUser');
+        const slugMatch = window.location.pathname.match(/^\/client\/([^/]+)/);
+        const slug = slugMatch ? slugMatch[1] : '';
+        window.location.href = slug ? `/client/${slug}/login` : '/login';
+        throw new Error('Non autenticato');
+      }
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Errore del server');
+      return d;
+    });
+  },
+};
+
+// Client Portal User Management (admin only)
+export const clientUsers = {
+  list: () => clientRequest('/client-auth/portal-users'),
+  create: (data) => clientRequest('/client-auth/portal-users', { method: 'POST', body: JSON.stringify(data) }),
+  update: (userId, data) => clientRequest(`/client-auth/portal-users/${userId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (userId) => clientRequest(`/client-auth/portal-users/${userId}`, { method: 'DELETE' }),
 };
 
 // Client Portal Projects (authed)

@@ -40,13 +40,17 @@ router.post('/login', (req, res) => {
       return res.status(403).json({ error: 'Account disabilitato' });
     }
 
+    const userRuolo = user.ruolo || 'user';
+    const visibili = userRuolo === 'admin' ? 'ticket,progetti' : user.schede_visibili;
+
     const token = jwt.sign(
       {
         id: user.id,
         nome: user.nome,
         email: user.email,
         cliente_id: user.cliente_id,
-        schede_visibili: user.schede_visibili,
+        ruolo: userRuolo,
+        schede_visibili: visibili,
         tipo: 'cliente',
       },
       JWT_SECRET,
@@ -62,7 +66,8 @@ router.post('/login', (req, res) => {
         cliente_id: user.cliente_id,
         nome_azienda: user.nome_azienda,
         logo: user.logo,
-        schede_visibili: user.schede_visibili,
+        ruolo: userRuolo,
+        schede_visibili: visibili,
       },
     });
   }
@@ -119,6 +124,7 @@ router.get('/me', authenticateClientToken, (req, res) => {
       nome: req.user.nome,
       email: req.user.email,
       cliente_id: req.user.cliente_id,
+      ruolo: 'admin',
       schede_visibili: req.user.schede_visibili,
       attivo: 1,
       nome_azienda: cliente.nome_azienda,
@@ -127,7 +133,7 @@ router.get('/me', authenticateClientToken, (req, res) => {
   }
 
   const user = db.prepare(`
-    SELECT uc.id, uc.nome, uc.email, uc.cliente_id, uc.schede_visibili, uc.attivo,
+    SELECT uc.id, uc.nome, uc.email, uc.cliente_id, uc.ruolo, uc.schede_visibili, uc.attivo,
            c.nome_azienda, c.logo
     FROM utenti_cliente uc
     JOIN clienti c ON uc.cliente_id = c.id
@@ -173,6 +179,84 @@ router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, re
     },
     slug: cliente.portale_slug,
   });
+});
+
+// --- Client Admin: manage portal users ---
+
+function requireClientAdmin(req, res, next) {
+  if (req.user.ruolo !== 'admin' && !req.user.impersonated) {
+    return res.status(403).json({ error: 'Accesso riservato agli admin' });
+  }
+  next();
+}
+
+// GET /api/client-auth/portal-users — list users of same company
+router.get('/portal-users', authenticateClientToken, requireClientAdmin, (req, res) => {
+  const users = db.prepare(
+    'SELECT id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome'
+  ).all(req.user.cliente_id);
+  res.json(users);
+});
+
+// POST /api/client-auth/portal-users — create user (only 'user' role)
+router.post('/portal-users', authenticateClientToken, requireClientAdmin, (req, res) => {
+  const { nome, email, password, schede_visibili } = req.body;
+  if (!nome || !email || !password) {
+    return res.status(400).json({ error: 'Campi obbligatori: nome, email, password' });
+  }
+
+  const existing = db.prepare('SELECT id FROM utenti_cliente WHERE email = ?').get(email);
+  if (existing) return res.status(400).json({ error: 'Email già in uso' });
+
+  const password_hash = bcrypt.hashSync(password, 10);
+  const result = db.prepare(
+    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(req.user.cliente_id, nome, email, password_hash, 'user', schede_visibili || 'ticket,progetti');
+
+  const user = db.prepare(
+    'SELECT id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+  ).get(result.lastInsertRowid);
+  res.status(201).json(user);
+});
+
+// PUT /api/client-auth/portal-users/:userId — update user (admin can edit users of same company)
+router.put('/portal-users/:userId', authenticateClientToken, requireClientAdmin, (req, res) => {
+  const { nome, email, password, schede_visibili, attivo } = req.body;
+  const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.user.cliente_id);
+  if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+  if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi modificare un altro admin' });
+
+  if (email && email !== user.email) {
+    const existing = db.prepare('SELECT id FROM utenti_cliente WHERE email = ? AND id != ?').get(email, req.params.userId);
+    if (existing) return res.status(400).json({ error: 'Email già in uso' });
+  }
+
+  const newHash = password ? bcrypt.hashSync(password, 10) : user.password_hash;
+
+  db.prepare(`
+    UPDATE utenti_cliente SET
+      nome = COALESCE(?, nome),
+      email = COALESCE(?, email),
+      password_hash = ?,
+      schede_visibili = COALESCE(?, schede_visibili),
+      attivo = COALESCE(?, attivo)
+    WHERE id = ?
+  `).run(nome || null, email || null, newHash, schede_visibili || null, attivo !== undefined ? attivo : null, req.params.userId);
+
+  const updated = db.prepare(
+    'SELECT id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+  ).get(req.params.userId);
+  res.json(updated);
+});
+
+// DELETE /api/client-auth/portal-users/:userId — delete user
+router.delete('/portal-users/:userId', authenticateClientToken, requireClientAdmin, (req, res) => {
+  const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.user.cliente_id);
+  if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+  if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi eliminare un admin' });
+
+  db.prepare('DELETE FROM utenti_cliente WHERE id = ?').run(req.params.userId);
+  res.json({ success: true });
 });
 
 module.exports = router;

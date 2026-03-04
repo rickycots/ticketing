@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS clienti (
   note TEXT,
   logo TEXT,
   portale_slug TEXT UNIQUE,
+  sla_reazione TEXT NOT NULL DEFAULT 'nb' CHECK(sla_reazione IN ('1g', '3g', 'nb')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS ticket (
   assegnato_a INTEGER REFERENCES utenti(id),
   progetto_id INTEGER REFERENCES progetti(id),
   letta INTEGER NOT NULL DEFAULT 0,
+  data_evasione TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -148,6 +150,7 @@ CREATE TABLE IF NOT EXISTS utenti_cliente (
   nome TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  ruolo TEXT NOT NULL DEFAULT 'user' CHECK(ruolo IN ('admin', 'user')),
   schede_visibili TEXT NOT NULL DEFAULT 'ticket,progetti',
   attivo INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

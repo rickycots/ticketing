@@ -83,18 +83,19 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // POST /api/clients — create client (admin only)
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
-  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note } = req.body;
+  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, sla_reazione } = req.body;
 
   if (!nome_azienda || !email) {
     return res.status(400).json({ error: 'Campi obbligatori: nome_azienda, email' });
   }
 
   const portale_slug = generateSlug(nome_azienda);
+  const sla = ['1g', '3g', 'nb'].includes(sla_reazione) ? sla_reazione : 'nb';
 
   const result = db.prepare(`
-    INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(nome_azienda, referente || null, email, telefono || null, indirizzo || null, citta || null, provincia || null, note || null, portale_slug);
+    INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(nome_azienda, referente || null, email, telefono || null, indirizzo || null, citta || null, provincia || null, note || null, portale_slug, sla);
 
   const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(client);
@@ -102,7 +103,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
 // PUT /api/clients/:id — update client (admin only)
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug } = req.body;
+  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione } = req.body;
 
   const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(req.params.id);
   if (!client) {
@@ -118,6 +119,10 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     }
   }
 
+  const sla = sla_reazione !== undefined
+    ? (['1g', '3g', 'nb'].includes(sla_reazione) ? sla_reazione : client.sla_reazione)
+    : client.sla_reazione;
+
   db.prepare(`
     UPDATE clienti SET
       nome_azienda = COALESCE(?, nome_azienda),
@@ -128,7 +133,8 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       citta = ?,
       provincia = ?,
       note = ?,
-      portale_slug = ?
+      portale_slug = ?,
+      sla_reazione = ?
     WHERE id = ?
   `).run(
     nome_azienda || null,
@@ -140,6 +146,7 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     provincia !== undefined ? provincia : client.provincia,
     note !== undefined ? note : client.note,
     newSlug || client.portale_slug,
+    sla,
     req.params.id
   );
 
@@ -192,14 +199,14 @@ router.delete('/:id/logo', authenticateToken, requireAdmin, (req, res) => {
 // GET /api/clients/:id/users — list client users
 router.get('/:id/users', authenticateToken, requireAdmin, (req, res) => {
   const users = db.prepare(
-    'SELECT id, cliente_id, nome, email, schede_visibili, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome'
   ).all(req.params.id);
   res.json(users);
 });
 
 // POST /api/clients/:id/users — create client user
 router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, password, schede_visibili } = req.body;
+  const { nome, email, password, ruolo, schede_visibili } = req.body;
   if (!nome || !email || !password) {
     return res.status(400).json({ error: 'Campi obbligatori: nome, email, password' });
   }
@@ -207,20 +214,22 @@ router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
   const existing = db.prepare('SELECT id FROM utenti_cliente WHERE email = ?').get(email);
   if (existing) return res.status(400).json({ error: 'Email già in uso' });
 
+  const userRuolo = ruolo === 'admin' ? 'admin' : 'user';
+  const visibili = userRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || 'ticket,progetti');
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
-    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, schede_visibili) VALUES (?, ?, ?, ?, ?)'
-  ).run(req.params.id, nome, email, password_hash, schede_visibili || 'ticket,progetti');
+    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(req.params.id, nome, email, password_hash, userRuolo, visibili);
 
   const user = db.prepare(
-    'SELECT id, cliente_id, nome, email, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
   ).get(result.lastInsertRowid);
   res.status(201).json(user);
 });
 
 // PUT /api/clients/:id/users/:userId — update client user
 router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, password, schede_visibili, attivo } = req.body;
+  const { nome, email, password, ruolo, schede_visibili, attivo } = req.body;
   const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.params.id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
@@ -230,19 +239,22 @@ router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => 
   }
 
   const newHash = password ? bcrypt.hashSync(password, 10) : user.password_hash;
+  const newRuolo = ruolo !== undefined ? (ruolo === 'admin' ? 'admin' : 'user') : user.ruolo;
+  const newVisibili = newRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || user.schede_visibili);
 
   db.prepare(`
     UPDATE utenti_cliente SET
       nome = COALESCE(?, nome),
       email = COALESCE(?, email),
       password_hash = ?,
-      schede_visibili = COALESCE(?, schede_visibili),
+      ruolo = ?,
+      schede_visibili = ?,
       attivo = COALESCE(?, attivo)
     WHERE id = ?
-  `).run(nome || null, email || null, newHash, schede_visibili || null, attivo !== undefined ? attivo : null, req.params.userId);
+  `).run(nome || null, email || null, newHash, newRuolo, newVisibili, attivo !== undefined ? attivo : null, req.params.userId);
 
   const updated = db.prepare(
-    'SELECT id, cliente_id, nome, email, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
   ).get(req.params.userId);
   res.json(updated);
 });

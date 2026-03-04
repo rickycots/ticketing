@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, Building2 } from 'lucide-react'
 import { tickets, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 
@@ -133,6 +133,19 @@ export default function TicketList() {
         </div>
       </div>
 
+      {/* Client filter banner */}
+      {filters.cliente_id && (() => {
+        const cl = clientList.find(c => String(c.id) === String(filters.cliente_id))
+        return cl ? (
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+              <Building2 size={16} className="text-teal-600" />
+            </div>
+            <span className="text-sm font-bold text-teal-900">{cl.nome_azienda}</span>
+          </div>
+        ) : null
+      })()}
+
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
@@ -151,6 +164,7 @@ export default function TicketList() {
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Stato</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Assegnato</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Data</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Evasione</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -187,6 +201,16 @@ export default function TicketList() {
                     <td className="px-4 py-3 text-sm text-gray-600">{t.assegnato_nome || '\u2014'}</td>
                     <td className="px-4 py-3 text-sm text-gray-400">
                       {new Date(t.created_at).toLocaleDateString('it-IT')}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {t.data_evasione ? (() => {
+                        const ev = new Date(t.data_evasione + 'T00:00:00');
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const diffMs = ev.getTime() - today.getTime();
+                        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                        const color = diffDays < 0 ? 'text-red-600 font-bold' : diffDays <= 1 ? 'text-orange-500 font-medium' : 'text-gray-500';
+                        return <span className={color}>{ev.toLocaleDateString('it-IT')}</span>
+                      })() : <span className="text-gray-300">{'\u2014'}</span>}
                     </td>
                   </tr>
                 ))}

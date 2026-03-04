@@ -1,8 +1,33 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, authenticateClientToken } = require('../middleware/auth');
+const { sendTicketingEmail, sendNoreplyEmail } = require('../services/mailer');
 
 const router = express.Router();
+
+// Multer setup for ticket attachments
+const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'tickets');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xlsx', '.zip'];
+const ticketUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, crypto.randomUUID() + ext);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowedExts.includes(ext));
+  },
+}).array('allegati', 5);
 
 function createNotifica(utenteId, tipo, titolo, messaggio, link) {
   if (!utenteId) return;
@@ -106,8 +131,10 @@ router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req,
 
   const threadId = `thread-${ticket.codice}`;
   const oggetto = `Re: [TICKET #${ticket.codice}] ${ticket.oggetto}`;
-  db.prepare(`INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id) VALUES ('ticket', ?, 'admin@ticketing.local', ?, ?, ?, ?, ?)`)
-    .run(ticket.cliente_email || 'unknown@client.com', oggetto, corpo.trim(), req.params.clienteId, ticket.id, threadId);
+  const ticketingAddr = process.env.MAIL_TICKETING_USER || 'ticketing@stmdomotica.it';
+  const mittenteReale = req.user.email || ticket.cliente_email || 'unknown@client.com';
+  db.prepare(`INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id) VALUES ('ticket', ?, ?, ?, ?, ?, ?, ?)`)
+    .run(mittenteReale, ticketingAddr, oggetto, corpo.trim(), req.params.clienteId, ticket.id, threadId);
 
   if (ticket.stato === 'in_attesa') {
     db.prepare("UPDATE ticket SET stato = 'in_lavorazione', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
@@ -124,7 +151,7 @@ router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req,
     );
   }
 
-  console.log(`[EMAIL SIMULATA] Risposta cliente: ${oggetto}`);
+  console.log(`[EMAIL] Risposta cliente: ${oggetto}`);
   res.json(getTicketWithEmails(ticket.id));
 });
 
@@ -157,8 +184,8 @@ router.get('/:id', authenticateToken, (req, res) => {
   res.json(ticket);
 });
 
-// POST /api/tickets — create (client auth)
-router.post('/', authenticateClientToken, (req, res) => {
+// POST /api/tickets — create (client auth, with optional attachments)
+router.post('/', authenticateClientToken, ticketUpload, async (req, res) => {
   const { oggetto, descrizione, categoria, priorita } = req.body;
   const cliente_id = req.user.cliente_id;
   if (!oggetto || !categoria) {
@@ -169,17 +196,55 @@ router.post('/', authenticateClientToken, (req, res) => {
   const prio = priorita || 'media';
   const admin = db.prepare("SELECT id FROM utenti WHERE ruolo='admin' AND attivo=1 LIMIT 1").get();
   const assegnato_a = admin ? admin.id : null;
-  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a);
+  const creatore_email = req.user.email || null;
+
+  // Calculate data_evasione based on client SLA
+  const clienteRow = db.prepare('SELECT sla_reazione FROM clienti WHERE id = ?').get(cliente_id);
+  let data_evasione = null;
+  if (clienteRow && clienteRow.sla_reazione && clienteRow.sla_reazione !== 'nb') {
+    const now = new Date();
+    const days = clienteRow.sla_reazione === '1g' ? 1 : 3;
+    now.setDate(now.getDate() + days);
+    data_evasione = now.toISOString().slice(0, 10);
+  }
+
+  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a, creatore_email, data_evasione);
+
+  // Build allegati JSON from uploaded files
+  const allegati = (req.files || []).map(f => ({
+    nome: f.originalname,
+    file: f.filename,
+    dimensione: f.size,
+  }));
 
   const cliente = db.prepare('SELECT * FROM clienti WHERE id = ?').get(cliente_id);
   const catLabel = { assistenza: 'Assistenza', bug: 'Bug', richiesta_info: 'Richiesta Info', altro: 'Altro' };
   const emailOggetto = `[TICKET #${codice}] [${catLabel[categoria] || categoria}] ${oggetto} — Cliente: ${cliente ? cliente.nome_azienda : 'N/A'}`;
-  const emailCorpo = `Nuovo ticket aperto dal portale cliente.\n\nOggetto: ${oggetto}\nCategoria: ${catLabel[categoria] || categoria}\nPriorità: ${prio}\n\nDescrizione:\n${descrizione || 'Nessuna descrizione'}`;
+  const emailCorpo = descrizione || '';
 
-  db.prepare(`INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id) VALUES ('ticket', ?, 'admin@ticketing.local', ?, ?, ?, ?, ?)`)
-    .run(cliente ? cliente.email : 'unknown@client.com', emailOggetto, emailCorpo, cliente_id, result.lastInsertRowid, `thread-${codice}`);
-  console.log(`[EMAIL SIMULATA] Nuovo ticket: ${emailOggetto}`);
+  const ticketingAddr = process.env.MAIL_TICKETING_USER || 'ticketing@stmdomotica.it';
+
+  // Send confirmation email to the user who created the ticket (creatore_email)
+  let sentMessageId = null;
+  const destinatarioConferma = creatore_email || (cliente && cliente.email);
+  if (destinatarioConferma) {
+    try {
+      const confermaOggetto = `[TICKET #${codice}] Conferma ricezione`;
+      const confermaHtml = `<p>Gentile cliente,</p>
+<p>abbiamo ricevuto il suo ticket <b>${codice}</b>.</p>
+<p>I nostri tecnici lo elaboreranno appena possibile nel rispetto dei tempi previsti dal suo contratto.</p>
+<p>Distinti Saluti.</p>`;
+      const r = await sendNoreplyEmail(destinatarioConferma, confermaOggetto, confermaHtml);
+      sentMessageId = r.messageId;
+    } catch (err) {
+      console.error('[MAIL] Errore invio conferma ticket:', err.message);
+    }
+  }
+
+  db.prepare(`INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id, message_id, allegati) VALUES ('ticket', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(cliente ? cliente.email : 'unknown@client.com', ticketingAddr, emailOggetto, emailCorpo, cliente_id, result.lastInsertRowid, `thread-${codice}`, sentMessageId, JSON.stringify(allegati));
+  console.log(`[EMAIL] Nuovo ticket: ${emailOggetto}`);
 
   res.status(201).json(db.prepare('SELECT * FROM ticket WHERE id = ?').get(result.lastInsertRowid));
 });

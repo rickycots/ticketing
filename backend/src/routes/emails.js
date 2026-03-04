@@ -1,8 +1,33 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { sendAssistenzaEmail, sendTicketingEmail } = require('../services/mailer');
 
 const router = express.Router();
+
+// Multer setup for email attachments
+const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'tickets');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xlsx', '.zip'];
+const emailUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, crypto.randomUUID() + ext);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowedExts.includes(ext));
+  },
+}).array('allegati', 5);
 
 // GET /api/emails — list emails with filters (admin only)
 router.get('/', authenticateToken, requireAdmin, (req, res) => {
@@ -106,29 +131,89 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ ...email, thread });
 });
 
-// POST /api/emails — create simulated email (admin only)
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
-  const { tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id } = req.body;
+// POST /api/emails — create email (admin only, with optional attachments)
+router.post('/', authenticateToken, requireAdmin, emailUpload, async (req, res) => {
+  const { tipo, destinatario, oggetto, corpo, is_bloccante, thread_id } = req.body;
+  // FormData sends everything as strings — parse numeric IDs
+  const cliente_id = req.body.cliente_id ? parseInt(req.body.cliente_id) : null;
+  const ticket_id = req.body.ticket_id ? parseInt(req.body.ticket_id) : null;
+  const progetto_id = req.body.progetto_id ? parseInt(req.body.progetto_id) : null;
+  const attivita_id = req.body.attivita_id ? parseInt(req.body.attivita_id) : null;
 
-  if (!mittente || !destinatario || !oggetto) {
-    return res.status(400).json({ error: 'Campi obbligatori: mittente, destinatario, oggetto' });
+  const isTicketEmail = tipo === 'ticket' || !!ticket_id;
+  const mittente = isTicketEmail
+    ? (process.env.MAIL_TICKETING_USER || 'ticketing@stmdomotica.it')
+    : (process.env.MAIL_ASSISTENZA_USER || 'assistenzatecnica@stmdomotica.it');
+
+  if (!destinatario || !oggetto) {
+    return res.status(400).json({ error: 'Campi obbligatori: destinatario, oggetto' });
+  }
+
+  // Build allegati JSON from uploaded files
+  const allegati = (req.files || []).map(f => ({
+    nome: f.originalname,
+    file: f.filename,
+    dimensione: f.size,
+  }));
+
+  // Find parent message_id for threading (In-Reply-To)
+  let inReplyTo = null;
+  if (thread_id) {
+    const parent = db.prepare('SELECT message_id FROM email WHERE thread_id = ? AND message_id IS NOT NULL ORDER BY data_ricezione DESC LIMIT 1').get(thread_id);
+    if (parent) inReplyTo = parent.message_id;
+  }
+
+  // Collect all recipients for ticket replies (everyone who interacted)
+  let allDestinatari = destinatario;
+  if (isTicketEmail && ticket_id) {
+    const systemAddrs = [
+      (process.env.MAIL_TICKETING_USER || 'ticketing@stmdomotica.it').toLowerCase(),
+      (process.env.MAIL_ASSISTENZA_USER || 'assistenzatecnica@stmdomotica.it').toLowerCase(),
+      (process.env.MAIL_NOREPLY_USER || 'noreply@stmdomotica.it').toLowerCase(),
+    ];
+    const ticket = db.prepare('SELECT creatore_email FROM ticket WHERE id = ?').get(ticket_id);
+    const threadEmails = db.prepare('SELECT DISTINCT mittente FROM email WHERE ticket_id = ?').all(ticket_id);
+    const addrs = new Set();
+    if (ticket && ticket.creatore_email) addrs.add(ticket.creatore_email.toLowerCase());
+    for (const row of threadEmails) {
+      if (row.mittente) addrs.add(row.mittente.toLowerCase());
+    }
+    // Remove system addresses
+    for (const sys of systemAddrs) addrs.delete(sys);
+    if (addrs.size > 0) {
+      allDestinatari = [...addrs].join(', ');
+    }
+  }
+
+  // Send real email via SMTP (ticketing@ for ticket emails, assistenza@ for others)
+  let sentMessageId = null;
+  try {
+    const htmlCorpo = (corpo || '').replace(/\n/g, '<br>');
+    const sendFn = isTicketEmail ? sendTicketingEmail : sendAssistenzaEmail;
+    const result = await sendFn(allDestinatari, oggetto, htmlCorpo, inReplyTo);
+    sentMessageId = result.messageId;
+  } catch (err) {
+    console.error('[MAIL] Errore invio:', err.message);
+    // Continue — save to DB anyway
   }
 
   const result = db.prepare(`
-    INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id, message_id, allegati)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     tipo || 'altro',
     mittente,
-    destinatario,
+    allDestinatari || destinatario,
     oggetto,
     corpo || '',
-    cliente_id || null,
-    ticket_id || null,
-    progetto_id || null,
-    attivita_id || null,
+    cliente_id,
+    ticket_id,
+    progetto_id,
+    attivita_id,
     is_bloccante ? 1 : 0,
-    thread_id || null
+    thread_id || null,
+    sentMessageId,
+    JSON.stringify(allegati)
   );
 
   // If marked as blocking and associated with a project, update the project
@@ -140,16 +225,14 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
         updated_at = datetime('now')
       WHERE id = ?
     `).run(result.lastInsertRowid, progetto_id);
-    console.log(`[EMAIL SIMULATA] Email bloccante associata al progetto #${progetto_id}`);
   }
 
   // If marked as blocking and associated with an activity, set activity to bloccata
   if (is_bloccante && attivita_id) {
     db.prepare("UPDATE attivita SET stato = 'bloccata' WHERE id = ?").run(attivita_id);
-    console.log(`[EMAIL SIMULATA] Email bloccante → attività #${attivita_id} bloccata`);
   }
 
-  console.log(`[EMAIL SIMULATA] Da: ${mittente} A: ${destinatario} — ${oggetto}`);
+  console.log(`[EMAIL] Da: ${mittente} A: ${destinatario} — ${oggetto}`);
 
   const email = db.prepare('SELECT * FROM email WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(email);

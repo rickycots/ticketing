@@ -56,4 +56,8 @@ app.listen(PORT, () => {
   console.log(`  GET  /api/users`);
   console.log(`  GET  /api/health`);
   console.log(`\nPronto!\n`);
+
+  // Start IMAP email polling
+  const { startPolling } = require('./services/imapPoller');
+  startPolling();
 });
