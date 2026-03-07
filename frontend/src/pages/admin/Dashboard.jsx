@@ -40,7 +40,7 @@ const statoColors = {
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = user.ruolo === 'admin'
 
   useEffect(() => {

@@ -23,7 +23,7 @@ export default function Repository() {
   const [editingDoc, setEditingDoc] = useState(null)
   const [editForm, setEditForm] = useState({ categoria: '', descrizione: '' })
   const fileInputRef = useRef()
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   useEffect(() => { loadDocs(); loadCategorie() }, [filtroCategoria])
@@ -80,7 +80,7 @@ export default function Repository() {
   }
 
   function handleDownload(doc) {
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     const url = repository.downloadUrl(doc.id)
     fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(r => r.blob())

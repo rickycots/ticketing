@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ticketing-mvp-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET non configurato nel .env');
+  process.exit(1);
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -15,7 +19,7 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Token non valido o scaduto' });
+    return res.status(401).json({ error: 'Token non valido o scaduto' });
   }
 }
 

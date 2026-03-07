@@ -16,9 +16,9 @@ export default function Login() {
 
     try {
       const data = await auth.login(email, password)
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      localStorage.setItem('lastLoginTime', new Date().toISOString())
+      sessionStorage.setItem('token', data.token)
+      sessionStorage.setItem('user', JSON.stringify(data.user))
+      sessionStorage.setItem('lastLoginTime', new Date().toISOString())
       navigate('/admin')
     } catch (err) {
       setError(err.message || 'Errore di autenticazione')

@@ -39,7 +39,7 @@ export default function ActivityDetail() {
   const [sendingNote, setSendingNote] = useState(false)
   const [notesOpen, setNotesOpen] = useState(true)
   const [emailTab, setEmailTab] = useState('tutte')
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   async function loadActivity() {

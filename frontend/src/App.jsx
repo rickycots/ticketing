@@ -25,19 +25,19 @@ import ClientUserManagement from './pages/client/UserManagement'
 import AiChat from './pages/client/AiChat'
 
 function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   if (!token) return <Navigate to="/login" replace />
   return children
 }
 
 function AdminOnly({ children }) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   if (user.ruolo !== 'admin') return <Navigate to="/admin" replace />
   return children
 }
 
 function ProtectedClientRoute({ children }) {
-  const token = localStorage.getItem('clientToken')
+  const token = sessionStorage.getItem('clientToken')
   if (!token) return <Navigate to="/client/login" replace />
   return children
 }

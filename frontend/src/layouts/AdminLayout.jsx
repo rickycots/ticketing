@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
 import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen } from 'lucide-react'
-import { projects, notifications, dashboard } from '../api/client'
+import { auth, projects, notifications, dashboard } from '../api/client'
 
 const allNavItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -19,7 +19,7 @@ const bottomNavItems = [
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
   const bottomItems = bottomNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
   const [chatNotifs, setChatNotifs] = useState([])
@@ -30,6 +30,15 @@ export default function AdminLayout() {
   const [notifList, setNotifList] = useState([])
   const [showNotifPanel, setShowNotifPanel] = useState(false)
   const notifRef = useRef(null)
+
+  // Verify token with backend on mount (background)
+  useEffect(() => {
+    auth.me().catch(() => {
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('user')
+      window.location.href = '/login'
+    })
+  }, [])
 
   useEffect(() => {
     loadChatNotifs()
@@ -59,7 +68,7 @@ export default function AdminLayout() {
   }
 
   function loadSidebarCounts() {
-    const since = localStorage.getItem('lastLoginTime')
+    const since = sessionStorage.getItem('lastLoginTime')
     dashboard.sidebarCounts(since).then(setSidebarCounts).catch(() => {})
   }
 
@@ -101,8 +110,8 @@ export default function AdminLayout() {
   }, [showNotifPanel])
 
   function handleLogout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     navigate('/login')
   }
 

@@ -17,8 +17,8 @@ export default function ClientLogin() {
 
     try {
       const data = await clientAuth.login(email, password)
-      localStorage.setItem('clientToken', data.token)
-      localStorage.setItem('clientUser', JSON.stringify(data.user))
+      sessionStorage.setItem('clientToken', data.token)
+      sessionStorage.setItem('clientUser', JSON.stringify(data.user))
       navigate('/client')
     } catch (err) {
       setError(err.message || 'Errore di autenticazione')

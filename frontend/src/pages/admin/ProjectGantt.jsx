@@ -23,7 +23,7 @@ export default function ProjectGantt() {
   const [newAct, setNewAct] = useState({ nome: '', descrizione: '', priorita: 'media', data_inizio: '', data_scadenza: '', assegnato_a: '', dipende_da: '' })
   const [emailTab, setEmailTab] = useState('tutte')
   const [expandedEmails, setExpandedEmails] = useState({})
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   function loadProject() {

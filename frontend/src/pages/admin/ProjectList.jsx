@@ -35,7 +35,7 @@ export default function ProjectList() {
   const [filterCliente, setFilterCliente] = useState('')
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 25 })
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   function loadProjects() {

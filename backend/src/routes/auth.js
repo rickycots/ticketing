@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 const { JWT_SECRET } = require('../middleware/auth');
 
+
 const router = express.Router();
 
 // POST /api/auth/login
@@ -28,7 +29,7 @@ router.post('/login', (req, res) => {
   const token = jwt.sign(
     { id: user.id, nome: user.nome, email: user.email, ruolo: user.ruolo },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '8h' }
   );
 
   res.json({
@@ -42,7 +43,7 @@ router.post('/login', (req, res) => {
   });
 });
 
-// GET /api/auth/me — get current user from token
+// GET /api/auth/me — verify token AND check user still active in DB
 router.get('/me', (req, res) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -52,10 +53,14 @@ router.get('/me', (req, res) => {
   }
 
   try {
-    const user = jwt.verify(token, JWT_SECRET);
-    res.json({ user });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = db.prepare('SELECT id, nome, email, ruolo, attivo FROM utenti WHERE id = ?').get(decoded.id);
+    if (!user || !user.attivo) {
+      return res.status(401).json({ error: 'Account disabilitato o non trovato' });
+    }
+    res.json({ user: { id: user.id, nome: user.nome, email: user.email, ruolo: user.ruolo } });
   } catch {
-    res.status(403).json({ error: 'Token non valido' });
+    res.status(401).json({ error: 'Token non valido o scaduto' });
   }
 });
 

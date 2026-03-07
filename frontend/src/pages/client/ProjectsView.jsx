@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FolderKanban, AlertTriangle, Wrench, CalendarClock, ChevronDown, ChevronUp, Mail } from 'lucide-react'
+import { FolderKanban, AlertTriangle, Wrench, CalendarClock, ChevronDown, ChevronUp, Mail, ChevronRight } from 'lucide-react'
 import { clientProjects } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
@@ -13,7 +13,8 @@ export default function ProjectsView() {
   const [projectList, setProjectList] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedEmail, setExpandedEmail] = useState(null)
-  const clientUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
+  const [expandedDesc, setExpandedDesc] = useState({})
+  const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
 
   function getUpdateColor(updatedAt) {
@@ -125,6 +126,20 @@ export default function ProjectsView() {
                       />
                     </div>
                   </div>
+
+                  {/* Descrizione collapsible */}
+                  <button
+                    onClick={() => setExpandedDesc(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                    className="flex items-center gap-1.5 mt-3 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                  >
+                    <ChevronRight size={14} className={`transition-transform ${expandedDesc[p.id] ? 'rotate-90' : ''}`} />
+                    <span className="font-medium">{t('shortDescription')}</span>
+                  </button>
+                  {expandedDesc[p.id] && (
+                    <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                      {p.descrizione || <span className="text-gray-400 italic">{t('noDescription')}</span>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Expanded blocking email */}

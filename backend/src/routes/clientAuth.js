@@ -40,7 +40,7 @@ router.post('/login', (req, res) => {
         tipo: 'cliente',
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
     return res.json({

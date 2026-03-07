@@ -163,6 +163,19 @@ const translations = {
     aiDisclaimer: 'Questa AI lavora su documenti interni STM Domotica popolati dai siti pubblici del supporto tecnico dei fornitori e da rielaborazioni interne.',
     aiError: 'Errore',
     aiNewChat: 'Nuova Chat',
+    aiFeatureDocs: 'Knowledge Base',
+    aiFeatureDocsDesc: 'Accesso a documentazione tecnica e FAQ dei fornitori.',
+    aiFeatureMultilang: 'Multilingua',
+    aiFeatureMultilangDesc: 'Risposte in italiano, inglese e francese.',
+    aiFeatureFast: 'Risposte Rapide',
+    aiFeatureFastDesc: 'Soluzioni concrete e passi operativi.',
+    shortDescription: 'Descrizione Breve',
+    noDescription: 'Nessuna descrizione disponibile',
+    companyComms: 'Comunicazioni',
+    noComms: 'Nessuna comunicazione',
+    aiSuggestion1: 'Come configuro un dispositivo Suprema?',
+    aiSuggestion2: 'Come resetto la password di BioStar?',
+    aiSuggestion3: 'Problemi di connessione al server',
   },
 
   en: {
@@ -329,6 +342,19 @@ const translations = {
     aiDisclaimer: 'This AI works on internal STM Domotica documents sourced from public vendor support sites and internal elaborations.',
     aiError: 'Error',
     aiNewChat: 'New Chat',
+    aiFeatureDocs: 'Knowledge Base',
+    aiFeatureDocsDesc: 'Access to technical documentation and vendor FAQs.',
+    aiFeatureMultilang: 'Multilingual',
+    aiFeatureMultilangDesc: 'Answers in Italian, English and French.',
+    aiFeatureFast: 'Quick Answers',
+    aiFeatureFastDesc: 'Concrete solutions and actionable steps.',
+    shortDescription: 'Short Description',
+    noDescription: 'No description available',
+    companyComms: 'Communications',
+    noComms: 'No communications',
+    aiSuggestion1: 'How to configure a Suprema device?',
+    aiSuggestion2: 'How to reset BioStar password?',
+    aiSuggestion3: 'Server connection issues',
   },
 
   fr: {
@@ -495,12 +521,25 @@ const translations = {
     aiDisclaimer: 'Cette IA travaille sur des documents internes STM Domotica alimentés par les sites publics de support technique des fournisseurs et des élaborations internes.',
     aiError: 'Erreur',
     aiNewChat: 'Nouvelle Chat',
+    aiFeatureDocs: 'Base de connaissances',
+    aiFeatureDocsDesc: 'Accès à la documentation technique et aux FAQ des fournisseurs.',
+    aiFeatureMultilang: 'Multilingue',
+    aiFeatureMultilangDesc: 'Réponses en italien, anglais et français.',
+    aiFeatureFast: 'Réponses rapides',
+    aiFeatureFastDesc: 'Solutions concrètes et étapes pratiques.',
+    shortDescription: 'Description Brève',
+    noDescription: 'Aucune description disponible',
+    companyComms: 'Communications',
+    noComms: 'Aucune communication',
+    aiSuggestion1: 'Comment configurer un appareil Suprema ?',
+    aiSuggestion2: 'Comment réinitialiser le mot de passe BioStar ?',
+    aiSuggestion3: 'Problèmes de connexion au serveur',
   },
 }
 
 export function getClientLang() {
   try {
-    const user = JSON.parse(localStorage.getItem('clientUser') || '{}')
+    const user = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
     return user.lingua || 'it'
   } catch {
     return 'it'

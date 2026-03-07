@@ -113,7 +113,7 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
     return res.status(403).json({ error: 'Accesso non consentito' });
   }
   const projects = db.prepare(`
-    SELECT p.id, p.nome, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id
+    SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id
     FROM progetti p
     WHERE p.cliente_id = ? AND p.stato != 'annullato'
     ORDER BY p.updated_at DESC

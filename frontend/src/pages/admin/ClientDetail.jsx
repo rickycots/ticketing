@@ -176,8 +176,8 @@ export default function ClientDetail() {
     const w = window.open('about:blank', '_blank')
     try {
       const data = await clientAuth.impersonate(id)
-      localStorage.setItem('clientToken', data.token)
-      localStorage.setItem('clientUser', JSON.stringify(data.user))
+      sessionStorage.setItem('clientToken', data.token)
+      sessionStorage.setItem('clientUser', JSON.stringify(data.user))
       w.location.href = '/client'
     } catch (err) {
       if (w) w.close()

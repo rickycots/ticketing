@@ -1,15 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
+import { clientAuth } from '../api/client'
 
 const TEAMS_EMAIL = 'riccardocoates@stmdomoticacorporationsrl.onmicrosoft.com'
 const TEAMS_CHAT_URL = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(TEAMS_EMAIL)}`
 
 export default function ClientLayout() {
   const navigate = useNavigate()
-  const clientUser = JSON.parse(localStorage.getItem('clientUser') || 'null')
+  const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || 'null')
   const [showTeamsModal, setShowTeamsModal] = useState(false)
+  const [comunicazioni, setComunicazioni] = useState([])
+  const [showComms, setShowComms] = useState(true)
+
+  // Verify token with backend on mount (background — doesn't block rendering)
+  useEffect(() => {
+    clientAuth.me().catch(() => {
+      // Token invalid/expired → force logout
+      sessionStorage.removeItem('clientToken')
+      sessionStorage.removeItem('clientUser')
+      window.location.href = '/client/login'
+    })
+  }, [])
+
+  // Load client communications
+  useEffect(() => {
+    if (clientUser) {
+      clientAuth.comunicazioni().then(setComunicazioni).catch(() => {})
+    }
+  }, [])
 
   if (!clientUser) return <Navigate to="/client/login" replace />
 
@@ -21,8 +41,8 @@ export default function ClientLayout() {
   const logoUrl = clientUser.logo ? `/uploads/logos/${clientUser.logo}` : null
 
   function handleLogout() {
-    localStorage.removeItem('clientToken')
-    localStorage.removeItem('clientUser')
+    sessionStorage.removeItem('clientToken')
+    sessionStorage.removeItem('clientUser')
     navigate('/client/login')
   }
 
@@ -126,6 +146,40 @@ export default function ClientLayout() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6 flex-1">
+        {/* Communications banner */}
+        {comunicazioni.length > 0 && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => setShowComms(prev => !prev)}
+              className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-blue-100/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Megaphone size={18} className="text-blue-600" />
+                <span className="text-sm font-semibold text-blue-800">
+                  {t('companyComms')} ({comunicazioni.length})
+                </span>
+              </div>
+              {showComms ? <ChevronUp size={16} className="text-blue-500" /> : <ChevronDown size={16} className="text-blue-500" />}
+            </button>
+            {showComms && (
+              <div className="px-4 pb-3 space-y-2 max-h-60 overflow-y-auto">
+                {comunicazioni.map(c => (
+                  <div key={c.id} className="bg-white rounded-lg border border-blue-100 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-medium text-gray-900">{c.oggetto}</h4>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        {new Date(c.data_ricezione).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                    {c.corpo && (
+                      <p className="text-xs text-gray-600 mt-1.5 line-clamp-3 whitespace-pre-wrap leading-relaxed">{c.corpo}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <Outlet />
       </main>
 

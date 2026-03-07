@@ -43,7 +43,7 @@ export default function ProjectDetail() {
   const [actFilter, setActFilter] = useState('attive')
   const [emailFilter, setEmailFilter] = useState('tutte')
   const chatEndRef = useRef(null)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   function load() {

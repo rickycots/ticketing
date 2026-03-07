@@ -21,7 +21,7 @@ export default function ClientTicketDetail() {
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const isReopen = searchParams.get('reopen') === 'true'
-  const clientUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
+  const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)

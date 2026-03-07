@@ -45,7 +45,7 @@ export default function TimelineList() {
   const [creating, setCreating] = useState(false)
   const containerRef = useRef(null)
   const navigate = useNavigate()
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   function loadProjects() {

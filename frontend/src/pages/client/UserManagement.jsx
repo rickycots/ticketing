@@ -10,7 +10,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState(null)
   const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti', lingua: 'it' })
   const [saving, setSaving] = useState(false)
-  const currentUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
 
   useEffect(() => { loadUsers() }, [])
 

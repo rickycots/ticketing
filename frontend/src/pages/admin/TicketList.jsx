@@ -35,7 +35,7 @@ export default function TicketList() {
   const [filters, setFilters] = useState({ stato: '', priorita: '', cliente_id: '', assegnato_a: '', search: '' })
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 25 })
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   useEffect(() => {

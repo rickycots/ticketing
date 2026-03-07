@@ -71,7 +71,7 @@ export default function ClientTicketList() {
   const [closedPage, setClosedPage] = useState(1)
   const PAGE_SIZE = 5
   const navigate = useNavigate()
-  const clientUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
+  const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
 
   useEffect(() => {

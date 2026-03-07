@@ -39,7 +39,7 @@ export default function ClientProjectDetail() {
   const { id } = useParams()
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
-  const clientUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
+  const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
 
   useEffect(() => {

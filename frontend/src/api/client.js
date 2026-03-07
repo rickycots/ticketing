@@ -1,7 +1,45 @@
 const API_BASE = '/api';
 
+// === Session Management ===
+// Uses sessionStorage: closes with browser. Inactivity timeout: 30 min.
+
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+let inactivityTimer = null;
+
+function resetInactivityTimer(isClient = false) {
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  const hasSession = isClient ? sessionStorage.getItem('clientToken') : sessionStorage.getItem('token');
+  if (!hasSession) return;
+  inactivityTimer = setTimeout(() => {
+    // Logout both admin and client on inactivity
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('clientToken');
+    sessionStorage.removeItem('clientUser');
+    window.location.href = sessionStorage.getItem('clientToken') ? '/client/login' : '/login';
+  }, INACTIVITY_TIMEOUT);
+}
+
+// Track user activity
+if (typeof window !== 'undefined') {
+  ['click', 'keydown', 'scroll', 'mousemove'].forEach(evt => {
+    document.addEventListener(evt, () => {
+      const isClient = !!sessionStorage.getItem('clientToken');
+      resetInactivityTimer(isClient);
+    }, { passive: true });
+  });
+}
+
+// === Admin Auth ===
+
 function getToken() {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
+}
+
+function adminLogout() {
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
+  window.location.href = '/login';
 }
 
 async function request(endpoint, options = {}) {
@@ -18,9 +56,7 @@ async function request(endpoint, options = {}) {
   });
 
   if (res.status === 401) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+    adminLogout();
     throw new Error('Non autenticato');
   }
 
@@ -103,7 +139,10 @@ export const clients = {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
-    }).then(r => r.json());
+    }).then(r => {
+      if (r.status === 401) { adminLogout(); throw new Error('Non autenticato'); }
+      return r.json();
+    });
   },
   deleteLogo: (id) => request(`/clients/${id}/logo`, { method: 'DELETE' }),
   getUsers: (clientId) => request(`/clients/${clientId}/users`),
@@ -131,12 +170,7 @@ export const emails = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     }).then(async r => {
-      if (r.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        throw new Error('Non autenticato');
-      }
+      if (r.status === 401) { adminLogout(); throw new Error('Non autenticato'); }
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Errore del server');
       return d;
@@ -198,7 +232,10 @@ export const repository = {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
-    }).then(r => r.json());
+    }).then(r => {
+      if (r.status === 401) { adminLogout(); throw new Error('Non autenticato'); }
+      return r.json();
+    });
   },
   update: (id, data) =>
     request(`/repository/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -213,10 +250,16 @@ export const ai = {
     request('/ai/ticket-assist', { method: 'POST', body: JSON.stringify({ ticket_id, domanda }) }),
 };
 
-// --- Client Portal Auth & Requests ---
+// === Client Portal Auth & Requests ===
 
 function getClientToken() {
-  return localStorage.getItem('clientToken');
+  return sessionStorage.getItem('clientToken');
+}
+
+function clientLogout() {
+  sessionStorage.removeItem('clientToken');
+  sessionStorage.removeItem('clientUser');
+  window.location.href = '/client/login';
 }
 
 async function clientRequest(endpoint, options = {}) {
@@ -230,9 +273,7 @@ async function clientRequest(endpoint, options = {}) {
   const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
 
   if (res.status === 401) {
-    localStorage.removeItem('clientToken');
-    localStorage.removeItem('clientUser');
-    window.location.href = '/client/login';
+    clientLogout();
     throw new Error('Non autenticato');
   }
 
@@ -271,12 +312,7 @@ export const clientTickets = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     }).then(async r => {
-      if (r.status === 401) {
-        localStorage.removeItem('clientToken');
-        localStorage.removeItem('clientUser');
-        window.location.href = '/client/login';
-        throw new Error('Non autenticato');
-      }
+      if (r.status === 401) { clientLogout(); throw new Error('Non autenticato'); }
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Errore del server');
       return d;

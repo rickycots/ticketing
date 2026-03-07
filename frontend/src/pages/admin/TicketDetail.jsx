@@ -29,7 +29,7 @@ export default function TicketDetail() {
   const [userList, setUserList] = useState([])
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
   // KB state
