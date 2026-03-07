@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, UserCog } from 'lucide-react'
+import { Plus, UserCog, Trash2 } from 'lucide-react'
 import { users } from '../../api/client'
 
 export default function UserList() {
@@ -32,6 +32,16 @@ export default function UserList() {
   async function handleToggleActive(user) {
     await users.update(user.id, { attivo: user.attivo ? 0 : 1 })
     loadUsers()
+  }
+
+  async function handleDelete(user) {
+    if (!confirm(`Eliminare l'utente "${user.nome}"? Questa azione è irreversibile.`)) return
+    try {
+      await users.delete(user.id)
+      loadUsers()
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   return (
@@ -125,16 +135,25 @@ export default function UserList() {
                   {u.attivo ? 'Attivo' : 'Disattivato'}
                 </span>
                 {u.ruolo !== 'admin' && (
-                  <button
-                    onClick={() => handleToggleActive(u)}
-                    className={`text-xs px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors ${
-                      u.attivo
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                        : 'bg-green-50 text-green-600 hover:bg-green-100'
-                    }`}
-                  >
-                    {u.attivo ? 'Disattiva' : 'Attiva'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleActive(u)}
+                      className={`text-xs px-3 py-1 rounded-lg font-medium cursor-pointer transition-colors ${
+                        u.attivo
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : 'bg-green-50 text-green-600 hover:bg-green-100'
+                      }`}
+                    >
+                      {u.attivo ? 'Disattiva' : 'Attiva'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                      title="Elimina utente"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

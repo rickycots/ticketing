@@ -1,4 +1,7 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+
+const LOGO_PATH = path.join(__dirname, '..', '..', 'uploads', 'LogoSTM.png');
 
 const TICKETING_USER = process.env.MAIL_TICKETING_USER;
 const TICKETING_PASS = process.env.MAIL_TICKETING_PASS;
@@ -55,6 +58,7 @@ async function sendTicketingEmail(to, subject, html, inReplyTo) {
     to,
     subject,
     html,
+    attachments: [{ filename: 'LogoSTM.png', path: LOGO_PATH, cid: 'logo' }],
   };
   if (inReplyTo) {
     mailOptions.inReplyTo = inReplyTo;
@@ -81,6 +85,7 @@ async function sendAssistenzaEmail(to, subject, html, inReplyTo) {
     to,
     subject,
     html,
+    attachments: [{ filename: 'LogoSTM.png', path: LOGO_PATH, cid: 'logo' }],
   };
   if (inReplyTo) {
     mailOptions.inReplyTo = inReplyTo;
@@ -108,6 +113,11 @@ async function sendNoreplyEmail(to, subject, html) {
     to,
     subject,
     html,
+    attachments: [{
+      filename: 'LogoSTM.png',
+      path: LOGO_PATH,
+      cid: 'logo',
+    }],
   };
 
   const transporter = noreplyTransporter || ticketingTransporter;
@@ -122,4 +132,21 @@ async function sendNoreplyEmail(to, subject, html) {
   return { messageId: info.messageId };
 }
 
-module.exports = { sendTicketingEmail, sendAssistenzaEmail, sendNoreplyEmail, mailEnabled };
+/**
+ * Wrap content in the standard STM email template with logo header and privacy footer
+ */
+function wrapEmailTemplate(bodyHtml) {
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto">
+<div style="border-bottom:2px solid #0066cc;padding:16px 0;margin-bottom:20px;text-align:center">
+<img src="cid:logo" alt="STM Domotica" style="height:50px;width:auto" />
+</div>
+${bodyHtml}
+<hr style="margin:20px 0;border:none;border-top:1px solid #ccc">
+<p style="text-align:center"><b>This e-mail has been sent automatically from STM Domotica support portal.</b></p>
+<p style="font-size:10px;color:#999;text-align:center;line-height:1.4;margin-top:16px">This message and any attachments are confidential and intended solely for the addressee. If you have received this e-mail in error, please notify the sender immediately and delete it. Any unauthorized use, disclosure, copying or distribution is strictly prohibited. This e-mail does not constitute a binding agreement. Stmdomotica Corporation Srl — Via Aldo Moro 15, 26839 Zelo Buon Persico (LO), Italy.</p>
+</div>`;
+}
+
+const logoAttachment = { filename: 'LogoSTM.png', path: LOGO_PATH, cid: 'logo' };
+
+module.exports = { sendTicketingEmail, sendAssistenzaEmail, sendNoreplyEmail, mailEnabled, wrapEmailTemplate, logoAttachment };

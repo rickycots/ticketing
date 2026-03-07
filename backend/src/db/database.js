@@ -45,6 +45,7 @@ function runMigrations() {
     "ALTER TABLE email ADD COLUMN allegati TEXT DEFAULT '[]'",
     "ALTER TABLE ticket ADD COLUMN creatore_email TEXT",
     "ALTER TABLE utenti_cliente ADD COLUMN ruolo TEXT NOT NULL DEFAULT 'user'",
+    "ALTER TABLE utenti_cliente ADD COLUMN lingua TEXT NOT NULL DEFAULT 'it'",
     "ALTER TABLE clienti ADD COLUMN sla_reazione TEXT DEFAULT 'nb'",
     "ALTER TABLE ticket ADD COLUMN data_evasione TEXT",
   ];
@@ -98,6 +99,28 @@ function runMigrations() {
   }
   db.exec('CREATE INDEX IF NOT EXISTS idx_utenti_cliente_cliente ON utenti_cliente(cliente_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_utenti_cliente_email ON utenti_cliente(email)');
+
+  // Create comunicazioni_cliente table if not exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS comunicazioni_cliente (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente_id INTEGER NOT NULL REFERENCES clienti(id),
+      oggetto TEXT NOT NULL,
+      corpo TEXT,
+      mittente TEXT,
+      message_id TEXT UNIQUE,
+      data_ricezione TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_comunicazioni_cliente ON comunicazioni_cliente(cliente_id)');
+
+  // Create impostazioni table (key-value settings store)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS impostazioni (
+      chiave TEXT PRIMARY KEY,
+      valore TEXT
+    )
+  `);
 }
 runMigrations();
 

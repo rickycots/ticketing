@@ -9,11 +9,14 @@
     "seed": "node src/seed.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.7.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.21.0",
+    "groq-sdk": "^0.37.0",
     "imapflow": "^1.2.11",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",

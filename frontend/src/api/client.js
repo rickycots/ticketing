@@ -150,6 +150,7 @@ export const users = {
   list: () => request('/users'),
   create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 };
 
 // Notifications
@@ -231,10 +232,7 @@ async function clientRequest(endpoint, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem('clientToken');
     localStorage.removeItem('clientUser');
-    // Extract slug from current URL to redirect to the correct client login
-    const slugMatch = window.location.pathname.match(/^\/client\/([^/]+)/);
-    const slug = slugMatch ? slugMatch[1] : '';
-    window.location.href = slug ? `/client/${slug}/login` : '/login';
+    window.location.href = '/client/login';
     throw new Error('Non autenticato');
   }
 
@@ -245,16 +243,12 @@ async function clientRequest(endpoint, options = {}) {
 
 // Client Auth
 export const clientAuth = {
-  login: (email, password, slug) =>
-    clientRequest('/client-auth/login', { method: 'POST', body: JSON.stringify({ email, password, slug }) }),
+  login: (email, password) =>
+    clientRequest('/client-auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => clientRequest('/client-auth/me'),
-  info: (slug) =>
-    fetch(`${API_BASE}/client-auth/info/${slug}`).then(r => {
-      if (!r.ok) throw new Error('Portale non trovato');
-      return r.json();
-    }),
   impersonate: (clienteId) =>
     request(`/client-auth/impersonate/${clienteId}`, { method: 'POST' }),
+  comunicazioni: () => clientRequest('/client-auth/comunicazioni'),
 };
 
 // Client Portal Tickets (authed)
@@ -263,6 +257,8 @@ export const clientTickets = {
   get: (clienteId, ticketId) => clientRequest(`/tickets/client/${clienteId}/${ticketId}`),
   reply: (clienteId, ticketId, corpo) =>
     clientRequest(`/tickets/client/${clienteId}/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ corpo }) }),
+  close: (clienteId, ticketId) =>
+    clientRequest(`/tickets/client/${clienteId}/${ticketId}/close`, { method: 'PUT' }),
   create: (data, files) => {
     const formData = new FormData();
     Object.entries(data).forEach(([k, v]) => { if (v != null) formData.append(k, v); });
@@ -278,9 +274,7 @@ export const clientTickets = {
       if (r.status === 401) {
         localStorage.removeItem('clientToken');
         localStorage.removeItem('clientUser');
-        const slugMatch = window.location.pathname.match(/^\/client\/([^/]+)/);
-        const slug = slugMatch ? slugMatch[1] : '';
-        window.location.href = slug ? `/client/${slug}/login` : '/login';
+        window.location.href = '/client/login';
         throw new Error('Non autenticato');
       }
       const d = await r.json();
@@ -296,6 +290,11 @@ export const clientUsers = {
   create: (data) => clientRequest('/client-auth/portal-users', { method: 'POST', body: JSON.stringify(data) }),
   update: (userId, data) => clientRequest(`/client-auth/portal-users/${userId}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (userId) => clientRequest(`/client-auth/portal-users/${userId}`, { method: 'DELETE' }),
+};
+
+// Client AI Chat
+export const clientAi = {
+  ask: (domanda) => clientRequest('/ai/client-assist', { method: 'POST', body: JSON.stringify({ domanda }) }),
 };
 
 // Client Portal Projects (authed)

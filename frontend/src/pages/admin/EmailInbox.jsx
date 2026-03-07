@@ -388,7 +388,7 @@ export default function EmailInbox() {
                   quickFilter === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
               >
-                {f.label} <span className={`ml-0.5 px-1 py-0.5 rounded text-[10px] ${quickFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
+                {f.label} <span className={`ml-0.5 px-1 py-0.5 rounded text-xs ${quickFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
               </button>
             ))}
           </div>

@@ -1,5 +1,6 @@
 const { ImapFlow } = require('imapflow');
 const db = require('../db/database');
+const { checkAndSync: checkFaqSync } = require('./faqScraper');
 
 const IMAP_HOST = process.env.MAIL_IMAP_HOST;
 const IMAP_PORT = parseInt(process.env.MAIL_IMAP_PORT) || 993;
@@ -13,6 +14,9 @@ const imapEnabled = !!(IMAP_HOST && TICKETING_USER && TICKETING_PASS);
 
 // Ticket code pattern: [TICKET #TK-YYYY-NNNN]
 const TICKET_CODE_RE = /\[TICKET\s*#(TK-\d{4}-\d{4})\]/i;
+
+// Communication tag pattern: [COMM slug]
+const COMM_TAG_RE = /\[COMM\s+([a-z0-9-]+)\]/i;
 
 /**
  * Match sender email to a client in the DB
@@ -34,6 +38,15 @@ function findClienteByEmail(senderEmail) {
 function messageExists(messageId) {
   if (!messageId) return false;
   const row = db.prepare('SELECT id FROM email WHERE message_id = ?').get(messageId);
+  return !!row;
+}
+
+/**
+ * Check if message_id already exists in comunicazioni_cliente (dedup)
+ */
+function comunicazioneExists(messageId) {
+  if (!messageId) return false;
+  const row = db.prepare('SELECT id FROM comunicazioni_cliente WHERE message_id = ?').get(messageId);
   return !!row;
 }
 
@@ -233,6 +246,39 @@ function handleTicketingMessage(msg) {
  * Import as email_cliente, unassigned, for admin to manage
  */
 function handleAssistenzaMessage(msg) {
+  // Check for [COMM slug] tag — client communication via email
+  const commMatch = msg.subject.match(COMM_TAG_RE);
+  if (commMatch) {
+    const slug = commMatch[1].toLowerCase();
+    const cliente = db.prepare('SELECT id FROM clienti WHERE portale_slug = ?').get(slug);
+
+    if (cliente) {
+      if (comunicazioneExists(msg.messageId)) {
+        console.log(`[IMAP] Skip comunicazione duplicata: ${msg.messageId}`);
+        return;
+      }
+
+      const oggettoClean = msg.subject.replace(COMM_TAG_RE, '').trim();
+
+      db.prepare(`
+        INSERT INTO comunicazioni_cliente (cliente_id, oggetto, corpo, mittente, message_id, data_ricezione)
+        VALUES (?, ?, ?, ?, ?, datetime(?))
+      `).run(
+        cliente.id,
+        oggettoClean,
+        msg.body,
+        msg.from,
+        msg.messageId,
+        new Date(msg.date).toISOString()
+      );
+
+      console.log(`[IMAP assistenza@] Comunicazione cliente (${slug}): ${oggettoClean}`);
+      return;
+    } else {
+      console.warn(`[IMAP assistenza@] [COMM] slug non trovato: "${slug}" — trattata come email normale`);
+    }
+  }
+
   if (messageExists(msg.messageId)) {
     console.log(`[IMAP] Skip duplicato: ${msg.messageId}`);
     return;
@@ -270,6 +316,9 @@ async function pollAll() {
   }
 
   console.log('[IMAP] Polling completato');
+
+  // Check FAQ sync (runs max once every 24h)
+  checkFaqSync().catch(err => console.error('[FAQ Scraper] Errore:', err.message));
 }
 
 let pollTimer = null;

@@ -229,7 +229,7 @@ export default function TimelineList() {
                       style={{ height: row.height }}
                     >
                       <Building2 size={11} className="text-gray-400 shrink-0" />
-                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide truncate">{row.cliente_nome}</span>
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide truncate">{row.cliente_nome}</span>
                     </div>
                   )
                 }
@@ -246,7 +246,7 @@ export default function TimelineList() {
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors.fill }} />
                     <div className="min-w-0 flex-1">
                       <span className="block truncate text-gray-700 text-xs font-medium">{bar.nome}</span>
-                      {filterCliente && <span className="block truncate text-gray-400 text-[10px]">{bar.cliente_nome}</span>}
+                      {filterCliente && <span className="block truncate text-gray-400 text-xs">{bar.cliente_nome}</span>}
                     </div>
                   </div>
                 )

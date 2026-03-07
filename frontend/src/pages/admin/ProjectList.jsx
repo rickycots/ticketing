@@ -264,7 +264,7 @@ export default function ProjectList() {
                   {p.chat_non_lette > 0 && (
                     <span className="relative inline-flex items-center" title={`${p.chat_non_lette} messaggi non letti`}>
                       <MessageCircle size={16} className="text-blue-500" />
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
                         {p.chat_non_lette}
                       </span>
                     </span>
@@ -302,7 +302,7 @@ export default function ProjectList() {
               {isAdmin && p.tecnici && p.tecnici.length > 0 && (
                 <div className="flex gap-1 mt-3">
                   {getTecniciNames(p.tecnici)?.map((initials, i) => (
-                    <span key={i} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">
+                    <span key={i} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
                       {initials}
                     </span>
                   ))}

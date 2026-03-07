@@ -154,24 +154,24 @@ export default function ActivityDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100">
               {activity.assegnato_nome && (
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Assegnato a</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Assegnato a</p>
                   <p className="text-sm font-medium text-gray-700">{activity.assegnato_nome}</p>
                 </div>
               )}
               {activity.data_inizio && (
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Data Inizio</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Data Inizio</p>
                   <p className="text-sm font-medium text-gray-700">{new Date(activity.data_inizio).toLocaleDateString('it-IT')}</p>
                 </div>
               )}
               {activity.data_scadenza && (
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Fine Prevista</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Fine Prevista</p>
                   <p className="text-sm font-medium text-gray-700">{new Date(activity.data_scadenza).toLocaleDateString('it-IT')}</p>
                 </div>
               )}
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Completata</p>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Completata</p>
                 <p className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-300'}`}>
                   {isCompleted && activity.data_completamento
                     ? new Date(activity.data_completamento).toLocaleDateString('it-IT')
@@ -193,7 +193,7 @@ export default function ActivityDetail() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <ArrowRightLeft size={18} className="text-orange-500" />
-                <h2 className="font-semibold">Dipendenze</h2>
+                <h2 className="text-lg font-semibold">Dipendenze</h2>
               </div>
               <div className="p-4 space-y-3">
                 {activity.dipendenza && (
@@ -202,7 +202,7 @@ export default function ActivityDetail() {
                     <Link to={`/admin/projects/${projectId}/activities/${activity.dipendenza.id}`}
                       className="inline-flex items-center gap-2 text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-1.5 hover:bg-orange-100">
                       {activity.dipendenza.nome}
-                      <span className={`${badgeCls} ${actStatoColors[activity.dipendenza.stato]} text-[10px]`}>{actStatoLabels[activity.dipendenza.stato]}</span>
+                      <span className={`${badgeCls} ${actStatoColors[activity.dipendenza.stato]} text-xs`}>{actStatoLabels[activity.dipendenza.stato]}</span>
                     </Link>
                   </div>
                 )}
@@ -214,7 +214,7 @@ export default function ActivityDetail() {
                         <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
                           className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-1.5 hover:bg-blue-100">
                           {d.nome}
-                          <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
+                          <span className={`${badgeCls} ${actStatoColors[d.stato]} text-xs`}>{actStatoLabels[d.stato]}</span>
                         </Link>
                       ))}
                     </div>
@@ -244,7 +244,7 @@ export default function ActivityDetail() {
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                   <Mail size={18} className="text-blue-500" />
-                  <h2 className="font-semibold">Email Associate</h2>
+                  <h2 className="text-lg font-semibold">Email Associate</h2>
                   <span className="text-xs text-gray-400">({allEmails.length})</span>
                 </div>
                 <div className="flex border-b border-gray-100">
@@ -255,7 +255,7 @@ export default function ActivityDetail() {
                           ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                       }`}>
-                      {t.label} {t.count > 0 && <span className="ml-1 text-[10px] bg-gray-200 text-gray-600 rounded-full px-1.5">{t.count}</span>}
+                      {t.label} {t.count > 0 && <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{t.count}</span>}
                     </button>
                   ))}
                 </div>
@@ -266,9 +266,9 @@ export default function ActivityDetail() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">{e.mittente}</p>
-                            {e.is_bloccante && <span className="text-[10px] font-semibold bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">Bloccante</span>}
-                            {e.rilevanza === 'rilevante' && <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">Rilevante</span>}
-                            {e.rilevanza === 'di_contesto' && <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">Contesto</span>}
+                            {e.is_bloccante && <span className="text-xs font-semibold bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">Bloccante</span>}
+                            {e.rilevanza === 'rilevante' && <span className="text-xs font-semibold bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">Rilevante</span>}
+                            {e.rilevanza === 'di_contesto' && <span className="text-xs font-semibold bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">Contesto</span>}
                           </div>
                           <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
                         </div>
@@ -290,7 +290,7 @@ export default function ActivityDetail() {
               className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <StickyNote size={18} className="text-yellow-500" />
-                <h2 className="font-semibold">Note Attività</h2>
+                <h2 className="text-lg font-semibold">Note Attività</h2>
                 <span className="text-xs text-gray-400">({noteList.length})</span>
               </div>
               {notesOpen ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}

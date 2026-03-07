@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout'
 import ClientLayout from './layouts/ClientLayout'
 import Login from './pages/Login'
@@ -22,6 +22,7 @@ import ClientTicketDetail from './pages/client/TicketDetail'
 import ProjectsView from './pages/client/ProjectsView'
 import ClientProjectDetail from './pages/client/ClientProjectDetail'
 import ClientUserManagement from './pages/client/UserManagement'
+import AiChat from './pages/client/AiChat'
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token')
@@ -37,8 +38,7 @@ function AdminOnly({ children }) {
 
 function ProtectedClientRoute({ children }) {
   const token = localStorage.getItem('clientToken')
-  const { slug } = useParams()
-  if (!token) return <Navigate to={`/client/${slug}/login`} replace />
+  if (!token) return <Navigate to="/client/login" replace />
   return children
 }
 
@@ -46,7 +46,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/client/:slug/login" element={<ClientLogin />} />
+      <Route path="/client/login" element={<ClientLogin />} />
 
       {/* Admin Panel */}
       <Route path="/admin" element={
@@ -70,7 +70,7 @@ export default function App() {
       </Route>
 
       {/* Client Portal */}
-      <Route path="/client/:slug" element={
+      <Route path="/client" element={
         <ProtectedClientRoute>
           <ClientLayout />
         </ProtectedClientRoute>
@@ -82,7 +82,12 @@ export default function App() {
         <Route path="projects" element={<ProjectsView />} />
         <Route path="projects/:id" element={<ClientProjectDetail />} />
         <Route path="users" element={<ClientUserManagement />} />
+        <Route path="ai" element={<AiChat />} />
       </Route>
+
+      {/* Redirect old slug-based URLs */}
+      <Route path="/client/:slug/login" element={<Navigate to="/client/login" replace />} />
+      <Route path="/client/:slug/*" element={<Navigate to="/client" replace />} />
 
       {/* Default redirect */}
       <Route path="/" element={<Navigate to="/admin" replace />} />

@@ -150,7 +150,7 @@ export default function ProjectGantt() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm mt-5">
             <div className="p-4 border-b border-gray-100 flex items-center gap-2">
               <Mail size={18} className="text-blue-500" />
-              <h2 className="font-semibold">Email Associate</h2>
+              <h2 className="text-lg font-semibold">Email Associate</h2>
               <span className="text-xs text-gray-400">({allEmails.length})</span>
             </div>
             <div className="flex gap-1 px-4 pt-3 pb-2 border-b border-gray-100">
@@ -159,7 +159,7 @@ export default function ProjectGantt() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                     emailTab === t.key ? t.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}>
-                  {t.label} <span className={`ml-1 px-1 py-0.5 rounded text-[10px] ${emailTab === t.key ? t.counter : 'bg-gray-200'}`}>{t.count}</span>
+                  {t.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailTab === t.key ? t.counter : 'bg-gray-200'}`}>{t.count}</span>
                 </button>
               ))}
             </div>

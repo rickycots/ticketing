@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, ExternalLink, BookOpen, Ticket, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3 } from 'lucide-react'
 import { clients, schede as schedeApi, clientAuth } from '../../api/client'
 
 const API_BASE = '/api'
@@ -15,7 +15,7 @@ export default function ClientDetail() {
   const [users, setUsers] = useState([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti' })
+  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti', lingua: 'it' })
   const fileRef = useRef()
 
   // Knowledge Base state
@@ -125,10 +125,10 @@ export default function ClientDetail() {
   function openUserForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili })
+      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it' })
     } else {
       setEditingUser(null)
-      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti' })
+      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti', lingua: 'it' })
     }
     setShowUserForm(true)
   }
@@ -178,7 +178,7 @@ export default function ClientDetail() {
       const data = await clientAuth.impersonate(id)
       localStorage.setItem('clientToken', data.token)
       localStorage.setItem('clientUser', JSON.stringify(data.user))
-      w.location.href = `/client/${data.slug}`
+      w.location.href = '/client'
     } catch (err) {
       if (w) w.close()
       alert('Errore durante l\'accesso al portale cliente')
@@ -215,7 +215,7 @@ export default function ClientDetail() {
             <Ticket size={14} /> Accedi Ticketing/Progetti
           </button>
           <button
-            onClick={() => window.open(`/client/${client.portale_slug}/login`, '_blank')}
+            onClick={() => window.open('/client/login', '_blank')}
             className="inline-flex items-center gap-1.5 bg-indigo-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors cursor-pointer"
           >
             <BarChart3 size={14} /> Dashboard Sistemi
@@ -246,18 +246,8 @@ export default function ClientDetail() {
                   }} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Link Portale Dedicato</label>
-                  <div className="flex items-center gap-0">
-                    <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-500">/client/</span>
-                    <input type="text" value={form.portale_slug || ''} onChange={e => setForm(f => ({ ...f, portale_slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') }))} className="flex-1 border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="slug" />
-                    <span className="inline-flex items-center px-3 py-2 rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 text-sm text-gray-500">/login</span>
-                  </div>
-                  {form.portale_slug && (
-                    <a href={`/client/${form.portale_slug}/login`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1.5">
-                      <ExternalLink size={12} />
-                      /client/{form.portale_slug}/login
-                    </a>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cartella dedicata del portale</label>
+                  <input type="text" value={form.portale_slug || ''} onChange={e => setForm(f => ({ ...f, portale_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="es. rossi-srl" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Referente Commerciale</label>
@@ -367,6 +357,14 @@ export default function ClientDetail() {
                     <option value="admin">Admin</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lingua</label>
+                  <select value={userForm.lingua} onChange={e => setUserForm(f => ({ ...f, lingua: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="it">Italiano</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                  </select>
+                </div>
                 {userForm.ruolo === 'user' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
@@ -407,6 +405,7 @@ export default function ClientDetail() {
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Ruolo</th>
                   <th className="px-4 py-3 font-medium">Schede</th>
+                  <th className="px-4 py-3 font-medium">Lingua</th>
                   <th className="px-4 py-3 font-medium">Creato il</th>
                   <th className="px-4 py-3 font-medium">Attivo</th>
                   <th className="px-4 py-3 font-medium">Azioni</th>
@@ -434,6 +433,9 @@ export default function ClientDetail() {
                           ))}
                         </div>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600">
+                      {u.lingua === 'en' ? '🇬🇧 EN' : u.lingua === 'fr' ? '🇫🇷 FR' : '🇮🇹 IT'}
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {u.created_at ? new Date(u.created_at).toLocaleDateString('it-IT') : '-'}

@@ -171,7 +171,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                 className="flex items-center px-3 gap-2 border-b border-gray-100"
                 style={{ height: ROW_HEIGHT }}
               >
-                <span className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: colors.fill }}>
+                <span className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: colors.fill }}>
                   {bar.ordine || i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -185,7 +185,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                   ) : (
                     <span className="block truncate text-gray-700 text-xs font-medium" title={bar.nome}>{bar.nome}</span>
                   )}
-                  {bar.assegnato_nome && <span className="block truncate text-gray-400 text-[10px]">{bar.assegnato_nome}</span>}
+                  {bar.assegnato_nome && <span className="block truncate text-gray-400 text-xs">{bar.assegnato_nome}</span>}
                 </div>
                 {bar.stato === 'bloccata' && (
                   <span title="Attività bloccata" className="shrink-0 text-orange-500">

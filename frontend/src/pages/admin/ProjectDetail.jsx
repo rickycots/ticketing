@@ -279,7 +279,7 @@ export default function ProjectDetail() {
                         : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                     }`}
                   >
-                    Attive <span className={`ml-1 px-1 py-0.5 rounded text-[10px] ${actFilter === 'attive' ? 'bg-orange-200' : 'bg-gray-200'}`}>{attAperte}</span>
+                    Attive <span className={`ml-1 px-1 py-0.5 rounded text-xs ${actFilter === 'attive' ? 'bg-orange-200' : 'bg-gray-200'}`}>{attAperte}</span>
                   </button>
                   <button
                     onClick={() => setActFilter('completate')}
@@ -289,7 +289,7 @@ export default function ProjectDetail() {
                         : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                     }`}
                   >
-                    Completate <span className={`ml-1 px-1 py-0.5 rounded text-[10px] ${actFilter === 'completate' ? 'bg-green-200' : 'bg-gray-200'}`}>{attCompletate}</span>
+                    Completate <span className={`ml-1 px-1 py-0.5 rounded text-xs ${actFilter === 'completate' ? 'bg-green-200' : 'bg-gray-200'}`}>{attCompletate}</span>
                   </button>
                 </div>
 
@@ -343,7 +343,7 @@ export default function ProjectDetail() {
                           className={selectCls}
                           title="Data Fine Prevista"
                         />
-                        <p className="text-[10px] text-gray-400 mt-0.5">Data Fine Prevista</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Data Fine Prevista</p>
                       </div>
                       <div>
                         <input
@@ -353,7 +353,7 @@ export default function ProjectDetail() {
                           className={selectCls}
                           title="Data Inizio"
                         />
-                        <p className="text-[10px] text-gray-400 mt-0.5">Data Inizio</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Data Inizio</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
@@ -367,7 +367,7 @@ export default function ProjectDetail() {
                             onChange={(e) => setNewActivity(a => ({ ...a, ordine: e.target.value }))}
                             className={selectCls}
                           />
-                          <p className="text-[10px] text-gray-400 mt-0.5">Ordine (auto se vuoto)</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Ordine (auto se vuoto)</p>
                         </div>
                       )}
                       <select
@@ -438,14 +438,14 @@ export default function ProjectDetail() {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                               {!a.dipende_da ? (
-                                <span className="w-5 h-5 rounded bg-gray-200 text-gray-600 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                <span className="w-5 h-5 rounded bg-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center shrink-0">
                                   {a.ordine || '—'}
                                 </span>
                               ) : (
                                 <span className="text-gray-300 text-xs">↳</span>
                               )}
                               <h4 className="text-sm font-semibold">{a.nome}</h4>
-                              <Link to={`/admin/projects/${id}/activities/${a.id}`} className="text-[11px] text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap">
+                              <Link to={`/admin/projects/${id}/activities/${a.id}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap">
                                 Dettaglio attività
                               </Link>
                               <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actStatoColors[a.stato]}`}>
@@ -579,7 +579,7 @@ export default function ProjectDetail() {
                                       <div key={n.id} className="bg-white rounded-lg px-3 py-2 border border-gray-100">
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-xs font-medium text-gray-700">{n.utente_nome}</span>
-                                          <span className="text-[10px] text-gray-400">{new Date(n.created_at).toLocaleString('it-IT')}</span>
+                                          <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleString('it-IT')}</span>
                                         </div>
                                         <p className="text-sm text-gray-600 whitespace-pre-wrap">{n.testo}</p>
                                       </div>
@@ -633,7 +633,7 @@ export default function ProjectDetail() {
                         emailFilter === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
-                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-[10px] ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
+                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
                     </button>
                   ))}
                 </div>
@@ -699,7 +699,7 @@ export default function ProjectDetail() {
                         emailFilter === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
-                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-[10px] ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
+                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
                     </button>
                   ))}
                 </div>
@@ -756,7 +756,7 @@ export default function ProjectDetail() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <StickyNote size={18} className="text-yellow-500" />
-                <h2 className="font-semibold">Note Interne</h2>
+                <h2 className="text-lg font-semibold">Note Interne</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {project.note.map(n => (
@@ -837,7 +837,7 @@ export default function ProjectDetail() {
               <MessageCircle size={16} className="text-blue-500" />
               <h3 className="text-sm font-semibold">Chat Progetto</h3>
               {project.chat && project.chat.length > 0 && (
-                <span className="text-[10px] text-gray-400">({project.chat.length})</span>
+                <span className="text-xs text-gray-400">({project.chat.length})</span>
               )}
             </div>
 
@@ -856,10 +856,10 @@ export default function ProjectDetail() {
                           : 'bg-gray-100 border border-gray-200'
                       }`}>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`text-[10px] font-semibold ${isMsgAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
+                          <span className={`text-xs font-semibold ${isMsgAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
                             {m.utente_nome}
                           </span>
-                          <span className="text-[9px] text-gray-400">
+                          <span className="text-xs text-gray-400">
                             {new Date(m.created_at).toLocaleString('it-IT')}
                           </span>
                         </div>

@@ -199,14 +199,14 @@ router.delete('/:id/logo', authenticateToken, requireAdmin, (req, res) => {
 // GET /api/clients/:id/users — list client users
 router.get('/:id/users', authenticateToken, requireAdmin, (req, res) => {
   const users = db.prepare(
-    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome'
   ).all(req.params.id);
   res.json(users);
 });
 
 // POST /api/clients/:id/users — create client user
 router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, password, ruolo, schede_visibili } = req.body;
+  const { nome, email, password, ruolo, schede_visibili, lingua } = req.body;
   if (!nome || !email || !password) {
     return res.status(400).json({ error: 'Campi obbligatori: nome, email, password' });
   }
@@ -216,20 +216,21 @@ router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
 
   const userRuolo = ruolo === 'admin' ? 'admin' : 'user';
   const visibili = userRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || 'ticket,progetti');
+  const userLingua = ['it', 'en', 'fr'].includes(lingua) ? lingua : 'it';
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
-    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(req.params.id, nome, email, password_hash, userRuolo, visibili);
+    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(req.params.id, nome, email, password_hash, userRuolo, visibili, userLingua);
 
   const user = db.prepare(
-    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE id = ?'
   ).get(result.lastInsertRowid);
   res.status(201).json(user);
 });
 
 // PUT /api/clients/:id/users/:userId — update client user
 router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, password, ruolo, schede_visibili, attivo } = req.body;
+  const { nome, email, password, ruolo, schede_visibili, lingua, attivo } = req.body;
   const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.params.id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
@@ -241,6 +242,7 @@ router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => 
   const newHash = password ? bcrypt.hashSync(password, 10) : user.password_hash;
   const newRuolo = ruolo !== undefined ? (ruolo === 'admin' ? 'admin' : 'user') : user.ruolo;
   const newVisibili = newRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || user.schede_visibili);
+  const newLingua = lingua ? (['it', 'en', 'fr'].includes(lingua) ? lingua : user.lingua) : user.lingua;
 
   db.prepare(`
     UPDATE utenti_cliente SET
@@ -249,12 +251,13 @@ router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => 
       password_hash = ?,
       ruolo = ?,
       schede_visibili = ?,
+      lingua = ?,
       attivo = COALESCE(?, attivo)
     WHERE id = ?
-  `).run(nome || null, email || null, newHash, newRuolo, newVisibili, attivo !== undefined ? attivo : null, req.params.userId);
+  `).run(nome || null, email || null, newHash, newRuolo, newVisibili, newLingua, attivo !== undefined ? attivo : null, req.params.userId);
 
   const updated = db.prepare(
-    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, attivo, created_at FROM utenti_cliente WHERE id = ?'
+    'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE id = ?'
   ).get(req.params.userId);
   res.json(updated);
 });

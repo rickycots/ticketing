@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { sendAssistenzaEmail, sendTicketingEmail } = require('../services/mailer');
+const { sendAssistenzaEmail, sendTicketingEmail, wrapEmailTemplate, logoAttachment } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -189,8 +189,27 @@ router.post('/', authenticateToken, requireAdmin, emailUpload, async (req, res) 
   let sentMessageId = null;
   try {
     const htmlCorpo = (corpo || '').replace(/\n/g, '<br>');
+    const portalUrl = process.env.BASE_URL || 'http://localhost:5173';
+
+    // Build the email subject and body based on ticket reply or generic email
+    let emailSubject = oggetto;
+    let emailHtml;
+    if (isTicketEmail && ticket_id) {
+      const ticketInfo = db.prepare('SELECT codice FROM ticket WHERE id = ?').get(ticket_id);
+      const codice = ticketInfo ? ticketInfo.codice : '';
+      emailSubject = `[TICKET #${codice}] STM Domotica Reply`;
+      emailHtml = wrapEmailTemplate(`<p>Segui la risposta al tuo ticket su: <a href="${portalUrl}/client/tickets">${portalUrl}/client/tickets</a></p>
+<br>
+<p><i>Ecco la tua risposta:</i></p>
+<div style="margin:12px 0;padding:12px;background:#f7f7f7;border-left:3px solid #0066cc;border-radius:4px">${htmlCorpo}</div>
+<br><br>
+<p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>`);
+    } else {
+      emailHtml = wrapEmailTemplate(`<div>${htmlCorpo}</div>`);
+    }
+
     const sendFn = isTicketEmail ? sendTicketingEmail : sendAssistenzaEmail;
-    const result = await sendFn(allDestinatari, oggetto, htmlCorpo, inReplyTo);
+    const result = await sendFn(allDestinatari, emailSubject, emailHtml, inReplyTo);
     sentMessageId = result.messageId;
   } catch (err) {
     console.error('[MAIL] Errore invio:', err.message);

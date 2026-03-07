@@ -134,17 +134,17 @@ export default function AdminLayout() {
                 <Icon size={18} />
                 {label}
                 {label === 'Timeline Progetti' && totalUnread > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {totalUnread}
                   </span>
                 )}
                 {label === 'Tickets' && sidebarCounts.tickets_nuovi > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {sidebarCounts.tickets_nuovi}
                   </span>
                 )}
                 {label === 'Email' && sidebarCounts.email_nuove > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {sidebarCounts.email_nuove}
                   </span>
                 )}
@@ -199,7 +199,7 @@ export default function AdminLayout() {
           <div className="px-3 pb-2 border-t border-gray-700 pt-2">
             <div className="flex items-center gap-2 px-2 mb-2">
               <MessageCircle size={14} className="text-blue-400" />
-              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Chat</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Chat</span>
             </div>
             <div className="space-y-1 max-h-32 overflow-y-auto">
               {chatNotifs.map(p => (
@@ -209,7 +209,7 @@ export default function AdminLayout() {
                   className="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-gray-800 transition-colors"
                 >
                   <span className="text-gray-300 truncate flex-1 mr-2">{p.nome}</span>
-                  <span className="bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center shrink-0">
+                  <span className="bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shrink-0">
                     {p.non_lette}
                   </span>
                 </Link>
@@ -247,7 +247,7 @@ export default function AdminLayout() {
             >
               <Bell size={20} className="text-gray-600" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -289,7 +289,7 @@ export default function AdminLayout() {
                             {n.messaggio && (
                               <p className="text-xs text-gray-500 mt-0.5 truncate">{n.messaggio}</p>
                             )}
-                            <p className="text-[11px] text-gray-400 mt-1">
+                            <p className="text-xs text-gray-400 mt-1">
                               {new Date(n.created_at).toLocaleString('it-IT')}
                             </p>
                           </div>

@@ -98,7 +98,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-100 flex items-center gap-2">
             <AlertTriangle size={18} className="text-red-500" />
-            <h2 className="font-semibold">Ticket Urgenti / Alta Priorità</h2>
+            <h2 className="text-lg font-semibold">Ticket Urgenti / Alta Priorità</h2>
           </div>
           <div className="divide-y divide-gray-100">
             {data.ticket_urgenti.length === 0 ? (
@@ -132,7 +132,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-100 flex items-center gap-2">
             <Ticket size={18} className="text-blue-500" />
-            <h2 className="font-semibold">Ticket Recenti</h2>
+            <h2 className="text-lg font-semibold">Ticket Recenti</h2>
           </div>
           <div className="divide-y divide-gray-100">
             {data.ticket_recenti.map(t => (
@@ -159,7 +159,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-100 flex items-center gap-2">
             <Clock size={18} className="text-orange-500" />
-            <h2 className="font-semibold">Scadenze Imminenti</h2>
+            <h2 className="text-lg font-semibold">Scadenze Imminenti</h2>
           </div>
           <div className="divide-y divide-gray-100">
             {data.scadenze_imminenti.length === 0 ? (
@@ -184,7 +184,7 @@ export default function Dashboard() {
         {isAdmin && <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-100 flex items-center gap-2">
             <Users size={18} className="text-purple-500" />
-            <h2 className="font-semibold">Carico per Tecnico</h2>
+            <h2 className="text-lg font-semibold">Carico per Tecnico</h2>
           </div>
           <div className="divide-y divide-gray-100">
             {data.carico_tecnici.map(u => (

@@ -192,7 +192,7 @@ export default function TicketList() {
                           {statoLabels[t.stato]}
                         </span>
                         {t.assegnato_nome && (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[10px] font-bold" title={t.assegnato_nome}>
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold" title={t.assegnato_nome}>
                             {t.assegnato_nome.split(' ').map(p => p[0]).join('').toUpperCase()}
                           </span>
                         )}

@@ -53,4 +53,14 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json(updated);
 });
 
+// DELETE /api/users/:id — delete user (admin-only, cannot delete self or other admins)
+router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+  const user = db.prepare('SELECT * FROM utenti WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+  if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi eliminare un admin' });
+
+  db.prepare('DELETE FROM utenti WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

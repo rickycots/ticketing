@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, Mail, CheckCircle2, Clock, Wrench, Lock, CalendarClock } from 'lucide-react'
 import { clientProjects } from '../../api/client'
+import { t, getDateLocale } from '../../i18n/clientTranslations'
 
 const statoColors = {
   attivo: 'bg-green-100 text-green-800',
@@ -17,13 +18,6 @@ const actStatoColors = {
   bloccata: 'border-l-red-500 bg-red-50/30',
 }
 
-const actStatoLabels = {
-  da_fare: 'Da fare',
-  in_corso: 'In corso',
-  completata: 'Completata',
-  bloccata: 'Bloccata',
-}
-
 const actStatoBadge = {
   da_fare: 'bg-gray-100 text-gray-700',
   in_corso: 'bg-blue-100 text-blue-700',
@@ -31,13 +25,18 @@ const actStatoBadge = {
   bloccata: 'bg-red-100 text-red-700',
 }
 
+function getActLabel(stato) {
+  const map = { da_fare: 'actTodo', in_corso: 'actInProgress', completata: 'actCompleted', bloccata: 'actBlocked' }
+  return t(map[stato] || stato)
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return null
-  return new Date(dateStr).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export default function ClientProjectDetail() {
-  const { slug, id } = useParams()
+  const { id } = useParams()
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
   const clientUser = JSON.parse(localStorage.getItem('clientUser') || '{}')
@@ -52,8 +51,8 @@ export default function ClientProjectDetail() {
       .finally(() => setLoading(false))
   }, [clienteId, id])
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">Caricamento...</div>
-  if (!project) return <div className="text-center text-gray-400 py-12">Progetto non trovato</div>
+  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">{t('loading')}</div>
+  if (!project) return <div className="text-center text-gray-400 py-12">{t('projectNotFound')}</div>
 
   const isBloccato = project.blocco === 'lato_cliente'
 
@@ -84,19 +83,19 @@ export default function ClientProjectDetail() {
                 <h4 className="font-medium text-gray-900 text-sm">{act.nome}</h4>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${actStatoBadge[act.stato]}`}>
-                  {actStatoLabels[act.stato] || act.stato}
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actStatoBadge[act.stato]}`}>
+                  {getActLabel(act.stato)}
                 </span>
                 {act.data_scadenza && (
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <CalendarClock size={12} />
-                    Scadenza: {formatDate(act.data_scadenza)}
+                    {t('deadline')}: {formatDate(act.data_scadenza)}
                   </span>
                 )}
                 {act.data_completamento && (
                   <span className="text-xs text-green-600 flex items-center gap-1">
                     <CheckCircle2 size={12} />
-                    Completata: {formatDate(act.data_completamento)}
+                    {t('completedOn')}: {formatDate(act.data_completamento)}
                   </span>
                 )}
               </div>
@@ -120,8 +119,8 @@ export default function ClientProjectDetail() {
   return (
     <div>
       {/* Back link */}
-      <Link to={`/client/${slug}/projects`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
-        <ArrowLeft size={16} /> Torna ai progetti
+      <Link to="/client/projects" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <ArrowLeft size={16} /> {t('backToProjects')}
       </Link>
 
       {/* Blocking email alert */}
@@ -129,7 +128,7 @@ export default function ClientProjectDetail() {
         <div className="bg-orange-50 border border-orange-300 rounded-xl p-5 mb-5">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={20} className="text-orange-600" />
-            <span className="font-semibold text-orange-800">In attesa di tuo riscontro</span>
+            <span className="font-semibold text-orange-800">{t('waitingForYou')}</span>
           </div>
           {project.email_bloccante_oggetto && (
             <div className="bg-white rounded-lg border border-orange-200 p-4 mt-3">
@@ -138,7 +137,7 @@ export default function ClientProjectDetail() {
                 <h4 className="font-medium text-gray-900 text-sm">{project.email_bloccante_oggetto}</h4>
               </div>
               {project.email_bloccante_data && (
-                <p className="text-xs text-gray-400 mb-2">Inviata il {formatDate(project.email_bloccante_data)}</p>
+                <p className="text-xs text-gray-400 mb-2">{t('sentOn')} {formatDate(project.email_bloccante_data)}</p>
               )}
               {project.email_bloccante_corpo && (
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3 mt-2">
@@ -162,7 +161,7 @@ export default function ClientProjectDetail() {
               {project.data_scadenza && (
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <CalendarClock size={14} />
-                  Completamento previsto: <span className="font-medium text-gray-700">{formatDate(project.data_scadenza)}</span>
+                  {t('expectedCompletion')}: <span className="font-medium text-gray-700">{formatDate(project.data_scadenza)}</span>
                 </span>
               )}
             </div>
@@ -171,14 +170,14 @@ export default function ClientProjectDetail() {
             <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
               <div className="flex items-center gap-1.5 text-orange-700 font-medium text-sm">
                 <AlertTriangle size={16} />
-                In attesa
+                {t('waiting')}
               </div>
             </div>
           ) : (
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
               <div className="flex items-center gap-1.5 text-blue-700 font-medium text-sm">
                 <Wrench size={16} />
-                In lavorazione
+                {t('inProgress')}
               </div>
             </div>
           )}
@@ -187,7 +186,7 @@ export default function ClientProjectDetail() {
         {/* Progress */}
         <div>
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-gray-500">Stato avanzamento</span>
+            <span className="text-gray-500">{t('progress')}</span>
             <span className="font-bold text-gray-900">{project.avanzamento}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -196,17 +195,17 @@ export default function ClientProjectDetail() {
               style={{ width: `${project.avanzamento}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-1">{project.attivita.length} attivit&agrave;</p>
+          <p className="text-xs text-gray-400 mt-1">{project.attivita.length} {t('activities').toLowerCase()}</p>
         </div>
       </div>
 
       {/* Activities list */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Attivit&agrave;</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('activities')}</h2>
         </div>
         {project.attivita.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Nessuna attivit&agrave; presente</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{t('noActivities')}</div>
         ) : (
           <div className="p-4 space-y-2">
             {parentActivities.map(act => renderActivity(act))}

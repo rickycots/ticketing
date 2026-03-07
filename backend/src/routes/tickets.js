@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, authenticateClientToken } = require('../middleware/auth');
-const { sendTicketingEmail, sendNoreplyEmail } = require('../services/mailer');
+const { sendTicketingEmail, sendNoreplyEmail, wrapEmailTemplate } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -116,6 +116,19 @@ router.get('/client/:clienteId/:ticketId', authenticateClientToken, (req, res) =
   res.json(ticket);
 });
 
+// PUT /api/tickets/client/:clienteId/:ticketId/close — client closes ticket
+router.put('/client/:clienteId/:ticketId/close', authenticateClientToken, (req, res) => {
+  if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+  const ticket = db.prepare('SELECT * FROM ticket WHERE id = ? AND cliente_id = ?').get(req.params.ticketId, req.params.clienteId);
+  if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+  if (ticket.stato === 'chiuso') return res.status(400).json({ error: 'Ticket già chiuso' });
+
+  db.prepare("UPDATE ticket SET stato = 'chiuso', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
+  res.json(getTicketWithEmails(ticket.id));
+});
+
 // POST /api/tickets/client/:clienteId/:ticketId/reply — client reply (client auth)
 router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req, res) => {
   if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
@@ -138,15 +151,20 @@ router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req,
 
   if (ticket.stato === 'in_attesa') {
     db.prepare("UPDATE ticket SET stato = 'in_lavorazione', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
+  } else if (ticket.stato === 'risolto' || ticket.stato === 'chiuso') {
+    db.prepare("UPDATE ticket SET stato = 'aperto', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
   }
 
-  // Notification: client replied — notify assigned technician
+  // Notification: client replied — notify assigned technician (or all admins if reopened)
   if (ticket.assegnato_a) {
+    const isReopen = ticket.stato === 'risolto' || ticket.stato === 'chiuso';
     createNotifica(
       ticket.assegnato_a,
-      'ticket_risposta',
-      `Risposta cliente: ${ticket.codice}`,
-      `Il cliente ha risposto al ticket "${ticket.oggetto}"`,
+      isReopen ? 'ticket_riaperto' : 'ticket_risposta',
+      isReopen ? `Ticket riaperto: ${ticket.codice}` : `Risposta cliente: ${ticket.codice}`,
+      isReopen
+        ? `Il cliente ha riaperto il ticket "${ticket.oggetto}"`
+        : `Il cliente ha risposto al ticket "${ticket.oggetto}"`,
       `/admin/tickets/${ticket.id}`
     );
   }
@@ -231,10 +249,17 @@ router.post('/', authenticateClientToken, ticketUpload, async (req, res) => {
   if (destinatarioConferma) {
     try {
       const confermaOggetto = `[TICKET #${codice}] Conferma ricezione`;
-      const confermaHtml = `<p>Gentile cliente,</p>
+      const confermaHtml = wrapEmailTemplate(`<p>Gentile cliente,</p>
 <p>abbiamo ricevuto il suo ticket <b>${codice}</b>.</p>
 <p>I nostri tecnici lo elaboreranno appena possibile nel rispetto dei tempi previsti dal suo contratto.</p>
-<p>Distinti Saluti.</p>`;
+<p>Riceverà risposta sul nostro portale e direttamente nella sua mail.</p>
+<p>Distinti Saluti.</p>
+<hr style="margin:20px 0;border:none;border-top:1px solid #ccc">
+<p style="color:#888">Dear customer,</p>
+<p style="color:#888">we have received your ticket <b>${codice}</b>.</p>
+<p style="color:#888">Our technicians will process it as soon as possible in accordance with the terms of your contract.</p>
+<p style="color:#888">You will receive a response on our portal and directly in your email.</p>
+<p style="color:#888">Best regards.</p>`);
       const r = await sendNoreplyEmail(destinatarioConferma, confermaOggetto, confermaHtml);
       sentMessageId = r.messageId;
     } catch (err) {
@@ -243,7 +268,7 @@ router.post('/', authenticateClientToken, ticketUpload, async (req, res) => {
   }
 
   db.prepare(`INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id, message_id, allegati) VALUES ('ticket', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(cliente ? cliente.email : 'unknown@client.com', ticketingAddr, emailOggetto, emailCorpo, cliente_id, result.lastInsertRowid, `thread-${codice}`, sentMessageId, JSON.stringify(allegati));
+    .run(creatore_email || (cliente ? cliente.email : 'unknown@client.com'), ticketingAddr, emailOggetto, emailCorpo, cliente_id, result.lastInsertRowid, `thread-${codice}`, sentMessageId, JSON.stringify(allegati));
   console.log(`[EMAIL] Nuovo ticket: ${emailOggetto}`);
 
   res.status(201).json(db.prepare('SELECT * FROM ticket WHERE id = ?').get(result.lastInsertRowid));

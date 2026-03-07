@@ -161,7 +161,7 @@ export default function TicketDetail() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <Mail size={18} className="text-blue-500" />
-                <h2 className="font-semibold">Thread Email</h2>
+                <h2 className="text-lg font-semibold">Thread Email</h2>
               </div>
               <div className="space-y-3 p-3">
                 {ticket.emails.map(e => {
@@ -202,7 +202,7 @@ export default function TicketDetail() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <Send size={18} className="text-green-500" />
-                <h2 className="font-semibold">Rispondi al Cliente</h2>
+                <h2 className="text-lg font-semibold">Rispondi al Cliente</h2>
               </div>
               <form onSubmit={handleReply} className="p-4 space-y-3">
                 <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)}
@@ -258,7 +258,7 @@ export default function TicketDetail() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="p-4 border-b border-gray-100 flex items-center gap-2">
               <StickyNote size={18} className="text-yellow-500" />
-              <h2 className="font-semibold">Note Interne</h2>
+              <h2 className="text-lg font-semibold">Note Interne</h2>
             </div>
             {ticket.note?.length > 0 && (
               <div className="divide-y divide-gray-100">
@@ -400,7 +400,7 @@ export default function TicketDetail() {
                 <div className="px-4 pt-3 flex flex-wrap gap-1.5">
                   {['Analizza il problema', 'Suggerisci soluzione', 'Prepara risposta'].map(s => (
                     <button key={s} onClick={() => handleAiAsk(s)} disabled={aiLoading}
-                      className="inline-flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 px-2.5 py-1 text-[11px] font-medium hover:bg-purple-100 disabled:opacity-50 cursor-pointer transition-colors">
+                      className="inline-flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 px-2.5 py-1 text-xs font-medium hover:bg-purple-100 disabled:opacity-50 cursor-pointer transition-colors">
                       <Sparkles size={10} /> {s}
                     </button>
                   ))}
