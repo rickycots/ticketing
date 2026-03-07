@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2 } from 'lucide-react'
 import { projects, activities, users as usersApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 
@@ -23,6 +23,11 @@ export default function ProjectGantt() {
   const [newAct, setNewAct] = useState({ nome: '', descrizione: '', priorita: 'media', data_inizio: '', data_scadenza: '', assegnato_a: '', dipende_da: '' })
   const [emailTab, setEmailTab] = useState('tutte')
   const [expandedEmails, setExpandedEmails] = useState({})
+  const [showDesc, setShowDesc] = useState(false)
+  const [showAllegati, setShowAllegati] = useState(false)
+  const [allegati, setAllegati] = useState([])
+  const [loadingAllegati, setLoadingAllegati] = useState(false)
+  const [uploadingFiles, setUploadingFiles] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -31,6 +36,47 @@ export default function ProjectGantt() {
       .then(setProject)
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  function loadAllegati() {
+    setLoadingAllegati(true)
+    projects.allegati(id).then(setAllegati).catch(() => setAllegati([])).finally(() => setLoadingAllegati(false))
+  }
+
+  function toggleAllegati() {
+    const willOpen = !showAllegati
+    setShowAllegati(willOpen)
+    if (willOpen && allegati.length === 0) loadAllegati()
+  }
+
+  async function handleUploadFiles(fileList) {
+    if (!fileList || fileList.length === 0) return
+    setUploadingFiles(true)
+    try {
+      await projects.uploadAllegati(id, Array.from(fileList))
+      loadAllegati()
+    } catch (err) { alert(err.message) }
+    finally { setUploadingFiles(false) }
+  }
+
+  async function handleDeleteAllegato(allegatoId) {
+    if (!confirm('Eliminare questo allegato?')) return
+    await projects.deleteAllegato(id, allegatoId).catch(err => alert(err.message))
+    loadAllegati()
+  }
+
+  function handleDownloadAllegato(allegatoId, nome) {
+    const token = sessionStorage.getItem('token')
+    const url = projects.downloadAllegatoUrl(id, allegatoId)
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.blob())
+      .then(blob => {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = nome
+        a.click()
+        URL.revokeObjectURL(a.href)
+      })
   }
 
   useEffect(() => {
@@ -120,6 +166,100 @@ export default function ProjectGantt() {
           <span className="text-sm font-semibold text-gray-700">{project.avanzamento}%</span>
           <span className="text-sm text-gray-400">{project.attivita.length} attività</span>
         </div>
+
+        {/* Collapsible description */}
+        <button
+          onClick={() => setShowDesc(prev => !prev)}
+          className="flex items-center gap-1.5 mt-3 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+        >
+          <ChevronRight size={14} className={`transition-transform ${showDesc ? 'rotate-90' : ''}`} />
+          <span className="font-medium">Descrizione Breve</span>
+        </button>
+        {showDesc && (
+          <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+            {project.descrizione || <span className="text-gray-400 italic">Nessuna descrizione disponibile</span>}
+          </div>
+        )}
+
+        {/* Allegati Progetto */}
+        <button
+          onClick={toggleAllegati}
+          className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+        >
+          <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+          <span className="font-medium">Allegati Progetto</span>
+          {allegati.length > 0 && (
+            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
+          )}
+          <ChevronRight size={14} className={`transition-transform text-gray-400 ${showAllegati ? 'rotate-90' : ''}`} />
+        </button>
+
+        {showAllegati && (
+          <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+            {isAdmin && (
+              <div className="p-3 border-b border-gray-200">
+                <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
+                  <Upload size={16} className="text-gray-400" />
+                  <span className="text-sm text-gray-500">
+                    {uploadingFiles ? 'Caricamento...' : 'Carica allegati (clicca o trascina)'}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    disabled={uploadingFiles}
+                    onChange={e => handleUploadFiles(e.target.files)}
+                  />
+                </label>
+              </div>
+            )}
+
+            {loadingAllegati ? (
+              <div className="p-4 text-center text-xs text-gray-400">Caricamento...</div>
+            ) : allegati.length === 0 ? (
+              <div className="p-4 text-center">
+                <FileText size={24} className="text-gray-300 mx-auto mb-1" />
+                <p className="text-xs text-gray-400">Nessun allegato</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {allegati.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white transition-colors">
+                    <FileText size={18} className={
+                      a.tipo_mime?.includes('pdf') ? 'text-red-500'
+                      : a.tipo_mime?.includes('image') ? 'text-blue-500'
+                      : a.tipo_mime?.includes('word') || a.tipo_mime?.includes('document') ? 'text-blue-600'
+                      : a.tipo_mime?.includes('sheet') || a.tipo_mime?.includes('excel') ? 'text-green-600'
+                      : 'text-gray-400'
+                    } />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{a.nome_originale}</p>
+                      <p className="text-[11px] text-gray-400">
+                        {a.dimensione < 1024 ? a.dimensione + ' B' : a.dimensione < 1048576 ? (a.dimensione / 1024).toFixed(1) + ' KB' : (a.dimensione / 1048576).toFixed(1) + ' MB'}
+                        {' '}&middot; {new Date(a.created_at).toLocaleDateString('it-IT')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadAllegato(a.id, a.nome_originale)}
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors shrink-0"
+                    >
+                      <Download size={13} /> Scarica
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteAllegato(a.id)}
+                        className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0"
+                        title="Elimina"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Gantt Chart */}

@@ -1,6 +1,29 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin, authenticateClientToken } = require('../middleware/auth');
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'progetti');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, crypto.randomUUID() + ext);
+  },
+});
+
+const uploadAllegati = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
 const router = express.Router();
 
@@ -192,6 +215,32 @@ router.get('/client/:clienteId/:projectId', authenticateClientToken, (req, res) 
     email_bloccante_corpo: emailBloccante ? emailBloccante.corpo : null,
     email_bloccante_data: emailBloccante ? emailBloccante.data_ricezione : null,
   });
+});
+
+// GET /api/projects/client/:clienteId/:projectId/allegati — client list attachments
+router.get('/client/:clienteId/:projectId/allegati', authenticateClientToken, (req, res) => {
+  if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+  const project = db.prepare('SELECT id FROM progetti WHERE id = ? AND cliente_id = ?').get(req.params.projectId, req.params.clienteId);
+  if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
+
+  const allegati = db.prepare(
+    'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_progetto WHERE progetto_id = ? ORDER BY created_at DESC'
+  ).all(req.params.projectId);
+  res.json(allegati);
+});
+
+// GET /api/projects/client/:clienteId/:projectId/allegati/:allegatoId/download — client download
+router.get('/client/:clienteId/:projectId/allegati/:allegatoId/download', authenticateClientToken, (req, res) => {
+  if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+  const allegato = db.prepare('SELECT * FROM allegati_progetto WHERE id = ? AND progetto_id = ?').get(req.params.allegatoId, req.params.projectId);
+  if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
+
+  const filePath = path.join(uploadDir, allegato.nome_file);
+  res.download(filePath, allegato.nome_originale);
 });
 
 // GET /api/projects/:id — project detail (admin: any, tecnico: only visible)
@@ -387,6 +436,56 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   `).get(req.params.id);
 
   res.json({ ...updated, tecnici: getProjectTecnici(req.params.id) });
+});
+
+// === Project Attachments ===
+
+// GET /api/projects/:id/allegati — list attachments (admin/tecnico)
+router.get('/:id/allegati', authenticateToken, (req, res) => {
+  const allegati = db.prepare(
+    'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_progetto WHERE progetto_id = ? ORDER BY created_at DESC'
+  ).all(req.params.id);
+  res.json(allegati);
+});
+
+// POST /api/projects/:id/allegati — upload attachments (admin only)
+router.post('/:id/allegati', authenticateToken, requireAdmin, uploadAllegati.array('files', 10), (req, res) => {
+  const project = db.prepare('SELECT id FROM progetti WHERE id = ?').get(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
+
+  const insert = db.prepare(
+    'INSERT INTO allegati_progetto (progetto_id, nome_file, nome_originale, dimensione, tipo_mime, caricato_da) VALUES (?, ?, ?, ?, ?, ?)'
+  );
+
+  const results = [];
+  for (const file of req.files) {
+    const result = insert.run(req.params.id, file.filename, file.originalname, file.size, file.mimetype, req.user.id);
+    results.push({ id: result.lastInsertRowid, nome_originale: file.originalname, dimensione: file.size, tipo_mime: file.mimetype });
+  }
+
+  res.status(201).json(results);
+});
+
+// DELETE /api/projects/:id/allegati/:allegatoId — delete attachment (admin only)
+router.delete('/:id/allegati/:allegatoId', authenticateToken, requireAdmin, (req, res) => {
+  const allegato = db.prepare('SELECT * FROM allegati_progetto WHERE id = ? AND progetto_id = ?').get(req.params.allegatoId, req.params.id);
+  if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
+
+  // Delete file from disk
+  const filePath = path.join(uploadDir, allegato.nome_file);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+  db.prepare('DELETE FROM allegati_progetto WHERE id = ?').run(req.params.allegatoId);
+  res.json({ success: true });
+});
+
+// GET /api/projects/:id/allegati/:allegatoId/download — download attachment (admin/tecnico)
+router.get('/:id/allegati/:allegatoId/download', authenticateToken, (req, res) => {
+  const allegato = db.prepare('SELECT * FROM allegati_progetto WHERE id = ? AND progetto_id = ?').get(req.params.allegatoId, req.params.id);
+  if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
+
+  const filePath = path.join(uploadDir, allegato.nome_file);
+  res.download(filePath, allegato.nome_originale);
 });
 
 module.exports = router;

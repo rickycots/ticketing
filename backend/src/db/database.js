@@ -114,6 +114,21 @@ function runMigrations() {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_comunicazioni_cliente ON comunicazioni_cliente(cliente_id)');
 
+  // Create allegati_progetto table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS allegati_progetto (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      progetto_id INTEGER NOT NULL REFERENCES progetti(id),
+      nome_file TEXT NOT NULL,
+      nome_originale TEXT NOT NULL,
+      dimensione INTEGER NOT NULL DEFAULT 0,
+      tipo_mime TEXT,
+      caricato_da INTEGER REFERENCES utenti(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_allegati_progetto ON allegati_progetto(progetto_id)');
+
   // Create impostazioni table (key-value settings store)
   db.exec(`
     CREATE TABLE IF NOT EXISTS impostazioni (

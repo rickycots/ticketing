@@ -106,6 +106,22 @@ export const projects = {
     request(`/projects/${id}/chat`, { method: 'POST', body: JSON.stringify({ testo }) }),
   chatUnread: () => request('/projects/chat-unread'),
   clientProjects: (clienteId) => request(`/projects/client/${clienteId}`),
+  allegati: (id) => request(`/projects/${id}/allegati`),
+  uploadAllegati: (id, files) => {
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    const token = getToken();
+    return fetch(`${API_BASE}/projects/${id}/allegati`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(r => {
+      if (r.status === 401) { adminLogout(); throw new Error('Non autenticato'); }
+      return r.json();
+    });
+  },
+  deleteAllegato: (id, allegatoId) => request(`/projects/${id}/allegati/${allegatoId}`, { method: 'DELETE' }),
+  downloadAllegatoUrl: (id, allegatoId) => `${API_BASE}/projects/${id}/allegati/${allegatoId}/download`,
 };
 
 // Activities
@@ -337,4 +353,6 @@ export const clientAi = {
 export const clientProjects = {
   list: (clienteId) => clientRequest(`/projects/client/${clienteId}`),
   get: (clienteId, projectId) => clientRequest(`/projects/client/${clienteId}/${projectId}`),
+  allegati: (clienteId, projectId) => clientRequest(`/projects/client/${clienteId}/${projectId}/allegati`),
+  downloadUrl: (clienteId, projectId, allegatoId) => `${API_BASE}/projects/client/${clienteId}/${projectId}/allegati/${allegatoId}/download`,
 };
