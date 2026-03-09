@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const BASE_URL = import.meta.env.BASE_URL || '/';
 
 // === Session Management ===
 // Uses sessionStorage: closes with browser. Inactivity timeout: 30 min.
@@ -16,7 +17,7 @@ function resetInactivityTimer(isClient = false) {
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('clientToken');
     sessionStorage.removeItem('clientUser');
-    window.location.href = sessionStorage.getItem('clientToken') ? '/client/login' : '/login';
+    window.location.href = sessionStorage.getItem('clientToken') ? `${BASE_URL}client/login` : `${BASE_URL}login`;
   }, INACTIVITY_TIMEOUT);
 }
 
@@ -39,7 +40,7 @@ function getToken() {
 function adminLogout() {
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('user');
-  window.location.href = '/login';
+  window.location.href = `${BASE_URL}login`;
 }
 
 async function request(endpoint, options = {}) {
@@ -275,7 +276,7 @@ function getClientToken() {
 function clientLogout() {
   sessionStorage.removeItem('clientToken');
   sessionStorage.removeItem('clientUser');
-  window.location.href = '/client/login';
+  window.location.href = `${BASE_URL}client/login`;
 }
 
 async function clientRequest(endpoint, options = {}) {

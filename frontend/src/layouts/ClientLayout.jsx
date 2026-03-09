@@ -20,7 +20,7 @@ export default function ClientLayout() {
       // Token invalid/expired → force logout
       sessionStorage.removeItem('clientToken')
       sessionStorage.removeItem('clientUser')
-      window.location.href = '/client/login'
+      window.location.href = `${import.meta.env.BASE_URL || '/'}client/login`
     })
   }, [])
 
@@ -39,7 +39,7 @@ export default function ClientLayout() {
   const hasAi = schede.includes('ai')
   const isClientAdmin = clientUser.ruolo === 'admin'
 
-  const logoUrl = clientUser.logo ? `/uploads/logos/${clientUser.logo}` : null
+  const logoUrl = clientUser.logo ? `${import.meta.env.VITE_API_BASE || '/api'}/uploads/logos/${clientUser.logo}` : null
 
   function handleLogout() {
     sessionStorage.removeItem('clientToken')
@@ -243,7 +243,7 @@ export default function ClientLayout() {
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
             <div className="flex items-center gap-2">
-              <img src="/LogoSTM.png" alt="STM Domotica" className="h-5 w-auto object-contain opacity-60" />
+              <img src={`${import.meta.env.BASE_URL || '/'}LogoSTM.png`} alt="STM Domotica" className="h-5 w-auto object-contain opacity-60" />
               <span>&copy; {new Date().getFullYear()} Stmdomotica Corporation Srl</span>
             </div>
             <div className="text-center sm:text-right leading-relaxed">

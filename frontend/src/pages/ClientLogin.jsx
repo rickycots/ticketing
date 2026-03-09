@@ -30,12 +30,12 @@ export default function ClientLogin() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundImage: "url('/sfondo1.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+      style={{ backgroundImage: `url('${import.meta.env.BASE_URL || '/'}sfondo1.jpg')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
     >
       <div className="w-full max-w-sm">
         <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8">
           <div className="text-center mb-6">
-            <img src="/LogoSTM.png" alt="Logo" className="mx-auto h-16 w-auto object-contain mb-4" />
+            <img src={`${import.meta.env.BASE_URL || '/'}LogoSTM.png`} alt="Logo" className="mx-auto h-16 w-auto object-contain mb-4" />
             <h1 className="text-2xl font-bold text-gray-900">{t('supportPortal')}</h1>
             <p className="text-sm text-gray-500 mt-1">{t('loginSubtitle')}</p>
           </div>

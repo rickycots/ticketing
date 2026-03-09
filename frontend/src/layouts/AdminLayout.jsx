@@ -36,7 +36,7 @@ export default function AdminLayout() {
     auth.me().catch(() => {
       sessionStorage.removeItem('token')
       sessionStorage.removeItem('user')
-      window.location.href = '/login'
+      window.location.href = `${import.meta.env.BASE_URL || '/'}login`
     })
   }, [])
 

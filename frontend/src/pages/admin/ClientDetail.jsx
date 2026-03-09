@@ -189,7 +189,7 @@ export default function ClientDetail() {
   if (loading) return <div className="text-center py-12 text-gray-400">Caricamento...</div>
   if (!client) return <div className="text-center py-12 text-gray-400">Cliente non trovato</div>
 
-  const logoUrl = client.logo ? `/uploads/logos/${client.logo}` : null
+  const logoUrl = client.logo ? `${import.meta.env.VITE_API_BASE || '/api'}/uploads/logos/${client.logo}` : null
 
   return (
     <div>

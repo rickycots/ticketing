@@ -1,0 +1,12 @@
+{
+    "name": "stm/ticketing-api",
+    "description": "Ticketing PHP Backend API",
+    "require": {
+        "php": ">=8.1",
+        "firebase/php-jwt": "^6.10",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "classmap": ["core/"]
+    }
+}

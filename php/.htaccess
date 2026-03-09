@@ -1,0 +1,20 @@
+RewriteEngine On
+RewriteBase /cloud/ticketing/
+
+# Direct access to existing files (uploads, static assets, etc.)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Direct access to existing directories
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# API requests -> PHP front controller (skip uploads and cron/seed scripts)
+RewriteRule ^api/uploads/ - [L]
+RewriteRule ^api/cron/ - [L]
+RewriteRule ^api/seed/ - [L]
+RewriteRule ^api/migrations/ - [L]
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# React SPA fallback (everything else -> index.html)
+RewriteRule ^ index.html [L]

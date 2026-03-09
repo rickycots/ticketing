@@ -181,7 +181,7 @@ export default function TicketDetail() {
                       {allegati.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
                           {allegati.map((a, i) => (
-                            <a key={i} href={`/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                            <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
                               className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
                               <FileDown size={12} className="text-gray-400" />
                               <span>{a.nome}</span>

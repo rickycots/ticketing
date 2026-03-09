@@ -155,7 +155,7 @@ export default function ClientTicketList() {
           rel="noopener noreferrer"
           className="block bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center hover:shadow-md transition-shadow"
         >
-          <img src="/LogoSTM.png" alt="STM Domotica" className="h-10 mx-auto mb-2 object-contain" />
+          <img src={`${import.meta.env.BASE_URL || '/'}LogoSTM.png`} alt="STM Domotica" className="h-10 mx-auto mb-2 object-contain" />
           <p className="text-xs font-semibold text-gray-700 mb-1">{t('visitWebsite')}</p>
           <p className="text-sm font-bold text-blue-700">www.stmdomotica.it</p>
         </a>
