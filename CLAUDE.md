@@ -255,3 +255,7 @@ git push
 
 Il repository e su GitHub: `https://github.com/rickycots/ticketing.git`
 Branch principale: `main`
+
+## Git
+- Dopo ogni modifica ai file, chiedi sempre all'utente se vuole fare un commit prima di procedere.
+

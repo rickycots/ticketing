@@ -27,7 +27,7 @@ router.post('/login', (req, res) => {
     }
 
     const userRuolo = user.ruolo || 'user';
-    const visibili = userRuolo === 'admin' ? 'ticket,progetti' : user.schede_visibili;
+    const visibili = userRuolo === 'admin' ? 'ticket,progetti,ai' : user.schede_visibili;
 
     const token = jwt.sign(
       {
@@ -107,7 +107,7 @@ router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, re
       nome: `Admin (${req.user.nome})`,
       email: req.user.email,
       cliente_id: cliente.id,
-      schede_visibili: 'ticket,progetti',
+      schede_visibili: 'ticket,progetti,ai',
       tipo: 'cliente',
       impersonated: true,
     },
@@ -124,7 +124,7 @@ router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, re
       cliente_id: cliente.id,
       nome_azienda: cliente.nome_azienda,
       logo: cliente.logo,
-      schede_visibili: 'ticket,progetti',
+      schede_visibili: 'ticket,progetti,ai',
     },
   });
 });
@@ -168,7 +168,7 @@ router.post('/portal-users', authenticateClientToken, requireClientAdmin, (req, 
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
     'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).run(req.user.cliente_id, nome, email, password_hash, 'user', schede_visibili || 'ticket,progetti', userLingua);
+  ).run(req.user.cliente_id, nome, email, password_hash, 'user', schede_visibili || 'ticket,progetti,ai', userLingua);
 
   const user = db.prepare(
     'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE id = ?'

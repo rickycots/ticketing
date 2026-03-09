@@ -215,7 +215,7 @@ router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
   if (existing) return res.status(400).json({ error: 'Email già in uso' });
 
   const userRuolo = ruolo === 'admin' ? 'admin' : 'user';
-  const visibili = userRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || 'ticket,progetti');
+  const visibili = userRuolo === 'admin' ? 'ticket,progetti,ai' : (schede_visibili || 'ticket,progetti,ai');
   const userLingua = ['it', 'en', 'fr'].includes(lingua) ? lingua : 'it';
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
@@ -241,7 +241,7 @@ router.put('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) => 
 
   const newHash = password ? bcrypt.hashSync(password, 10) : user.password_hash;
   const newRuolo = ruolo !== undefined ? (ruolo === 'admin' ? 'admin' : 'user') : user.ruolo;
-  const newVisibili = newRuolo === 'admin' ? 'ticket,progetti' : (schede_visibili || user.schede_visibili);
+  const newVisibili = newRuolo === 'admin' ? 'ticket,progetti,ai' : (schede_visibili || user.schede_visibili);
   const newLingua = lingua ? (['it', 'en', 'fr'].includes(lingua) ? lingua : user.lingua) : user.lingua;
 
   db.prepare(`

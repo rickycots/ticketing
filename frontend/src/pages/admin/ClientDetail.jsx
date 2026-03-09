@@ -15,7 +15,7 @@ export default function ClientDetail() {
   const [users, setUsers] = useState([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti', lingua: 'it' })
+  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
   const fileRef = useRef()
 
   // Knowledge Base state
@@ -128,7 +128,7 @@ export default function ClientDetail() {
       setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it' })
     } else {
       setEditingUser(null)
-      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti', lingua: 'it' })
+      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
     }
     setShowUserForm(true)
   }
@@ -377,6 +377,10 @@ export default function ClientDetail() {
                         <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
                         Progetti
                       </label>
+                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
+                        AI Assistant
+                      </label>
                     </div>
                   </div>
                 )}
@@ -428,7 +432,7 @@ export default function ClientDetail() {
                         <div className="flex gap-1">
                           {u.schede_visibili.split(',').map(s => (
                             <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
-                              {s === 'ticket' ? 'Ticket' : 'Progetti'}
+                              {s === 'ticket' ? 'Ticket' : s === 'progetti' ? 'Progetti' : 'AI'}
                             </span>
                           ))}
                         </div>

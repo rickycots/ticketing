@@ -8,7 +8,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti', lingua: 'it' })
+  const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
   const [saving, setSaving] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
 
@@ -25,7 +25,7 @@ export default function UserManagement() {
       setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it' })
     } else {
       setEditingUser(null)
-      setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti', lingua: 'it' })
+      setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
     }
     setShowForm(true)
   }
@@ -120,6 +120,10 @@ export default function UserManagement() {
                   <input type="checkbox" checked={form.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
                   Progetti
                 </label>
+                <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
+                  AI Assistant
+                </label>
               </div>
             </div>
             <div className="flex gap-2">
@@ -176,7 +180,7 @@ export default function UserManagement() {
                         <div className="flex gap-1">
                           {u.schede_visibili.split(',').map(s => (
                             <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
-                              {s === 'ticket' ? 'Ticket' : 'Progetti'}
+                              {s === 'ticket' ? 'Ticket' : s === 'progetti' ? 'Progetti' : 'AI'}
                             </span>
                           ))}
                         </div>

@@ -36,6 +36,7 @@ export default function ClientLayout() {
   const schede = (clientUser.schede_visibili || '').split(',').filter(Boolean)
   const hasTicket = schede.includes('ticket')
   const hasProgetti = schede.includes('progetti')
+  const hasAi = schede.includes('ai')
   const isClientAdmin = clientUser.ruolo === 'admin'
 
   const logoUrl = clientUser.logo ? `/uploads/logos/${clientUser.logo}` : null
@@ -62,23 +63,25 @@ export default function ClientLayout() {
           </div>
           <div className="flex items-center gap-1">
             <nav className="flex gap-1">
-              <NavLink
-                to="/client/ai"
-                onClick={(e) => {
-                  if (window.location.pathname === '/client/ai') {
-                    e.preventDefault()
-                    window.dispatchEvent(new CustomEvent('ai-new-chat'))
+              {hasAi && (
+                <NavLink
+                  to="/client/ai"
+                  onClick={(e) => {
+                    if (window.location.pathname === '/client/ai') {
+                      e.preventDefault()
+                      window.dispatchEvent(new CustomEvent('ai-new-chat'))
+                    }
+                  }}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`
                   }
-                }}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <Sparkles size={16} />
-                {t('aiNav')}
-              </NavLink>
+                >
+                  <Sparkles size={16} />
+                  {t('aiNav')}
+                </NavLink>
+              )}
               {hasTicket && (
                 <>
                   <NavLink

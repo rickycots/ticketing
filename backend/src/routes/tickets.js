@@ -248,18 +248,52 @@ router.post('/', authenticateClientToken, ticketUpload, async (req, res) => {
   const destinatarioConferma = creatore_email || (cliente && cliente.email);
   if (destinatarioConferma) {
     try {
-      const confermaOggetto = `[TICKET #${codice}] Conferma ricezione`;
-      const confermaHtml = wrapEmailTemplate(`<p>Gentile cliente,</p>
+      // Detect client language
+      const utenteCliente = db.prepare('SELECT lingua FROM utenti_cliente WHERE email = ?').get(creatore_email);
+      const lingua = (utenteCliente && utenteCliente.lingua) || 'it';
+
+      const ticketBox = `<div style="background:#f0f4f8;border:1px solid #d0d7de;border-radius:8px;padding:16px;margin:16px 0">
+<p style="font-size:12px;color:#666;margin:0 0 6px 0;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">${lingua === 'en' ? 'Your message' : lingua === 'fr' ? 'Votre message' : 'Il tuo messaggio'}</p>
+<p style="font-size:13px;color:#333;margin:0;white-space:pre-wrap">${(descrizione || oggetto).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+</div>`;
+
+      const itBlock = `<p>Gentile cliente,</p>
 <p>abbiamo ricevuto il suo ticket <b>${codice}</b>.</p>
+${lingua === 'it' ? ticketBox : ''}
 <p>I nostri tecnici lo elaboreranno appena possibile nel rispetto dei tempi previsti dal suo contratto.</p>
 <p>Riceverà risposta sul nostro portale e direttamente nella sua mail.</p>
-<p>Distinti Saluti.</p>
+<p>Distinti Saluti.</p>`;
+
+      const enBlock = `<p>Dear customer,</p>
+<p>we have received your ticket <b>${codice}</b>.</p>
+${lingua === 'en' ? ticketBox : ''}
+<p>Our technicians will process it as soon as possible in accordance with the terms of your contract.</p>
+<p>You will receive a response on our portal and directly in your email.</p>
+<p>Best regards.</p>`;
+
+      const frBlock = `<p>Cher client,</p>
+<p>nous avons bien reçu votre ticket <b>${codice}</b>.</p>
+${lingua === 'fr' ? ticketBox : ''}
+<p>Nos techniciens le traiteront dans les meilleurs délais, conformément aux conditions de votre contrat.</p>
+<p>Vous recevrez une réponse sur notre portail et directement par e-mail.</p>
+<p>Cordialement.</p>`;
+
+      let primaryBlock, secondaryBlock;
+      if (lingua === 'en') {
+        primaryBlock = enBlock;
+        secondaryBlock = `<div style="color:#888">${itBlock}</div>`;
+      } else if (lingua === 'fr') {
+        primaryBlock = frBlock;
+        secondaryBlock = `<div style="color:#888">${itBlock}</div>`;
+      } else {
+        primaryBlock = itBlock;
+        secondaryBlock = `<div style="color:#888">${enBlock}</div>`;
+      }
+
+      const confermaOggetto = `[TICKET #${codice}] ${lingua === 'en' ? 'Confirmation of receipt' : lingua === 'fr' ? 'Confirmation de réception' : 'Conferma ricezione'}`;
+      const confermaHtml = wrapEmailTemplate(`${primaryBlock}
 <hr style="margin:20px 0;border:none;border-top:1px solid #ccc">
-<p style="color:#888">Dear customer,</p>
-<p style="color:#888">we have received your ticket <b>${codice}</b>.</p>
-<p style="color:#888">Our technicians will process it as soon as possible in accordance with the terms of your contract.</p>
-<p style="color:#888">You will receive a response on our portal and directly in your email.</p>
-<p style="color:#888">Best regards.</p>`);
+${secondaryBlock}`);
       const r = await sendNoreplyEmail(destinatarioConferma, confermaOggetto, confermaHtml);
       sentMessageId = r.messageId;
     } catch (err) {

@@ -28,9 +28,12 @@ export default function ClientLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ backgroundImage: "url('/sfondo1.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+    >
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8">
           <div className="text-center mb-6">
             <img src="/LogoSTM.png" alt="Logo" className="mx-auto h-16 w-auto object-contain mb-4" />
             <h1 className="text-2xl font-bold text-gray-900">{t('supportPortal')}</h1>
@@ -86,7 +89,7 @@ export default function ClientLogin() {
             </div>
           </form>
         </div>
-        <p className="text-xs text-gray-400 text-center mt-4 leading-relaxed">
+        <p className="text-xs text-white/80 text-center mt-4 leading-relaxed">
           Se non hai un utente chiedi al responsabile della tua azienda di crearlo.
         </p>
 
@@ -94,10 +97,10 @@ export default function ClientLogin() {
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 py-4 text-center">
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-white/70">
           &copy; 2014-2026 STM Domotica Corporation S.r.l. &mdash; All rights reserved.
         </p>
-        <p className="text-[10px] text-gray-400 mt-0.5">
+        <p className="text-[10px] text-white/60 mt-0.5">
           P.IVA: IT08502970968 &mdash; Sede Legale e Operativa in Largo Aldo Moro n&deg;15 &mdash; 26839 Zelo Buon Persico (LO)
         </p>
       </div>
