@@ -141,13 +141,56 @@ $router->post('/client-auth/impersonate/:clienteId',
     }
 );
 
-// GET /api/client-auth/comunicazioni
+// GET /api/client-auth/comunicazioni — returns unread comms + important (even if read), filtered by 15-day expiry
 $router->get('/client-auth/comunicazioni', [Auth::class, 'authenticateClientToken'], function($req) {
+    $userId = $req->user['id'];
+    $clienteId = $req->user['cliente_id'];
+
     $comunicazioni = Database::fetchAll(
-        'SELECT * FROM comunicazioni_cliente WHERE cliente_id = ? ORDER BY data_ricezione DESC LIMIT 20',
-        [$req->user['cliente_id']]
+        "SELECT c.*,
+            CASE WHEN cl.comunicazione_id IS NOT NULL THEN 1 ELSE 0 END as letta
+         FROM comunicazioni_cliente c
+         LEFT JOIN comunicazioni_lette cl ON cl.comunicazione_id = c.id AND cl.utente_cliente_id = ?
+         WHERE c.cliente_id = ? AND c.data_ricezione >= DATE_SUB(NOW(), INTERVAL 15 DAY)
+           AND (cl.comunicazione_id IS NULL OR c.importante = 1)
+         ORDER BY c.data_ricezione DESC LIMIT 20",
+        [$userId, $clienteId]
     );
     Response::json($comunicazioni);
+});
+
+// PUT /api/client-auth/comunicazioni/:id/read — mark single comm as read
+$router->put('/client-auth/comunicazioni/:id/read', [Auth::class, 'authenticateClientToken'], function($req) {
+    $userId = $req->user['id'];
+    $commId = $req->params['id'];
+    Database::execute(
+        'INSERT IGNORE INTO comunicazioni_lette (utente_cliente_id, comunicazione_id) VALUES (?, ?)',
+        [$userId, (int)$commId]
+    );
+    Response::success();
+});
+
+// PUT /api/client-auth/comunicazioni/read-all — mark all as read for current user
+$router->put('/client-auth/comunicazioni/read-all', [Auth::class, 'authenticateClientToken'], function($req) {
+    $userId = $req->user['id'];
+    $clienteId = $req->user['cliente_id'];
+
+    $unread = Database::fetchAll(
+        "SELECT c.id FROM comunicazioni_cliente c
+         LEFT JOIN comunicazioni_lette cl ON cl.comunicazione_id = c.id AND cl.utente_cliente_id = ?
+         WHERE c.cliente_id = ? AND cl.comunicazione_id IS NULL
+           AND c.data_ricezione >= DATE_SUB(NOW(), INTERVAL 15 DAY)",
+        [$userId, $clienteId]
+    );
+
+    foreach ($unread as $c) {
+        Database::execute(
+            'INSERT IGNORE INTO comunicazioni_lette (utente_cliente_id, comunicazione_id) VALUES (?, ?)',
+            [$userId, $c['id']]
+        );
+    }
+
+    Response::success();
 });
 
 // GET /api/client-auth/portal-users

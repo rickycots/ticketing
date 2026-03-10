@@ -18,6 +18,33 @@ header('Content-Type: text/plain; charset=utf-8');
 
 $db = Database::get();
 
+// Also create comunicazioni_lette if missing
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS comunicazioni_lette (
+        utente_cliente_id INT NOT NULL,
+        comunicazione_id INT NOT NULL,
+        letto_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (utente_cliente_id, comunicazione_id),
+        FOREIGN KEY (utente_cliente_id) REFERENCES utenti_cliente(id),
+        FOREIGN KEY (comunicazione_id) REFERENCES comunicazioni_cliente(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    echo "OK: comunicazioni_lette table\n";
+} catch (PDOException $e) {
+    if (strpos($e->getMessage(), 'already exists') === false) echo "ERROR: " . $e->getMessage() . "\n";
+}
+
+// Add 'importante' column to comunicazioni_cliente if missing
+try {
+    $db->exec("ALTER TABLE comunicazioni_cliente ADD COLUMN importante TINYINT(1) NOT NULL DEFAULT 0");
+    echo "OK: added 'importante' column to comunicazioni_cliente\n";
+} catch (PDOException $e) {
+    if (strpos($e->getMessage(), 'Duplicate column') === false && strpos($e->getMessage(), 'duplicate column') === false) {
+        echo "SKIP: importante column — " . $e->getMessage() . "\n";
+    } else {
+        echo "OK: importante column already exists\n";
+    }
+}
+
 $sqls = [
     "CREATE TABLE IF NOT EXISTS referenti_progetto (
         id INT AUTO_INCREMENT PRIMARY KEY,

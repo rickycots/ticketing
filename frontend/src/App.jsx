@@ -16,6 +16,7 @@ import ClientList from './pages/admin/ClientList'
 import ClientDetail from './pages/admin/ClientDetail'
 import UserList from './pages/admin/UserList'
 import Repository from './pages/admin/Repository'
+import ComunicazioniList from './pages/admin/ComunicazioniList'
 import TicketForm from './pages/client/TicketForm'
 import ClientTicketList from './pages/client/TicketList'
 import ClientTicketDetail from './pages/client/TicketDetail'
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="clients" element={<AdminOnly><ClientList /></AdminOnly>} />
         <Route path="clients/:id" element={<AdminOnly><ClientDetail /></AdminOnly>} />
         <Route path="users" element={<AdminOnly><UserList /></AdminOnly>} />
+        <Route path="comunicazioni" element={<AdminOnly><ComunicazioniList /></AdminOnly>} />
       </Route>
 
       {/* Client Portal */}

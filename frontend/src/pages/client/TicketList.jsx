@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Ticket, AlertTriangle, Wrench, CheckCircle, Archive, Clock, Megaphone, ChevronDown, ChevronUp, LayoutList, List, ChevronLeft, ChevronRight } from 'lucide-react'
-import { clientTickets, clientAuth } from '../../api/client'
+import { Ticket, AlertTriangle, Wrench, CheckCircle, Archive, Clock, LayoutList, List, ChevronLeft, ChevronRight } from 'lucide-react'
+import { clientTickets } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
 const statoConfig = {
@@ -64,8 +64,6 @@ function formatDuration(createdAt, closedAt) {
 export default function ClientTicketList() {
   const [ticketList, setTicketList] = useState([])
   const [loading, setLoading] = useState(true)
-  const [comunicazioni, setComunicazioni] = useState([])
-  const [commExpanded, setCommExpanded] = useState(false)
   const [viewMode, setViewMode] = useState('esteso')
   const [openPage, setOpenPage] = useState(1)
   const [closedPage, setClosedPage] = useState(1)
@@ -81,9 +79,6 @@ export default function ClientTicketList() {
       .then(setTicketList)
       .catch(console.error)
       .finally(() => setLoading(false))
-    clientAuth.comunicazioni()
-      .then(setComunicazioni)
-      .catch(() => {})
   }, [clienteId])
 
   const openTickets = ticketList.filter(t => t.stato !== 'chiuso' && t.stato !== 'risolto')
@@ -95,41 +90,6 @@ export default function ClientTicketList() {
 
   return (
     <div>
-      {/* Comunicazioni Banner */}
-      {comunicazioni.length > 0 && (
-        <div className="mb-6">
-          <div className="bg-sky-50 border border-sky-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setCommExpanded(!commExpanded)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-left cursor-pointer hover:bg-sky-100 transition-colors"
-            >
-              <Megaphone size={18} className="text-sky-600 flex-shrink-0" />
-              <span className="text-sm font-semibold text-sky-800 flex-1">
-                {t('communications')} ({comunicazioni.length})
-              </span>
-              {commExpanded ? <ChevronUp size={16} className="text-sky-600" /> : <ChevronDown size={16} className="text-sky-600" />}
-            </button>
-            {commExpanded && (
-              <div className="px-4 pb-3 max-h-60 overflow-y-auto space-y-2">
-                {comunicazioni.map(c => (
-                  <div key={c.id} className="bg-white rounded border border-sky-100 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-900">{c.oggetto}</p>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(c.data_ricezione).toLocaleDateString(getDateLocale())}
-                      </span>
-                    </div>
-                    {c.corpo && (
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">{c.corpo}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
     <div className={`grid grid-cols-1 ${viewMode === 'esteso' ? 'lg:grid-cols-[220px_1fr_1fr]' : 'lg:grid-cols-[220px_1fr]'} gap-6`} style={{ minHeight: 800 }}>
       {/* Sidebar: Pubblicità */}
       <aside className="hidden lg:flex flex-col gap-4">

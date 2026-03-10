@@ -36,6 +36,7 @@ $pdo = Database::get();
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 
 $tables = [
+    'progetto_referenti', 'referenti_progetto',
     'comunicazioni_cliente', 'schede_cliente', 'documenti_repository', 'allegati_progetto',
     'notifiche', 'chat_lettura', 'messaggi_progetto', 'note_attivita', 'note_interne',
     'progetto_tecnici', 'email', 'ticket', 'attivita', 'progetti',
@@ -257,6 +258,17 @@ Database::execute(
 );
 
 out("3 schede cliente (Knowledge Base) create");
+
+// --- COMUNICAZIONI CLIENTE ---
+Database::execute(
+    'INSERT INTO comunicazioni_cliente (cliente_id, oggetto, corpo, mittente, data_ricezione) VALUES (?, ?, ?, ?, ?)',
+    [1, 'Manutenzione programmata server', "Gentile cliente,\nvi informiamo che il giorno 15/03/2026 dalle 22:00 alle 06:00 effettueremo una manutenzione programmata sui server. Durante questo periodo il servizio potrebbe subire brevi interruzioni.\n\nCi scusiamo per il disagio.", 'assistenzatecnica@stmdomotica.it', '2026-03-08 10:30:00']
+);
+Database::execute(
+    'INSERT INTO comunicazioni_cliente (cliente_id, oggetto, corpo, mittente, data_ricezione) VALUES (?, ?, ?, ?, ?)',
+    [1, 'Aggiornamento contratto assistenza', "Vi comunichiamo che il contratto di assistenza è stato rinnovato fino al 31/12/2026.\nPer qualsiasi informazione non esitate a contattarci.", 'assistenzatecnica@stmdomotica.it', '2026-03-05 14:15:00']
+);
+out("2 comunicazioni cliente create");
 
 out("\n=== Seed completato con successo! ===");
 out("\nCredenziali demo:");

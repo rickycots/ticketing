@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 
 const allNavItems = [
@@ -10,6 +10,8 @@ const allNavItems = [
   { to: '/admin/emails', icon: Mail, label: 'Email', adminOnly: true },
   { to: '/admin/clients', icon: Users, label: 'Clienti', adminOnly: true },
   { to: '/admin/users', icon: UserCog, label: 'Utenti', adminOnly: true },
+  { separator: true, adminOnly: true },
+  { to: '/admin/comunicazioni', icon: Megaphone, label: 'Comunicazioni', adminOnly: true },
 ]
 
 const bottomNavItems = [
@@ -127,7 +129,10 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {navItems.map(({ to, icon: Icon, label, end, children }) => (
+          {navItems.map((item, idx) => {
+            if (item.separator) return <hr key={`sep-${idx}`} className="border-gray-700 my-2" />
+            const { to, icon: Icon, label, end, children } = item
+            return (
             <div key={to}>
               <NavLink
                 to={to}
@@ -178,7 +183,7 @@ export default function AdminLayout() {
                 )
               })}
             </div>
-          ))}
+          )})}
         </nav>
 
         {/* Bottom nav items (separated) */}

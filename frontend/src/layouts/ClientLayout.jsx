@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
 
@@ -12,7 +12,8 @@ export default function ClientLayout() {
   const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || 'null')
   const [showTeamsModal, setShowTeamsModal] = useState(false)
   const [comunicazioni, setComunicazioni] = useState([])
-  const [showComms, setShowComms] = useState(true)
+  const [showComms, setShowComms] = useState(false)
+  const [commsDismissed, setCommsDismissed] = useState(false)
 
   // Verify token with backend on mount (background — doesn't block rendering)
   useEffect(() => {
@@ -149,30 +150,92 @@ export default function ClientLayout() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6 flex-1">
-        {/* Communications banner */}
-        {comunicazioni.length > 0 && (
+        {/* Communications banner — unread + important (even if read) */}
+        {comunicazioni.length > 0 && !commsDismissed && (() => {
+          const unread = comunicazioni.filter(c => !c.letta)
+          const importanti = comunicazioni.filter(c => c.importante)
+          return (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl shadow-sm overflow-hidden">
-            <button
-              onClick={() => setShowComms(prev => !prev)}
-              className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-blue-100/50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Megaphone size={18} className="text-blue-600" />
+            {/* Top bar */}
+            <div className="flex items-center gap-2 px-4 py-2.5">
+              <Megaphone size={18} className="text-blue-600 shrink-0" />
+              <button
+                onClick={() => setShowComms(prev => !prev)}
+                className="flex items-center gap-1 cursor-pointer shrink-0"
+              >
                 <span className="text-sm font-semibold text-blue-800">
-                  {t('companyComms')} ({comunicazioni.length})
+                  {t('companyComms')}
+                  {unread.length > 0 && <span className="ml-1 bg-blue-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{unread.length}</span>}
+                  {importanti.length > 0 && <span className="ml-1 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{importanti.length}</span>}
                 </span>
-              </div>
-              {showComms ? <ChevronUp size={16} className="text-blue-500" /> : <ChevronDown size={16} className="text-blue-500" />}
-            </button>
+                <ChevronDown size={14} className={`text-blue-500 transition-transform ${showComms ? 'rotate-180' : ''}`} />
+              </button>
+              {unread.length > 0 && (
+                <button
+                  onClick={() => {
+                    clientAuth.comunicazioniReadAll().then(() => {
+                      setComunicazioni(prev => prev.filter(c => c.importante).map(c => ({ ...c, letta: 1 })))
+                    }).catch(() => {})
+                  }}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 px-2 py-1 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  <Check size={13} />
+                  {t('markAllRead') || 'Lette tutte'}
+                </button>
+              )}
+              {/* Scrolling marquee of latest unread */}
+              {unread.length > 0 && (
+                <div className="flex-1 overflow-hidden mx-2">
+                  <div className="whitespace-nowrap animate-marquee text-sm text-gray-900">
+                    <span className="italic underline">Ultimo msg:</span>{' '}
+                    <span className="font-bold">{unread[0].oggetto}</span>
+                    {unread[0].corpo && <span className="ml-1.5 font-normal text-gray-700">— {unread[0].corpo}</span>}
+                  </div>
+                </div>
+              )}
+              {unread.length === 0 && <div className="flex-1" />}
+              <button
+                onClick={() => setCommsDismissed(true)}
+                className="shrink-0 p-1 rounded-lg hover:bg-blue-100 text-blue-400 hover:text-blue-700 cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Expanded content */}
             {showComms && (
-              <div className="px-4 pb-3 space-y-2 max-h-60 overflow-y-auto">
+              <div className="px-4 pb-3 space-y-2 max-h-60 overflow-y-auto border-t border-blue-200">
                 {comunicazioni.map(c => (
-                  <div key={c.id} className="bg-white rounded-lg border border-blue-100 p-3">
+                  <div key={c.id} className={`rounded-lg border p-3 mt-2 ${c.letta ? 'bg-white border-blue-100' : 'bg-blue-100/50 border-blue-200'}`}>
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-sm font-medium text-gray-900">{c.oggetto}</h4>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(c.data_ricezione).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {c.importante ? <Megaphone size={14} className="text-red-500 shrink-0" /> : null}
+                        <h4 className={`text-sm ${c.letta ? 'font-medium text-gray-600' : 'font-semibold text-gray-900'}`}>{c.oggetto}</h4>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(c.data_ricezione).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        {!c.letta && (
+                          <button
+                            onClick={() => {
+                              clientAuth.comunicazioneRead(c.id).then(() => {
+                                setComunicazioni(prev => c.importante
+                                  ? prev.map(x => x.id === c.id ? { ...x, letta: 1 } : x)
+                                  : prev.filter(x => x.id !== c.id)
+                                )
+                              }).catch(() => {})
+                            }}
+                            className="p-1 rounded-lg text-blue-400 hover:text-green-600 hover:bg-green-50 cursor-pointer transition-colors"
+                            title={t('markAllRead') || 'Segna come letta'}
+                          >
+                            <CircleCheck size={16} />
+                          </button>
+                        )}
+                        {c.letta && (
+                          <CircleCheck size={16} className="text-green-400" />
+                        )}
+                      </div>
                     </div>
                     {c.corpo && (
                       <p className="text-xs text-gray-600 mt-1.5 line-clamp-3 whitespace-pre-wrap leading-relaxed">{c.corpo}</p>
@@ -182,7 +245,8 @@ export default function ClientLayout() {
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
         <Outlet />
       </main>
 

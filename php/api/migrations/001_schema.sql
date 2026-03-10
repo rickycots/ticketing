@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS comunicazioni_cliente (
   corpo TEXT,
   mittente VARCHAR(255),
   message_id VARCHAR(191) UNIQUE,
+  importante TINYINT(1) NOT NULL DEFAULT 0,
   data_ricezione DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clienti(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -258,6 +259,16 @@ CREATE TABLE IF NOT EXISTS progetto_referenti (
   PRIMARY KEY (progetto_id, referente_id),
   FOREIGN KEY (progetto_id) REFERENCES progetti(id),
   FOREIGN KEY (referente_id) REFERENCES referenti_progetto(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Lettura comunicazioni per utente
+CREATE TABLE IF NOT EXISTS comunicazioni_lette (
+  utente_cliente_id INT NOT NULL,
+  comunicazione_id INT NOT NULL,
+  letto_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (utente_cliente_id, comunicazione_id),
+  FOREIGN KEY (utente_cliente_id) REFERENCES utenti_cliente(id),
+  FOREIGN KEY (comunicazione_id) REFERENCES comunicazioni_cliente(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes

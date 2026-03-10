@@ -275,6 +275,13 @@ export const repository = {
   downloadUrl: (id) => `${API_BASE}/repository/${id}/download`,
 };
 
+// Comunicazioni (admin)
+export const comunicazioni = {
+  list: () => request('/comunicazioni'),
+  create: (data) => request('/comunicazioni', { method: 'POST', body: JSON.stringify(data) }),
+  remove: (id) => request(`/comunicazioni/${id}`, { method: 'DELETE' }),
+};
+
 // AI Assistente
 export const ai = {
   ticketAssist: (ticket_id, domanda) =>
@@ -330,6 +337,8 @@ export const clientAuth = {
   impersonate: (clienteId) =>
     request(`/client-auth/impersonate/${clienteId}`, { method: 'POST' }),
   comunicazioni: () => clientRequest('/client-auth/comunicazioni'),
+  comunicazioniReadAll: () => clientRequest('/client-auth/comunicazioni/read-all', { method: 'PUT' }),
+  comunicazioneRead: (id) => clientRequest(`/client-auth/comunicazioni/${id}/read`, { method: 'PUT' }),
 };
 
 // Client Portal Tickets (authed)

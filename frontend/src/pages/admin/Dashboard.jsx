@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Ticket, FolderKanban, Mail, AlertTriangle, Clock, Users } from 'lucide-react'
 import { dashboard } from '../../api/client'
+import { APP_VERSION } from '../../version'
 
 function StatCard({ icon: Icon, label, value, sub, color, to }) {
   const content = (
@@ -202,6 +203,11 @@ export default function Dashboard() {
             ))}
           </div>
         </div>}
+      </div>
+
+      {/* Version footer */}
+      <div className="mt-8 text-center text-xs text-gray-400">
+        {APP_VERSION} &mdash; &copy; {new Date().getFullYear()} STM Domotica Corporation S.r.l.
       </div>
     </div>
   )
