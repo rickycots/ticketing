@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { clientAuth } from '../api/client'
 import { t } from '../i18n/clientTranslations'
+import { APP_VERSION } from '../version'
 
 export default function ClientLogin() {
   const navigate = useNavigate()
@@ -103,6 +104,7 @@ export default function ClientLogin() {
         <p className="text-[10px] text-white/60 mt-0.5">
           P.IVA: IT08502970968 &mdash; Sede Legale e Operativa in Largo Aldo Moro n&deg;15 &mdash; 26839 Zelo Buon Persico (LO)
         </p>
+        <p className="text-[10px] text-white/50 mt-1">{APP_VERSION}</p>
       </div>
     </div>
   )

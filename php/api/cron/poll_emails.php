@@ -12,12 +12,16 @@
 
 set_time_limit(120);
 
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../core/Database.php';
+// When called internally (from CronRunner), config and Database are already loaded
+$isInternal = defined('JWT_SECRET');
+if (!$isInternal) {
+    require_once __DIR__ . '/../config.php';
+    require_once __DIR__ . '/../core/Database.php';
+}
 
-// Security: require JWT_SECRET as key parameter (web) or CLI
+// Security: require JWT_SECRET as key parameter (web) or CLI or internal call
 $isCli = php_sapi_name() === 'cli';
-if (!$isCli) {
+if (!$isCli && !$isInternal) {
     $key = $_GET['key'] ?? '';
     if ($key !== JWT_SECRET) {
         http_response_code(403);

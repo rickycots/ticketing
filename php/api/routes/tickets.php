@@ -329,6 +329,36 @@ $router->post('/tickets', [Auth::class, 'authenticateClientToken'], function($re
         }
     }
 
+    // Notify admin via noreply email
+    try {
+        $adminUsers = Database::fetchAll("SELECT email FROM utenti WHERE ruolo = 'admin' AND attivo = 1");
+        if ($adminUsers) {
+            $adminEmails = implode(',', array_column($adminUsers, 'email'));
+            $priLabel = ['urgente' => 'URGENTE', 'alta' => 'Alta', 'media' => 'Media', 'bassa' => 'Bassa'];
+            $descPreview = mb_substr($descrizione ?: '(nessuna descrizione)', 0, 300);
+
+            $adminHtml = Mailer::wrapEmailTemplate("
+<p><b>Nuovo ticket aperto da un cliente</b></p>
+<table style=\"width:100%;border-collapse:collapse;font-size:13px;margin:12px 0\">
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600;width:130px\">Codice</td><td style=\"padding:6px 12px\">{$codice}</td></tr>
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600\">Cliente</td><td style=\"padding:6px 12px\">" . ($cliente ? htmlspecialchars($cliente['nome_azienda']) : 'N/A') . "</td></tr>
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600\">Aperto da</td><td style=\"padding:6px 12px\">" . htmlspecialchars($creatoreEmail ?: 'N/A') . "</td></tr>
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600\">Categoria</td><td style=\"padding:6px 12px\">" . ($catLabel[$categoria] ?? $categoria) . "</td></tr>
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600\">Priorità</td><td style=\"padding:6px 12px\">" . ($priLabel[$priorita] ?? $priorita) . "</td></tr>
+<tr><td style=\"padding:6px 12px;background:#f0f4f8;font-weight:600\">Oggetto</td><td style=\"padding:6px 12px\">" . htmlspecialchars($oggetto) . "</td></tr>
+</table>
+<div style=\"background:#f0f4f8;border:1px solid #d0d7de;border-radius:8px;padding:16px;margin:12px 0\">
+<p style=\"font-size:12px;color:#666;margin:0 0 6px 0;text-transform:uppercase;letter-spacing:0.5px;font-weight:600\">Descrizione</p>
+<p style=\"font-size:13px;color:#333;margin:0;white-space:pre-wrap\">" . htmlspecialchars($descPreview) . "</p>
+</div>
+<p style=\"margin-top:16px\"><a href=\"https://www.stmdomotica.cloud/ticketing/admin/tickets/{$ticketId}\" style=\"background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600\">Apri Ticket nel Pannello</a></p>");
+
+            Mailer::sendNoreply($adminEmails, "[TICKET #{$codice}] Nuovo ticket: {$oggetto}", $adminHtml);
+        }
+    } catch (\Exception $e) {
+        error_log('[MAIL] Errore notifica admin nuovo ticket: ' . $e->getMessage());
+    }
+
     // Save email record
     Database::execute(
         "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, thread_id, message_id, allegati) VALUES ('ticket', ?, ?, ?, ?, ?, ?, ?, ?, ?)",

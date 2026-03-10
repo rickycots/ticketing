@@ -1,26 +1,60 @@
 <?php
 /**
- * Configuration - loads environment and defines constants
+ * Configuration - decrypts config.enc and defines constants
  */
 
-// Load config from config.env file
+// Decrypt config.enc
+$envVars = [];
+$encFile = __DIR__ . '/config.enc';
 $envFile = __DIR__ . '/config.env';
-if (file_exists($envFile)) {
+
+if (file_exists($encFile)) {
+    // Encrypted config (production)
+    $enc = json_decode(file_get_contents($encFile), true);
+    if ($enc && isset($enc['iv'], $enc['data'])) {
+        $passphrase = 'STM-Config-2026-Encrypt';
+        $salt = 'stm-config-salt';
+        $key = hash_pbkdf2('sha256', $passphrase, $salt, 100000, 32, true);
+        $iv = hex2bin($enc['iv']);
+        $plaintext = openssl_decrypt($enc['data'], 'aes-256-cbc', $key, 0, $iv);
+
+        if ($plaintext !== false) {
+            $lines = explode("\n", $plaintext);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '' || $line[0] === '#') continue;
+                if (strpos($line, '=') === false) continue;
+                [$k, $v] = explode('=', $line, 2);
+                $k = trim($k);
+                $v = trim($v);
+                if (preg_match('/^["\'](.*)["\']\s*$/', $v, $m)) {
+                    $v = $m[1];
+                }
+                $envVars[$k] = $v;
+            }
+        }
+    }
+} elseif (file_exists($envFile)) {
+    // Fallback: plain config.env (development)
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || $line[0] === '#') continue;
         if (strpos($line, '=') === false) continue;
-        [$key, $value] = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value);
-        // Remove surrounding quotes
-        if (preg_match('/^["\'](.*)["\']\s*$/', $value, $m)) {
-            $value = $m[1];
+        [$k, $v] = explode('=', $line, 2);
+        $k = trim($k);
+        $v = trim($v);
+        if (preg_match('/^["\'](.*)["\']\s*$/', $v, $m)) {
+            $v = $m[1];
         }
-        $_ENV[$key] = $value;
-        putenv("$key=$value");
+        $envVars[$k] = $v;
     }
+}
+
+// Set environment
+foreach ($envVars as $k => $v) {
+    $_ENV[$k] = $v;
+    putenv("$k=$v");
 }
 
 // JWT Secret (mandatory)

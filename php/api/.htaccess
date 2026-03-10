@@ -1,10 +1,17 @@
 RewriteEngine On
 
+# Block access to sensitive files
+<FilesMatch "\.(env|enc|sql|log)$">
+    Require all denied
+</FilesMatch>
+
 # Pass Authorization header to PHP (required for CGI/FastCGI)
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # Allow direct access to existing files (uploads, etc.)
+# But NOT config files (already blocked above)
 RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} !\.(env|enc|sql|log)$
 RewriteRule ^ - [L]
 
 # Allow direct access to migrations (with key protection)

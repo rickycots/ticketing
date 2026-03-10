@@ -17,6 +17,7 @@ require_once __DIR__ . '/core/Router.php';
 require_once __DIR__ . '/core/Auth.php';
 require_once __DIR__ . '/core/Upload.php';
 require_once __DIR__ . '/core/Mailer.php';
+require_once __DIR__ . '/core/CronRunner.php';
 
 // Create router with API base path
 $router = new Router(API_BASE);
@@ -40,6 +41,21 @@ require_once __DIR__ . '/routes/dashboard.php';
 require_once __DIR__ . '/routes/knowledgeBase.php';
 require_once __DIR__ . '/routes/repository.php';
 require_once __DIR__ . '/routes/ai.php';
+
+// Poor man's cron: poll emails every 10 minutes
+CronRunner::runIfDue('poll_emails', 600, function() {
+    // Only run if IMAP credentials are configured
+    if (!MAIL_TICKETING_USER || !MAIL_TICKETING_PASS) return;
+
+    // Include the poller functions (designed for CLI/cron, we capture output)
+    ob_start();
+    try {
+        require __DIR__ . '/cron/poll_emails.php';
+    } catch (\Throwable $e) {
+        error_log('[CronRunner] poll_emails error: ' . $e->getMessage());
+    }
+    ob_end_clean();
+});
 
 // Dispatch request
 $router->dispatch();

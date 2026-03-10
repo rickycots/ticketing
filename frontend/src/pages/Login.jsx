@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { auth } from '../api/client'
+import { APP_VERSION } from '../version'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -88,6 +89,10 @@ export default function Login() {
           <Link to="/client/login" className="text-sm text-blue-600 hover:underline">
             Accedi al Portale Cliente
           </Link>
+        </p>
+
+        <p className="text-center mt-6 text-[11px] text-gray-400">
+          {APP_VERSION} &mdash; &copy; {new Date().getFullYear()} STM Domotica Corporation S.r.l.
         </p>
       </div>
     </div>
