@@ -52,7 +52,7 @@ export default function ClientLayout() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="h-8 w-auto object-contain" />
@@ -149,7 +149,7 @@ export default function ClientLayout() {
       </header>
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-4 py-6 flex-1">
+      <main className="w-full max-w-6xl mx-auto px-4 py-6 flex-1">
         {/* Communications banner — unread + important (even if read) */}
         {comunicazioni.length > 0 && !commsDismissed && (() => {
           const unread = comunicazioni.filter(c => !c.letta)
@@ -304,7 +304,7 @@ export default function ClientLayout() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
             <div className="flex items-center gap-2">
               <img src={`${import.meta.env.BASE_URL || '/'}LogoSTM.png`} alt="STM Domotica" className="h-5 w-auto object-contain opacity-60" />

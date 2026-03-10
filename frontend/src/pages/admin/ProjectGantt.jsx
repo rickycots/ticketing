@@ -187,17 +187,16 @@ export default function ProjectGantt() {
               <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
             )}
           </button>
-          {project.referenti && project.referenti.length > 0 && (
-            <button
-              onClick={() => setShowReferenti(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
-              <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
-              <span className="font-medium">Referenti</span>
-              <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{project.referenti.length}</span>
-            </button>
-          )}
+          <button
+            onClick={() => setShowReferenti(prev => !prev)}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
+            <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
+            <span className="font-medium">Referenti</span>
+            <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
+          </button>
+          {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
         </div>
 
         {/* Expanded description */}
@@ -275,26 +274,30 @@ export default function ProjectGantt() {
         )}
 
         {/* Expanded referenti */}
-        {showReferenti && project.referenti && project.referenti.length > 0 && (
+        {showReferenti && (
           <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
-            <div className="divide-y divide-teal-100">
-              {project.referenti.map(r => (
-                <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold text-teal-700">
-                      {(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}
-                    </span>
+            {(!project.referenti || project.referenti.length === 0) ? (
+              <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente assegnato</p>
+            ) : (
+              <div className="divide-y divide-teal-100">
+                {project.referenti.map(r => (
+                  <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-teal-700">
+                        {(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
+                      <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
+                    </div>
+                    {r.ruolo && (
+                      <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
-                    <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
-                  </div>
-                  {r.ruolo && (
-                    <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -40,6 +40,7 @@ export default function ProjectDetail() {
   const [editDescrizione, setEditDescrizione] = useState('')
   const [expandedEmails, setExpandedEmails] = useState({})
   const [showAllegati, setShowAllegati] = useState(false)
+  const [showReferenti, setShowReferenti] = useState(false)
   const [allegati, setAllegati] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
@@ -252,32 +253,51 @@ export default function ProjectDetail() {
               </div>
             </div>
 
-            <div className="flex gap-4 text-sm text-gray-500">
+            <div className="flex gap-4 text-sm text-gray-500 flex-wrap">
               {project.data_scadenza && <span>Fine prevista: {new Date(project.data_scadenza).toLocaleDateString('it-IT')}</span>}
               <span>{project.attivita.length} attività</span>
               <span className="font-bold text-gray-700">Ultimo aggiornamento: {new Date(project.updated_at).toLocaleString('it-IT')}</span>
             </div>
 
-            {project.descrizione && (
-              <div className="mt-4 border-t border-gray-100 pt-3">
-                <p className="text-sm font-medium text-gray-500 mb-1">Descrizione</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{project.descrizione}</p>
-              </div>
-            )}
-
-            {/* Allegati Progetto */}
-            <div className="mt-4 border-t border-gray-100 pt-3">
+            {/* Toggle buttons row */}
+            <div className="flex items-center gap-4 mt-4 border-t border-gray-100 pt-3">
+              {project.descrizione && (
+                <button
+                  onClick={() => setEditDescrizione(editDescrizione ? '' : 'show')}
+                  className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${editDescrizione ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <ChevronRight size={14} className={`transition-transform ${editDescrizione ? 'rotate-90' : ''}`} />
+                  <span className="font-medium">Descrizione Breve</span>
+                </button>
+              )}
               <button
                 onClick={toggleAllegati}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Paperclip size={15} className={showAllegati ? 'text-blue-500' : ''} />
                 <span className="font-medium">Allegati Progetto</span>
                 {allegati.length > 0 && (
                   <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
                 )}
-                <ChevronRight size={14} className={`transition-transform text-gray-400 ${showAllegati ? 'rotate-90' : ''}`} />
               </button>
+              <button
+                onClick={() => setShowReferenti(prev => !prev)}
+                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
+                <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
+                <span className="font-medium">Referenti</span>
+                <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
+              </button>
+              {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
+            </div>
+
+            {/* Expanded description */}
+            {editDescrizione && project.descrizione && (
+              <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                {project.descrizione}
+              </div>
+            )}
 
               {showAllegati && (
                 <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
@@ -346,7 +366,34 @@ export default function ProjectDetail() {
                   )}
                 </div>
               )}
-            </div>
+
+            {/* Expanded referenti */}
+            {showReferenti && (
+              <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
+                {(!project.referenti || project.referenti.length === 0) ? (
+                  <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente assegnato</p>
+                ) : (
+                  <div className="divide-y divide-teal-100">
+                    {project.referenti.map(r => (
+                      <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-teal-700">
+                            {(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
+                          <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
+                        </div>
+                        {r.ruolo && (
+                          <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tabs: Attività / Email Progetto / Email Attività */}

@@ -34,6 +34,7 @@ export default function ProjectList() {
   const [clientReferenti, setClientReferenti] = useState([])
   const [showNewRef, setShowNewRef] = useState(false)
   const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '' })
+  const [manutenzioneOrdinaria, setManutenzioneOrdinaria] = useState(false)
   const [activeTab, setActiveTab] = useState('aperti')
   const [filterCliente, setFilterCliente] = useState('')
   const [page, setPage] = useState(1)
@@ -109,10 +110,16 @@ export default function ProjectList() {
 
   async function handleCreate(e) {
     e.preventDefault()
-    await projects.create(form)
+    const hasReferenti = form.referenti.length > 0 || form.nuovi_referenti.length > 0
+    if (!manutenzioneOrdinaria && !hasReferenti) {
+      alert('Seleziona almeno un referente, oppure spunta "STM Manutenzione Ordinaria".')
+      return
+    }
+    await projects.create({ ...form, manutenzione_ordinaria: manutenzioneOrdinaria })
     setForm({ cliente_id: '', nome: '', descrizione: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
     setShowForm(false)
     setClientReferenti([])
+    setManutenzioneOrdinaria(false)
     loadProjects()
   }
 
@@ -212,11 +219,24 @@ export default function ProjectList() {
                 )}
               </div>
             )}
+            {/* Manutenzione Ordinaria checkbox */}
+            {form.cliente_id && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={manutenzioneOrdinaria}
+                  onChange={e => setManutenzioneOrdinaria(e.target.checked)}
+                  className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                />
+                <span className="text-sm font-medium text-gray-700">STM Manutenzione Ordinaria</span>
+                <span className="text-xs text-gray-400">(referenti opzionali)</span>
+              </label>
+            )}
             {/* Referenti progetto */}
             {form.cliente_id && (
-              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+              <div className={`bg-teal-50 border rounded-lg p-3 ${!manutenzioneOrdinaria && form.referenti.length === 0 && form.nuovi_referenti.length === 0 ? 'border-red-300' : 'border-teal-200'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Users size={16} /> Referenti Progetto (personale cliente)
+                  <Users size={16} /> Referenti Progetto {!manutenzioneOrdinaria && <span className="text-red-500">*</span>}
                 </label>
 
                 {/* Existing referenti from client */}

@@ -45,6 +45,18 @@ try {
     }
 }
 
+// Add 'manutenzione_ordinaria' column to progetti if missing
+try {
+    $db->exec("ALTER TABLE progetti ADD COLUMN manutenzione_ordinaria TINYINT(1) NOT NULL DEFAULT 0");
+    echo "OK: added 'manutenzione_ordinaria' column to progetti\n";
+} catch (PDOException $e) {
+    if (strpos($e->getMessage(), 'Duplicate column') === false && strpos($e->getMessage(), 'duplicate column') === false) {
+        echo "SKIP: manutenzione_ordinaria — " . $e->getMessage() . "\n";
+    } else {
+        echo "OK: manutenzione_ordinaria column already exists\n";
+    }
+}
+
 $sqls = [
     "CREATE TABLE IF NOT EXISTS referenti_progetto (
         id INT AUTO_INCREMENT PRIMARY KEY,

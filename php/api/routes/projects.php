@@ -66,7 +66,7 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
     }
 
     $projects = Database::fetchAll(
-        "SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id
+        "SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id, p.manutenzione_ordinaria
          FROM progetti p
          WHERE p.cliente_id = ? AND p.stato != 'annullato'
          ORDER BY p.updated_at DESC",
@@ -114,7 +114,7 @@ $router->get('/projects/client/:clienteId/:projectId', [Auth::class, 'authentica
     }
 
     $project = Database::fetchOne(
-        "SELECT p.id, p.nome, p.stato, p.blocco, p.data_inizio, p.data_scadenza, p.updated_at, p.email_bloccante_id
+        "SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_inizio, p.data_scadenza, p.updated_at, p.email_bloccante_id, p.manutenzione_ordinaria
          FROM progetti p
          WHERE p.id = ? AND p.cliente_id = ? AND p.stato != 'annullato'",
         [$req->params['projectId'], $req->params['clienteId']]
@@ -156,6 +156,7 @@ $router->get('/projects/client/:clienteId/:projectId', [Auth::class, 'authentica
     $project['email_bloccante_oggetto'] = $emailBloccante ? $emailBloccante['oggetto'] : null;
     $project['email_bloccante_corpo'] = $emailBloccante ? $emailBloccante['corpo'] : null;
     $project['email_bloccante_data'] = $emailBloccante ? $emailBloccante['data_ricezione'] : null;
+    $project['referenti'] = getProjectReferenti($project['id']);
 
     Response::json($project);
 });
@@ -467,6 +468,7 @@ $router->post('/projects', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $dataInizio = $req->body['data_inizio'] ?? null;
     $dataScadenza = $req->body['data_scadenza'] ?? null;
     $stato = $req->body['stato'] ?? 'attivo';
+    $manutenzioneOrdinaria = !empty($req->body['manutenzione_ordinaria']) ? 1 : 0;
     $tecnici = $req->body['tecnici'] ?? [];
     $referenti = $req->body['referenti'] ?? [];
     $nuoviReferenti = $req->body['nuovi_referenti'] ?? [];
@@ -476,8 +478,8 @@ $router->post('/projects', [Auth::class, 'authenticateToken'], [Auth::class, 're
     }
 
     Database::execute(
-        'INSERT INTO progetti (cliente_id, nome, descrizione, data_inizio, data_scadenza, stato) VALUES (?, ?, ?, ?, ?, ?)',
-        [$clienteId, $nome, $descrizione, $dataInizio, $dataScadenza, $stato]
+        'INSERT INTO progetti (cliente_id, nome, descrizione, data_inizio, data_scadenza, stato, manutenzione_ordinaria) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [$clienteId, $nome, $descrizione, $dataInizio, $dataScadenza, $stato, $manutenzioneOrdinaria]
     );
     $projectId = Database::lastInsertId();
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, AlertTriangle, Mail, CheckCircle2, Clock, Wrench, Lock, CalendarClock } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, Mail, CheckCircle2, Clock, Wrench, Lock, CalendarClock, ChevronRight, Paperclip, FileText, Download, Users } from 'lucide-react'
 import { clientProjects } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
@@ -35,10 +35,31 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function getFileIconColor(mime) {
+  if (!mime) return 'text-gray-400'
+  if (mime.includes('pdf')) return 'text-red-500'
+  if (mime.includes('image')) return 'text-blue-500'
+  if (mime.includes('word') || mime.includes('document')) return 'text-blue-600'
+  if (mime.includes('sheet') || mime.includes('excel')) return 'text-green-600'
+  if (mime.includes('zip') || mime.includes('archive')) return 'text-yellow-600'
+  return 'text-gray-400'
+}
+
 export default function ClientProjectDetail() {
   const { id } = useParams()
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [expandedDesc, setExpandedDesc] = useState(false)
+  const [expandedAllegati, setExpandedAllegati] = useState(false)
+  const [expandedReferenti, setExpandedReferenti] = useState(false)
+  const [allegatiData, setAllegatiData] = useState([])
+  const [loadingAllegati, setLoadingAllegati] = useState(false)
   const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
 
@@ -55,6 +76,16 @@ export default function ClientProjectDetail() {
   if (!project) return <div className="text-center text-gray-400 py-12">{t('projectNotFound')}</div>
 
   const isBloccato = project.blocco === 'lato_cliente'
+  const isManutenzione = !!project.manutenzione_ordinaria
+
+  function loadAllegati() {
+    if (allegatiData.length > 0) return
+    setLoadingAllegati(true)
+    clientProjects.allegati(clienteId, id)
+      .then(data => setAllegatiData(data || []))
+      .catch(console.error)
+      .finally(() => setLoadingAllegati(false))
+  }
 
   // Build tree: parent activities and their children
   const parentActivities = project.attivita.filter(a => !a.dipende_da)
@@ -195,9 +226,110 @@ export default function ClientProjectDetail() {
               style={{ width: `${project.avanzamento}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-1">{project.attivita.length} {t('activities').toLowerCase()}</p>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-gray-400">{project.attivita.length} {t('activities').toLowerCase()}</p>
+            {isManutenzione && <span className="text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
+          </div>
         </div>
       </div>
+
+      {/* Detail toggles: Description, Attachments, Referenti */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setExpandedDesc(!expandedDesc)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${expandedDesc ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              <ChevronRight size={14} className={`transition-transform ${expandedDesc ? 'rotate-90' : ''}`} />
+              {t('shortDescription')}
+            </button>
+            <button
+              onClick={() => {
+                const next = !expandedAllegati
+                setExpandedAllegati(next)
+                if (next) loadAllegati()
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${expandedAllegati ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              <ChevronRight size={14} className={`transition-transform ${expandedAllegati ? 'rotate-90' : ''}`} />
+              <Paperclip size={14} />
+              {t('projectAttachments')}
+            </button>
+            <button
+              onClick={() => setExpandedReferenti(!expandedReferenti)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${expandedReferenti ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              <ChevronRight size={14} className={`transition-transform ${expandedReferenti ? 'rotate-90' : ''}`} />
+              <Users size={14} />
+              {t('projectContacts') || 'Referenti'} ({(project.referenti || []).length})
+            </button>
+          </div>
+
+          {/* Description expanded */}
+          {expandedDesc && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              {project.descrizione
+                ? <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{project.descrizione}</p>
+                : <p className="text-sm text-gray-400 italic">{t('noDescription')}</p>
+              }
+            </div>
+          )}
+
+          {/* Attachments expanded */}
+          {expandedAllegati && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              {loadingAllegati ? (
+                <p className="text-sm text-gray-400">{t('loading')}</p>
+              ) : allegatiData.length === 0 ? (
+                <p className="text-sm text-gray-400">{t('noAttachments') || 'Nessun allegato'}</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {allegatiData.map(a => (
+                    <a
+                      key={a.id}
+                      href={clientProjects.downloadUrl(clienteId, id, a.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                    >
+                      <FileText size={18} className={getFileIconColor(a.tipo_mime)} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{a.nome_originale}</p>
+                        <p className="text-xs text-gray-400">{formatFileSize(a.dimensione)} · {formatDate(a.created_at)}</p>
+                      </div>
+                      <Download size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Referenti expanded */}
+          {expandedReferenti && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              {(!project.referenti || project.referenti.length === 0) ? (
+                <p className="text-sm text-gray-400">Nessun referente assegnato</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {project.referenti.map(ref => (
+                    <div key={ref.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        {(ref.nome || '?')[0]}{(ref.cognome || '')[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{ref.nome} {ref.cognome}</p>
+                        {ref.ruolo && <p className="text-xs text-gray-500">{ref.ruolo}</p>}
+                        {ref.email && <p className="text-xs text-gray-400 truncate">{ref.email}</p>}
+                        {ref.telefono && <p className="text-xs text-gray-400">{ref.telefono}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {/* Activities list */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">

@@ -46,6 +46,7 @@ export default function TimelineList() {
   const [clientReferenti, setClientReferenti] = useState([])
   const [showNewRef, setShowNewRef] = useState(false)
   const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '' })
+  const [manutenzioneOrdinaria, setManutenzioneOrdinaria] = useState(false)
   const containerRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -376,6 +377,11 @@ export default function TimelineList() {
             <form onSubmit={async (e) => {
               e.preventDefault()
               if (!newProject.cliente_id || !newProject.nome.trim()) return
+              const hasReferenti = newProject.referenti.length > 0 || newProject.nuovi_referenti.length > 0
+              if (!manutenzioneOrdinaria && !hasReferenti) {
+                alert('Seleziona almeno un referente, oppure spunta "STM Manutenzione Ordinaria".')
+                return
+              }
               setCreating(true)
               try {
                 await projects.create({
@@ -384,10 +390,12 @@ export default function TimelineList() {
                   tecnici: newProject.tecnici,
                   referenti: newProject.referenti,
                   nuovi_referenti: newProject.nuovi_referenti,
+                  manutenzione_ordinaria: manutenzioneOrdinaria,
                 })
                 setNewProject({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
                 setClientReferenti([])
                 setShowNewRef(false)
+                setManutenzioneOrdinaria(false)
                 setShowNewProject(false)
                 loadProjects()
               } catch (err) { alert(err.message) }
@@ -474,11 +482,25 @@ export default function TimelineList() {
                   )}
                 </div>
               </div>
+              {/* Manutenzione Ordinaria checkbox */}
+              {newProject.cliente_id && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={manutenzioneOrdinaria}
+                    onChange={e => setManutenzioneOrdinaria(e.target.checked)}
+                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">STM Manutenzione Ordinaria</span>
+                  <span className="text-xs text-gray-400">(referenti opzionali)</span>
+                </label>
+              )}
+
               {/* Referenti progetto */}
               {newProject.cliente_id && (
-                <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                <div className={`bg-teal-50 border rounded-lg p-3 ${!manutenzioneOrdinaria && newProject.referenti.length === 0 && newProject.nuovi_referenti.length === 0 ? 'border-red-300' : 'border-teal-200'}`}>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Users size={16} /> Referenti Progetto
+                    <Users size={16} /> Referenti Progetto {!manutenzioneOrdinaria && <span className="text-red-500">*</span>}
                   </label>
 
                   {clientReferenti.length > 0 && (
