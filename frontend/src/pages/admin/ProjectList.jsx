@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, MessageCircle, Building2 } from 'lucide-react'
+import { Plus, MessageCircle, Building2, UserPlus, X, Users } from 'lucide-react'
 import { projects, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 
@@ -30,7 +30,10 @@ export default function ProjectList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ cliente_id: '', nome: '', descrizione: '', data_scadenza: '', tecnici: [] })
+  const [form, setForm] = useState({ cliente_id: '', nome: '', descrizione: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
+  const [clientReferenti, setClientReferenti] = useState([])
+  const [showNewRef, setShowNewRef] = useState(false)
+  const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '' })
   const [activeTab, setActiveTab] = useState('aperti')
   const [filterCliente, setFilterCliente] = useState('')
   const [page, setPage] = useState(1)
@@ -74,11 +77,42 @@ export default function ProjectList() {
     }))
   }
 
+  // Load referenti when client changes
+  useEffect(() => {
+    setClientReferenti([])
+    if (form.cliente_id) {
+      clientsApi.getReferenti(form.cliente_id)
+        .then(data => setClientReferenti(Array.isArray(data) ? data : []))
+        .catch(() => {})
+    }
+  }, [form.cliente_id])
+
+  function handleRefToggle(refId) {
+    setForm(f => ({
+      ...f,
+      referenti: f.referenti.includes(refId)
+        ? f.referenti.filter(id => id !== refId)
+        : [...f.referenti, refId]
+    }))
+  }
+
+  function addNewReferente() {
+    if (!newRefForm.nome.trim() || !newRefForm.email.trim()) return
+    setForm(f => ({ ...f, nuovi_referenti: [...f.nuovi_referenti, { ...newRefForm }] }))
+    setNewRefForm({ nome: '', cognome: '', email: '' })
+    setShowNewRef(false)
+  }
+
+  function removeNewReferente(idx) {
+    setForm(f => ({ ...f, nuovi_referenti: f.nuovi_referenti.filter((_, i) => i !== idx) }))
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
     await projects.create(form)
-    setForm({ cliente_id: '', nome: '', descrizione: '', data_scadenza: '', tecnici: [] })
+    setForm({ cliente_id: '', nome: '', descrizione: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
     setShowForm(false)
+    setClientReferenti([])
     loadProjects()
   }
 
@@ -124,7 +158,7 @@ export default function ProjectList() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
                 <select
                   value={form.cliente_id}
-                  onChange={(e) => setForm(f => ({ ...f, cliente_id: e.target.value }))}
+                  onChange={(e) => setForm(f => ({ ...f, cliente_id: e.target.value, referenti: [], nuovi_referenti: [] }))}
                   required
                   className={selectCls}
                 >
@@ -178,11 +212,82 @@ export default function ProjectList() {
                 )}
               </div>
             )}
+            {/* Referenti progetto */}
+            {form.cliente_id && (
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Users size={16} /> Referenti Progetto (personale cliente)
+                </label>
+
+                {/* Existing referenti from client */}
+                {clientReferenti.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {clientReferenti.map(r => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => handleRefToggle(r.id)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                          form.referenti.includes(r.id)
+                            ? 'bg-teal-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {r.nome} {r.cognome}
+                        <span className="text-xs opacity-75 ml-1">({r.email})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* New referenti added inline */}
+                {form.nuovi_referenti.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {form.nuovi_referenti.map((nr, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 bg-teal-100 text-teal-800 px-3 py-1.5 rounded-lg text-sm">
+                        {nr.nome} {nr.cognome} ({nr.email})
+                        <button type="button" onClick={() => removeNewReferente(idx)} className="ml-1 hover:text-red-600 cursor-pointer">
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new referente form */}
+                {showNewRef ? (
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <input type="text" placeholder="Nome *" value={newRefForm.nome} onChange={e => setNewRefForm(f => ({ ...f, nome: e.target.value }))}
+                        className={selectCls} />
+                      <input type="text" placeholder="Cognome" value={newRefForm.cognome} onChange={e => setNewRefForm(f => ({ ...f, cognome: e.target.value }))}
+                        className={selectCls} />
+                      <input type="email" placeholder="Email *" value={newRefForm.email} onChange={e => setNewRefForm(f => ({ ...f, email: e.target.value }))}
+                        className={selectCls} />
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button type="button" onClick={addNewReferente} className="bg-teal-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-teal-700 cursor-pointer">
+                        Aggiungi
+                      </button>
+                      <button type="button" onClick={() => setShowNewRef(false)} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-1.5 text-sm hover:bg-gray-200 cursor-pointer">
+                        Annulla
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setShowNewRef(true)}
+                    className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 cursor-pointer mt-1">
+                    <UserPlus size={14} /> Nuovo referente
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">
                 Crea Progetto
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
+              <button type="button" onClick={() => { setShowForm(false); setClientReferenti([]); setShowNewRef(false) }} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
                 Annulla
               </button>
             </div>

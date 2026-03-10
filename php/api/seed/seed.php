@@ -77,8 +77,8 @@ out("2 clienti creati");
 
 // --- UTENTI CLIENTE ---
 Database::execute(
-    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, schede_visibili) VALUES (?, ?, ?, ?, ?)',
-    [1, 'Giuseppe Rossi', 'giuseppe@rossi-srl.it', $hash('cliente123'), 'ticket,progetti,ai']
+    'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili) VALUES (?, ?, ?, ?, ?, ?)',
+    [1, 'Giuseppe Rossi', 'giuseppe@rossi-srl.it', $hash('cliente123'), 'admin', 'ticket,progetti,ai']
 );
 Database::execute(
     'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, schede_visibili) VALUES (?, ?, ?, ?, ?)',

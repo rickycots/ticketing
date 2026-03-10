@@ -238,6 +238,28 @@ CREATE TABLE IF NOT EXISTS impostazioni (
   valore TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Referenti progetto (anagrafica referenti del cliente)
+CREATE TABLE IF NOT EXISTS referenti_progetto (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cliente_id INT NOT NULL,
+  nome VARCHAR(255) NOT NULL,
+  cognome VARCHAR(255) NOT NULL DEFAULT '',
+  email VARCHAR(191) NOT NULL,
+  telefono VARCHAR(50) DEFAULT NULL,
+  ruolo VARCHAR(100) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clienti(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Associazione progetto-referente (ponte)
+CREATE TABLE IF NOT EXISTS progetto_referenti (
+  progetto_id INT NOT NULL,
+  referente_id INT NOT NULL,
+  PRIMARY KEY (progetto_id, referente_id),
+  FOREIGN KEY (progetto_id) REFERENCES progetti(id),
+  FOREIGN KEY (referente_id) REFERENCES referenti_progetto(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Indexes
 CREATE INDEX idx_ticket_stato ON ticket(stato);
 CREATE INDEX idx_ticket_cliente ON ticket(cliente_id);
@@ -260,5 +282,6 @@ CREATE INDEX idx_schede_cliente ON schede_cliente(cliente_id);
 CREATE INDEX idx_documenti_repository_categoria ON documenti_repository(categoria);
 CREATE INDEX idx_allegati_progetto ON allegati_progetto(progetto_id);
 CREATE INDEX idx_comunicazioni_cliente ON comunicazioni_cliente(cliente_id);
+CREATE INDEX idx_referenti_progetto_cliente ON referenti_progetto(cliente_id);
 
 SET FOREIGN_KEY_CHECKS = 1;

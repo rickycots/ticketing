@@ -56,12 +56,21 @@ async function request(endpoint, options = {}) {
     headers,
   });
 
-  if (res.status === 401) {
-    adminLogout();
-    throw new Error('Non autenticato');
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(res.ok ? 'Risposta non valida dal server' : 'Errore del server');
   }
 
-  const data = await res.json();
+  if (res.status === 401) {
+    // Only logout if we had a token (session expired), not on login attempts
+    if (token) {
+      adminLogout();
+      throw new Error('Non autenticato');
+    }
+    throw new Error(data.error || 'Credenziali non valide');
+  }
 
   if (!res.ok) {
     throw new Error(data.error || 'Errore del server');
@@ -166,6 +175,11 @@ export const clients = {
   createUser: (clientId, data) => request(`/clients/${clientId}/users`, { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (clientId, userId, data) => request(`/clients/${clientId}/users/${userId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (clientId, userId) => request(`/clients/${clientId}/users/${userId}`, { method: 'DELETE' }),
+  // Referenti progetto
+  getReferenti: (clientId) => request(`/clients/${clientId}/referenti`),
+  createReferente: (clientId, data) => request(`/clients/${clientId}/referenti`, { method: 'POST', body: JSON.stringify(data) }),
+  updateReferente: (clientId, refId, data) => request(`/clients/${clientId}/referenti/${refId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteReferente: (clientId, refId) => request(`/clients/${clientId}/referenti/${refId}`, { method: 'DELETE' }),
 };
 
 // Emails
@@ -289,12 +303,21 @@ async function clientRequest(endpoint, options = {}) {
 
   const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401) {
-    clientLogout();
-    throw new Error('Non autenticato');
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(res.ok ? 'Risposta non valida dal server' : 'Errore del server');
   }
 
-  const data = await res.json();
+  if (res.status === 401) {
+    if (token) {
+      clientLogout();
+      throw new Error('Non autenticato');
+    }
+    throw new Error(data.error || 'Credenziali non valide');
+  }
+
   if (!res.ok) throw new Error(data.error || 'Errore del server');
   return data;
 }

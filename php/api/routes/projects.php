@@ -23,6 +23,25 @@ function setProjectTecnici($progettoId, $tecnicoIds) {
     }
 }
 
+// Helper: get referenti IDs for a project
+function getProjectReferenti($progettoId) {
+    return Database::fetchAll(
+        'SELECT r.* FROM referenti_progetto r INNER JOIN progetto_referenti pr ON pr.referente_id = r.id WHERE pr.progetto_id = ? ORDER BY r.cognome, r.nome',
+        [$progettoId]
+    );
+}
+
+// Helper: set referenti for a project (replace all)
+function setProjectReferenti($progettoId, $referenteIds) {
+    Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$progettoId]);
+    foreach ($referenteIds as $rid) {
+        Database::execute(
+            'INSERT INTO progetto_referenti (progetto_id, referente_id) VALUES (?, ?)',
+            [$progettoId, (int)$rid]
+        );
+    }
+}
+
 // Helper: count unread chat messages for a user in a project
 function chatNonLette($progettoId, $utenteId) {
     $row = Database::fetchOne(
@@ -81,6 +100,7 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
         $p['email_bloccante_oggetto'] = $emailBloccante ? $emailBloccante['oggetto'] : null;
         $p['email_bloccante_corpo'] = $emailBloccante ? $emailBloccante['corpo'] : null;
         $p['email_bloccante_data'] = $emailBloccante ? $emailBloccante['data_ricezione'] : null;
+        $p['referenti'] = getProjectReferenti($p['id']);
         $result[] = $p;
     }
 
@@ -263,6 +283,7 @@ $router->get('/projects', [Auth::class, 'authenticateToken'], function($req) {
         $p['avanzamento'] = $avanzamento;
         $p['num_attivita'] = count($activities);
         $p['tecnici'] = getProjectTecnici($p['id']);
+        $p['referenti'] = getProjectReferenti($p['id']);
         $p['chat_non_lette'] = chatNonLette($p['id'], $req->user['id']);
         $data[] = $p;
     }
@@ -379,12 +400,15 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
         [$req->user['id'], $project['id']]
     );
 
+    $referenti = getProjectReferenti($project['id']);
+
     $project['avanzamento'] = $avanzamento;
     $project['attivita'] = $attivita;
     $project['emails'] = $emails;
     $project['note'] = $note;
     $project['chat'] = $chat;
     $project['tecnici'] = $tecnici;
+    $project['referenti'] = $referenti;
 
     Response::json($project);
 });
@@ -444,6 +468,8 @@ $router->post('/projects', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $dataScadenza = $req->body['data_scadenza'] ?? null;
     $stato = $req->body['stato'] ?? 'attivo';
     $tecnici = $req->body['tecnici'] ?? [];
+    $referenti = $req->body['referenti'] ?? [];
+    $nuoviReferenti = $req->body['nuovi_referenti'] ?? [];
 
     if (!$clienteId || !$nome) {
         Response::error('Campi obbligatori: cliente_id, nome', 400);
@@ -459,8 +485,27 @@ $router->post('/projects', [Auth::class, 'authenticateToken'], [Auth::class, 're
         setProjectTecnici($projectId, $tecnici);
     }
 
+    // Create new referenti inline and collect their IDs
+    $allReferenteIds = is_array($referenti) ? $referenti : [];
+    if (is_array($nuoviReferenti)) {
+        foreach ($nuoviReferenti as $nr) {
+            $nrNome = trim($nr['nome'] ?? '');
+            $nrEmail = trim($nr['email'] ?? '');
+            if (!$nrNome || !$nrEmail) continue;
+            Database::execute(
+                'INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)',
+                [$clienteId, $nrNome, trim($nr['cognome'] ?? ''), $nrEmail, $nr['telefono'] ?? null]
+            );
+            $allReferenteIds[] = (int)Database::lastInsertId();
+        }
+    }
+    if (count($allReferenteIds) > 0) {
+        setProjectReferenti($projectId, $allReferenteIds);
+    }
+
     $project = Database::fetchOne('SELECT * FROM progetti WHERE id = ?', [$projectId]);
     $project['tecnici'] = getProjectTecnici($project['id']);
+    $project['referenti'] = getProjectReferenti($project['id']);
     Response::created($project);
 });
 
@@ -496,6 +541,26 @@ $router->put('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::class, 
         setProjectTecnici($req->params['id'], $tecnici);
     }
 
+    // Handle referenti update
+    $referenti = $req->body['referenti'] ?? null;
+    $nuoviReferenti = $req->body['nuovi_referenti'] ?? [];
+    if ($referenti !== null || count($nuoviReferenti) > 0) {
+        $allReferenteIds = is_array($referenti) ? $referenti : [];
+        if (is_array($nuoviReferenti)) {
+            foreach ($nuoviReferenti as $nr) {
+                $nrNome = trim($nr['nome'] ?? '');
+                $nrEmail = trim($nr['email'] ?? '');
+                if (!$nrNome || !$nrEmail) continue;
+                Database::execute(
+                    'INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)',
+                    [$project['cliente_id'], $nrNome, trim($nr['cognome'] ?? ''), $nrEmail, $nr['telefono'] ?? null]
+                );
+                $allReferenteIds[] = (int)Database::lastInsertId();
+            }
+        }
+        setProjectReferenti($req->params['id'], $allReferenteIds);
+    }
+
     $updated = Database::fetchOne(
         "SELECT p.*, c.nome_azienda as cliente_nome
          FROM progetti p
@@ -504,6 +569,7 @@ $router->put('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::class, 
         [$req->params['id']]
     );
     $updated['tecnici'] = getProjectTecnici($req->params['id']);
+    $updated['referenti'] = getProjectReferenti($req->params['id']);
 
     Response::json($updated);
 });

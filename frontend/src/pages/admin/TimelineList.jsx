@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart3, Building2, Plus, X } from 'lucide-react'
+import { BarChart3, Building2, Plus, X, Users, UserPlus } from 'lucide-react'
 import { projects, clients as clientsApi, users as usersApi } from '../../api/client'
 
 const DAY_WIDTH = 13
@@ -41,8 +41,11 @@ export default function TimelineList() {
   const [filterCliente, setFilterCliente] = useState('')
   const [showNewProject, setShowNewProject] = useState(false)
   const [userList, setUserList] = useState([])
-  const [newProject, setNewProject] = useState({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [] })
+  const [newProject, setNewProject] = useState({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
   const [creating, setCreating] = useState(false)
+  const [clientReferenti, setClientReferenti] = useState([])
+  const [showNewRef, setShowNewRef] = useState(false)
+  const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '' })
   const containerRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -68,6 +71,16 @@ export default function TimelineList() {
       usersApi.list().then(setUserList).catch(() => {})
     }
   }, [])
+
+  // Load referenti when client changes in new project form
+  useEffect(() => {
+    setClientReferenti([])
+    if (newProject.cliente_id) {
+      clientsApi.getReferenti(newProject.cliente_id)
+        .then(data => setClientReferenti(Array.isArray(data) ? data : []))
+        .catch(() => {})
+    }
+  }, [newProject.cliente_id])
 
   const { timelineStart, months, bars, totalDays } = useMemo(() => {
     if (!list || list.length === 0) {
@@ -369,8 +382,12 @@ export default function TimelineList() {
                   ...newProject,
                   cliente_id: Number(newProject.cliente_id),
                   tecnici: newProject.tecnici,
+                  referenti: newProject.referenti,
+                  nuovi_referenti: newProject.nuovi_referenti,
                 })
-                setNewProject({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [] })
+                setNewProject({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })
+                setClientReferenti([])
+                setShowNewRef(false)
                 setShowNewProject(false)
                 loadProjects()
               } catch (err) { alert(err.message) }
@@ -457,6 +474,84 @@ export default function TimelineList() {
                   )}
                 </div>
               </div>
+              {/* Referenti progetto */}
+              {newProject.cliente_id && (
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Users size={16} /> Referenti Progetto
+                  </label>
+
+                  {clientReferenti.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {clientReferenti.map(r => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setNewProject(p => ({
+                            ...p,
+                            referenti: p.referenti.includes(r.id)
+                              ? p.referenti.filter(id => id !== r.id)
+                              : [...p.referenti, r.id]
+                          }))}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                            newProject.referenti.includes(r.id)
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                          }`}
+                        >
+                          {r.nome} {r.cognome}
+                          <span className="text-xs opacity-75 ml-1">({r.email})</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {newProject.nuovi_referenti.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {newProject.nuovi_referenti.map((nr, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 bg-teal-100 text-teal-800 px-3 py-1.5 rounded-lg text-sm">
+                          {nr.nome} {nr.cognome} ({nr.email})
+                          <button type="button" onClick={() => setNewProject(p => ({ ...p, nuovi_referenti: p.nuovi_referenti.filter((_, i) => i !== idx) }))} className="ml-1 hover:text-red-600 cursor-pointer">
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {showNewRef ? (
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="grid grid-cols-3 gap-2">
+                        <input type="text" placeholder="Nome *" value={newRefForm.nome} onChange={e => setNewRefForm(f => ({ ...f, nome: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="text" placeholder="Cognome" value={newRefForm.cognome} onChange={e => setNewRefForm(f => ({ ...f, cognome: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input type="email" placeholder="Email *" value={newRefForm.email} onChange={e => setNewRefForm(f => ({ ...f, email: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <button type="button" onClick={() => {
+                          if (!newRefForm.nome.trim() || !newRefForm.email.trim()) return
+                          setNewProject(p => ({ ...p, nuovi_referenti: [...p.nuovi_referenti, { ...newRefForm }] }))
+                          setNewRefForm({ nome: '', cognome: '', email: '' })
+                          setShowNewRef(false)
+                        }} className="bg-teal-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-teal-700 cursor-pointer">
+                          Aggiungi
+                        </button>
+                        <button type="button" onClick={() => setShowNewRef(false)} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-1.5 text-sm hover:bg-gray-200 cursor-pointer">
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setShowNewRef(true)}
+                      className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 cursor-pointer mt-1">
+                      <UserPlus size={14} /> Nuovo referente
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"

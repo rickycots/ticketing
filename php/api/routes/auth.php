@@ -18,7 +18,7 @@ $router->post('/auth/login', function($req) {
     );
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
-        Response::error('Credenziali non valide', 401);
+        Response::error("Utente non abilitato o dati errati.\nVerifica le credenziali e riprova.", 401);
     }
 
     $token = Auth::generateToken([

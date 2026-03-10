@@ -43,17 +43,17 @@ require_once __DIR__ . '/routes/repository.php';
 require_once __DIR__ . '/routes/ai.php';
 
 // Poor man's cron: poll emails every 10 minutes
+// Wrapped in ob to prevent any output from breaking JSON responses
 CronRunner::runIfDue('poll_emails', 600, function() {
-    // Only run if IMAP credentials are configured
     if (!MAIL_TICKETING_USER || !MAIL_TICKETING_PASS) return;
-
-    // Include the poller functions (designed for CLI/cron, we capture output)
     ob_start();
+    $oldLevel = error_reporting(0);
     try {
         require __DIR__ . '/cron/poll_emails.php';
     } catch (\Throwable $e) {
         error_log('[CronRunner] poll_emails error: ' . $e->getMessage());
     }
+    error_reporting($oldLevel);
     ob_end_clean();
 });
 

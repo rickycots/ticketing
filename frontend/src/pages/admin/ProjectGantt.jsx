@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2 } from 'lucide-react'
+import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2, Users } from 'lucide-react'
 import { projects, activities, users as usersApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 
@@ -25,6 +25,7 @@ export default function ProjectGantt() {
   const [expandedEmails, setExpandedEmails] = useState({})
   const [showDesc, setShowDesc] = useState(false)
   const [showAllegati, setShowAllegati] = useState(false)
+  const [showReferenti, setShowReferenti] = useState(false)
   const [allegati, setAllegati] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
@@ -167,32 +168,44 @@ export default function ProjectGantt() {
           <span className="text-sm text-gray-400">{project.attivita.length} attività</span>
         </div>
 
-        {/* Collapsible description */}
-        <button
-          onClick={() => setShowDesc(prev => !prev)}
-          className="flex items-center gap-1.5 mt-3 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <ChevronRight size={14} className={`transition-transform ${showDesc ? 'rotate-90' : ''}`} />
-          <span className="font-medium">Descrizione Breve</span>
-        </button>
+        {/* Toggle buttons row */}
+        <div className="flex items-center gap-4 mt-3">
+          <button
+            onClick={() => setShowDesc(prev => !prev)}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showDesc ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <ChevronRight size={14} className={`transition-transform ${showDesc ? 'rotate-90' : ''}`} />
+            <span className="font-medium">Descrizione Breve</span>
+          </button>
+          <button
+            onClick={toggleAllegati}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+            <span className="font-medium">Allegati Progetto</span>
+            {allegati.length > 0 && (
+              <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
+            )}
+          </button>
+          {project.referenti && project.referenti.length > 0 && (
+            <button
+              onClick={() => setShowReferenti(prev => !prev)}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
+              <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
+              <span className="font-medium">Referenti</span>
+              <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{project.referenti.length}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Expanded description */}
         {showDesc && (
           <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
             {project.descrizione || <span className="text-gray-400 italic">Nessuna descrizione disponibile</span>}
           </div>
         )}
-
-        {/* Allegati Progetto */}
-        <button
-          onClick={toggleAllegati}
-          className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
-          <span className="font-medium">Allegati Progetto</span>
-          {allegati.length > 0 && (
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
-          )}
-          <ChevronRight size={14} className={`transition-transform text-gray-400 ${showAllegati ? 'rotate-90' : ''}`} />
-        </button>
 
         {showAllegati && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
@@ -258,6 +271,30 @@ export default function ProjectGantt() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Expanded referenti */}
+        {showReferenti && project.referenti && project.referenti.length > 0 && (
+          <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
+            <div className="divide-y divide-teal-100">
+              {project.referenti.map(r => (
+                <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-teal-700">
+                      {(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
+                    <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
+                  </div>
+                  {r.ruolo && (
+                    <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -199,3 +199,55 @@ $router->delete('/clients/:id/users/:userId', [Auth::class, 'authenticateToken']
     Database::execute('DELETE FROM utenti_cliente WHERE id = ?', [$req->params['userId']]);
     Response::success();
 });
+
+// --- Referenti Progetto (anagrafica referenti del cliente) ---
+
+// GET /api/clients/:id/referenti
+$router->get('/clients/:id/referenti', [Auth::class, 'authenticateToken'], function($req) {
+    $referenti = Database::fetchAll(
+        'SELECT * FROM referenti_progetto WHERE cliente_id = ? ORDER BY cognome, nome',
+        [$req->params['id']]
+    );
+    Response::json($referenti);
+});
+
+// POST /api/clients/:id/referenti
+$router->post('/clients/:id/referenti', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $nome = trim($req->body['nome'] ?? '');
+    $cognome = trim($req->body['cognome'] ?? '');
+    $email = trim($req->body['email'] ?? '');
+    if (!$nome || !$email) Response::error('Campi obbligatori: nome, email', 400);
+
+    Database::execute(
+        'INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono, ruolo) VALUES (?, ?, ?, ?, ?, ?)',
+        [$req->params['id'], $nome, $cognome, $email, $req->body['telefono'] ?? null, $req->body['ruolo'] ?? null]
+    );
+    Response::created(Database::fetchOne('SELECT * FROM referenti_progetto WHERE id = ?', [Database::lastInsertId()]));
+});
+
+// PUT /api/clients/:id/referenti/:refId
+$router->put('/clients/:id/referenti/:refId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $ref = Database::fetchOne('SELECT * FROM referenti_progetto WHERE id = ? AND cliente_id = ?', [$req->params['refId'], $req->params['id']]);
+    if (!$ref) Response::error('Referente non trovato', 404);
+
+    Database::execute(
+        'UPDATE referenti_progetto SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email), telefono = ?, ruolo = ? WHERE id = ?',
+        [
+            $req->body['nome'] ?? null, $req->body['cognome'] ?? null, $req->body['email'] ?? null,
+            array_key_exists('telefono', $req->body) ? $req->body['telefono'] : $ref['telefono'],
+            array_key_exists('ruolo', $req->body) ? $req->body['ruolo'] : $ref['ruolo'],
+            $req->params['refId']
+        ]
+    );
+    Response::json(Database::fetchOne('SELECT * FROM referenti_progetto WHERE id = ?', [$req->params['refId']]));
+});
+
+// DELETE /api/clients/:id/referenti/:refId
+$router->delete('/clients/:id/referenti/:refId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $ref = Database::fetchOne('SELECT id FROM referenti_progetto WHERE id = ? AND cliente_id = ?', [$req->params['refId'], $req->params['id']]);
+    if (!$ref) Response::error('Referente non trovato', 404);
+    // Remove from project associations
+    Database::execute('DELETE FROM progetto_referenti WHERE referente_id = ?', [$req->params['refId']]);
+    Database::execute('DELETE FROM referenti_progetto WHERE id = ?', [$req->params['refId']]);
+    Response::success();
+});

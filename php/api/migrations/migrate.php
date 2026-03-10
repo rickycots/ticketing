@@ -26,7 +26,8 @@ try {
     if (isset($_GET['reset']) && $_GET['reset'] === '1') {
         echo "=== RESET: Dropping all tables ===\n";
         $db->exec('SET FOREIGN_KEY_CHECKS = 0');
-        $tables = ['comunicazioni_cliente', 'schede_cliente', 'documenti_repository', 'allegati_progetto',
+        $tables = ['progetto_referenti', 'referenti_progetto',
+            'comunicazioni_cliente', 'schede_cliente', 'documenti_repository', 'allegati_progetto',
             'notifiche', 'chat_lettura', 'messaggi_progetto', 'note_attivita', 'note_interne',
             'progetto_tecnici', 'email', 'ticket', 'attivita', 'progetti',
             'utenti_cliente', 'clienti', 'utenti', 'impostazioni'];
@@ -49,7 +50,11 @@ try {
     // Split by semicolon and execute each statement
     $statements = array_filter(
         array_map('trim', explode(';', $sql)),
-        fn($s) => $s !== '' && !str_starts_with($s, '--')
+        function($s) {
+            // Remove comment-only lines and check if there's actual SQL
+            $clean = trim(preg_replace('/--.*$/m', '', $s));
+            return $clean !== '';
+        }
     );
 
     $count = 0;

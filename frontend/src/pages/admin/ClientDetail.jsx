@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3, Users } from 'lucide-react'
 import { clients, schede as schedeApi, clientAuth } from '../../api/client'
 
 const API_BASE = '/api'
@@ -26,10 +26,17 @@ export default function ClientDetail() {
   const [savingKb, setSavingKb] = useState(false)
   const [expandedKb, setExpandedKb] = useState(null)
 
+  // Referenti state
+  const [referenti, setReferenti] = useState([])
+  const [showRefForm, setShowRefForm] = useState(false)
+  const [editingRef, setEditingRef] = useState(null)
+  const [refForm, setRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
+
   useEffect(() => {
     loadClient()
     loadUsers()
     loadKb()
+    loadReferenti()
   }, [id])
 
   function loadClient() {
@@ -60,6 +67,41 @@ export default function ClientDetail() {
 
   function loadKb() {
     schedeApi.list(id).then(setKbList).catch(console.error)
+  }
+
+  function loadReferenti() {
+    clients.getReferenti(id).then(setReferenti).catch(console.error)
+  }
+
+  function openRefForm(ref = null) {
+    if (ref) {
+      setEditingRef(ref)
+      setRefForm({ nome: ref.nome, cognome: ref.cognome || '', email: ref.email, telefono: ref.telefono || '', ruolo: ref.ruolo || '' })
+    } else {
+      setEditingRef(null)
+      setRefForm({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
+    }
+    setShowRefForm(true)
+  }
+
+  async function handleRefSubmit(e) {
+    e.preventDefault()
+    if (!refForm.nome.trim() || !refForm.email.trim()) return
+    try {
+      if (editingRef) {
+        await clients.updateReferente(id, editingRef.id, refForm)
+      } else {
+        await clients.createReferente(id, refForm)
+      }
+      setShowRefForm(false)
+      setEditingRef(null)
+      loadReferenti()
+    } catch (err) { alert(err.message) }
+  }
+
+  async function handleDeleteRef(refId) {
+    if (!confirm('Eliminare questo referente?')) return
+    try { await clients.deleteReferente(id, refId); loadReferenti() } catch (err) { console.error(err) }
   }
 
   function openKbForm(kb = null) {
@@ -458,6 +500,93 @@ export default function ClientDetail() {
                           <Pencil size={14} />
                         </button>
                         <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Referenti Progetti Section */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Users size={20} className="text-indigo-500" /> Anagrafica Referenti Progetti</h2>
+          <button onClick={() => openRefForm()} className="inline-flex items-center gap-1 bg-indigo-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-indigo-700 transition-colors cursor-pointer">
+            <Plus size={16} /> Nuovo Referente
+          </button>
+        </div>
+
+        {showRefForm && (
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <form onSubmit={handleRefSubmit} className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                  <input type="text" value={refForm.nome} onChange={e => setRefForm(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+                  <input type="text" value={refForm.cognome} onChange={e => setRefForm(f => ({ ...f, cognome: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" value={refForm.email} onChange={e => setRefForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                  <input type="text" value={refForm.telefono} onChange={e => setRefForm(f => ({ ...f, telefono: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo/Posizione</label>
+                  <input type="text" value={refForm.ruolo} onChange={e => setRefForm(f => ({ ...f, ruolo: e.target.value }))} placeholder="es. Project Manager, IT Manager..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+                  {editingRef ? 'Aggiorna' : 'Crea Referente'}
+                </button>
+                <button type="button" onClick={() => { setShowRefForm(false); setEditingRef(null) }} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
+                  Annulla
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {referenti.length === 0 && !showRefForm ? (
+          <div className="p-8 text-center text-gray-400 text-sm">Nessun referente progetto per questo cliente</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-100">
+                  <th className="px-4 py-3 font-medium">Nome</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Telefono</th>
+                  <th className="px-4 py-3 font-medium">Ruolo</th>
+                  <th className="px-4 py-3 font-medium">Azioni</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {referenti.map(r => (
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-900">{r.nome} {r.cognome}</td>
+                    <td className="px-4 py-3 text-gray-600">{r.email}</td>
+                    <td className="px-4 py-3 text-gray-600">{r.telefono || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600">{r.ruolo || '-'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openRefForm(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer">
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => handleDeleteRef(r.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
                           <Trash2 size={14} />
                         </button>
                       </div>
