@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { auth } from '../api/client'
 
 export default function Login() {
@@ -85,9 +85,9 @@ export default function Login() {
         </div>
 
         <p className="text-center mt-4">
-          <a href="/client/login" className="text-sm text-blue-600 hover:underline">
+          <Link to="/client/login" className="text-sm text-blue-600 hover:underline">
             Accedi al Portale Cliente
-          </a>
+          </Link>
         </p>
       </div>
     </div>

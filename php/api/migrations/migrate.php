@@ -22,6 +22,22 @@ header('Content-Type: text/plain; charset=utf-8');
 try {
     $db = Database::get();
 
+    // Drop all tables if ?reset=1 is passed
+    if (isset($_GET['reset']) && $_GET['reset'] === '1') {
+        echo "=== RESET: Dropping all tables ===\n";
+        $db->exec('SET FOREIGN_KEY_CHECKS = 0');
+        $tables = ['comunicazioni_cliente', 'schede_cliente', 'documenti_repository', 'allegati_progetto',
+            'notifiche', 'chat_lettura', 'messaggi_progetto', 'note_attivita', 'note_interne',
+            'progetto_tecnici', 'email', 'ticket', 'attivita', 'progetti',
+            'utenti_cliente', 'clienti', 'utenti', 'impostazioni'];
+        foreach ($tables as $t) {
+            $db->exec("DROP TABLE IF EXISTS {$t}");
+            echo "Dropped: {$t}\n";
+        }
+        $db->exec('SET FOREIGN_KEY_CHECKS = 1');
+        echo "\n";
+    }
+
     // Read and execute schema SQL
     $schemaFile = __DIR__ . '/001_schema.sql';
     if (!file_exists($schemaFile)) {

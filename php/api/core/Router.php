@@ -125,11 +125,23 @@ class Router {
      */
     private function getHeaders(): array {
         $headers = [];
+        // Try apache_request_headers() first (most reliable)
+        if (function_exists('apache_request_headers')) {
+            foreach (apache_request_headers() as $key => $value) {
+                $headers[strtolower($key)] = $value;
+            }
+            return $headers;
+        }
+        // Fallback to $_SERVER
         foreach ($_SERVER as $key => $value) {
             if (strpos($key, 'HTTP_') === 0) {
                 $header = strtolower(str_replace('_', '-', substr($key, 5)));
                 $headers[$header] = $value;
             }
+        }
+        // CGI/FastCGI: Authorization header from .htaccess rewrite
+        if (!isset($headers['authorization']) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $headers['authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
         return $headers;
     }

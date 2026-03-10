@@ -1,5 +1,5 @@
 -- Schema Ticketing & Project Management MVP — MySQL version
--- Converted from SQLite schema
+-- Compatible with MySQL 5.6+ (no JSON type, VARCHAR UNIQUE max 191 for utf8mb4)
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -7,7 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 CREATE TABLE IF NOT EXISTS utenti (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(191) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   ruolo ENUM('admin', 'tecnico') NOT NULL,
   attivo TINYINT(1) NOT NULL DEFAULT 1,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS clienti (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome_azienda VARCHAR(255) NOT NULL,
   referente VARCHAR(255),
-  email VARCHAR(255) NOT NULL,
+  email VARCHAR(191) NOT NULL,
   telefono VARCHAR(50),
   indirizzo VARCHAR(255),
   citta VARCHAR(100),
@@ -28,6 +28,27 @@ CREATE TABLE IF NOT EXISTS clienti (
   portale_slug VARCHAR(100) UNIQUE,
   sla_reazione ENUM('1g', '3g', 'nb') NOT NULL DEFAULT 'nb',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS email (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tipo ENUM('ticket', 'email_cliente', 'altro') NOT NULL DEFAULT 'altro',
+  mittente VARCHAR(255) NOT NULL,
+  destinatario VARCHAR(255) NOT NULL,
+  oggetto VARCHAR(500) NOT NULL,
+  corpo TEXT,
+  allegati TEXT DEFAULT NULL,
+  cliente_id INT,
+  ticket_id INT,
+  progetto_id INT,
+  attivita_id INT,
+  is_bloccante TINYINT(1) NOT NULL DEFAULT 0,
+  rilevanza ENUM('rilevante', 'di_contesto', 'bloccante') DEFAULT NULL,
+  thread_id VARCHAR(255),
+  message_id VARCHAR(191) UNIQUE,
+  data_ricezione DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  letta TINYINT(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (cliente_id) REFERENCES clienti(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS progetti (
@@ -44,28 +65,6 @@ CREATE TABLE IF NOT EXISTS progetti (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clienti(id),
   FOREIGN KEY (email_bloccante_id) REFERENCES email(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS email (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  tipo ENUM('ticket', 'email_cliente', 'altro') NOT NULL DEFAULT 'altro',
-  mittente VARCHAR(255) NOT NULL,
-  destinatario VARCHAR(255) NOT NULL,
-  oggetto VARCHAR(500) NOT NULL,
-  corpo TEXT,
-  allegati JSON DEFAULT NULL,
-  cliente_id INT,
-  ticket_id INT,
-  progetto_id INT,
-  attivita_id INT,
-  is_bloccante TINYINT(1) NOT NULL DEFAULT 0,
-  rilevanza ENUM('rilevante', 'di_contesto', 'bloccante') DEFAULT NULL,
-  thread_id VARCHAR(255),
-  message_id VARCHAR(500) UNIQUE,
-  data_ricezione DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  letta TINYINT(1) NOT NULL DEFAULT 0,
-  FOREIGN KEY (cliente_id) REFERENCES clienti(id),
-  FOREIGN KEY (progetto_id) REFERENCES progetti(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ticket (
@@ -176,7 +175,7 @@ CREATE TABLE IF NOT EXISTS utenti_cliente (
   id INT AUTO_INCREMENT PRIMARY KEY,
   cliente_id INT NOT NULL,
   nome VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(191) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   ruolo ENUM('admin', 'user') NOT NULL DEFAULT 'user',
   schede_visibili VARCHAR(100) NOT NULL DEFAULT 'ticket,progetti,ai',
@@ -192,7 +191,7 @@ CREATE TABLE IF NOT EXISTS comunicazioni_cliente (
   oggetto VARCHAR(500) NOT NULL,
   corpo TEXT,
   mittente VARCHAR(255),
-  message_id VARCHAR(500) UNIQUE,
+  message_id VARCHAR(191) UNIQUE,
   data_ricezione DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clienti(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

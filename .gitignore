@@ -41,6 +41,14 @@ npm-debug.log*
 # Claude
 .claude/
 
+# Deploy credentials
+deploy/
+
+# PHP vendor
+php/api/vendor/
+php/api/config.env
+php/api/composer.phar
+
 # Personal files
 TODO personale.txt
 msg avvio nuova chat.txt

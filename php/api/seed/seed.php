@@ -5,6 +5,9 @@
  * WARNING: This TRUNCATES all tables and reinserts demo data!
  */
 
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 // Load config
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/Database.php';
@@ -27,7 +30,7 @@ function out(string $msg): void {
 
 out("=== Seeding database ===\n");
 
-$pdo = Database::getConnection();
+$pdo = Database::get();
 
 // Disable FK checks for truncation
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');

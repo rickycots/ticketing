@@ -53,7 +53,7 @@ define('MAIL_IMAP_HOST', $_ENV['MAIL_IMAP_HOST'] ?? 'imaps.aruba.it');
 define('MAIL_IMAP_PORT', (int)($_ENV['MAIL_IMAP_PORT'] ?? 993));
 
 // Base path for deployment
-define('BASE_PATH', $_ENV['BASE_PATH'] ?? '/cloud/ticketing');
+define('BASE_PATH', $_ENV['BASE_PATH'] ?? '/ticketing');
 define('API_BASE', BASE_PATH . '/api');
 
 // Upload directories

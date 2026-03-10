@@ -1,5 +1,5 @@
 RewriteEngine On
-RewriteBase /cloud/ticketing/
+RewriteBase /ticketing/
 
 # Direct access to existing files (uploads, static assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f

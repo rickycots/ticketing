@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Pass Authorization header to PHP (required for CGI/FastCGI)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Allow direct access to existing files (uploads, etc.)
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
