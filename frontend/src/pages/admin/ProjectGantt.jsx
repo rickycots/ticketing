@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2, Users } from 'lucide-react'
 import { projects, activities, users as usersApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
@@ -36,6 +36,7 @@ export default function ProjectGantt() {
   const [allegati, setAllegati] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
+  const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -116,6 +117,14 @@ export default function ProjectGantt() {
   const computedStatus = computeProjectStatus(project.attivita)
   const statusCfg = projectStatusConfig[computedStatus]
 
+  async function handleDeleteProject() {
+    if (!confirm('Sei sicuro di voler eliminare questo progetto e tutte le sue attività? Questa azione è irreversibile.')) return
+    try {
+      await projects.delete(id)
+      navigate('/admin/timeline')
+    } catch (err) { alert(err.message) }
+  }
+
   return (
     <div>
       {/* Navigation */}
@@ -156,6 +165,15 @@ export default function ProjectGantt() {
               <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
               {statusCfg.label}
             </span>
+            {isAdmin && (
+              <button
+                onClick={handleDeleteProject}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                title="Elimina progetto"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => setShowNewActivity(true)}

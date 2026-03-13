@@ -17,6 +17,8 @@ const statoBarColors = {
 
 const STATO_FILTER_OPTIONS = [
   { label: 'Aperti', value: 'aperti' },
+  { label: 'Chiusi', value: 'chiusi' },
+  { label: 'Senza Attività', value: 'senza_attivita' },
   { label: 'Tutti', value: 'tutti' },
 ]
 
@@ -93,7 +95,10 @@ export default function TimelineList() {
     if (statoFilter === 'tutti') return list
     return list.filter(p => {
       const sc = p.stato_calcolato || 'attivo'
-      return sc === 'attivo' || sc === 'bloccato'
+      if (statoFilter === 'aperti') return sc === 'attivo' || sc === 'bloccato'
+      if (statoFilter === 'chiusi') return sc === 'chiuso'
+      if (statoFilter === 'senza_attivita') return sc === 'senza_attivita'
+      return true
     })
   }, [list, statoFilter])
 

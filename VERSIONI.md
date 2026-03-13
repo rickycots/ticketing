@@ -1,12 +1,13 @@
 # Storico Versioni
 
-## V1.9-0314 — 14 Marzo 2026
+## V2.0-0314 — 14 Marzo 2026
 - Stato progetto calcolato automaticamente: Chiuso (tutte attività completate), Attivo, Bloccato (attività bloccata), Senza attività
-- Eliminazione progetto con conferma (cestino in alto a destra, cancella progetto + attività + allegati)
+- Eliminazione progetto con conferma (cestino in ProjectDetail e ProjectGantt)
 - Colonna 2F nella tabella utenti portale (admin e client) con SI/NO
 - Checkbox "Cambio password al primo avvio" disabilitato dopo primo cambio, riabilitato solo se admin cambia password
-- Timeline: filtro Aperti/Tutti, legenda pallini colorati per stato progetto
+- Timeline: filtri Aperti/Chiusi/Senza Attività/Tutti, legenda pallini colorati
 - Colori timeline aggiornati: blu=attivo, verde=chiuso, rosso=bloccato, grigio=senza attività
+- Fix cache CDN Aruba: index.html rinominato in _app.html, servito via index.php con header no-cache
 
 ## V1.8-0313 — 13 Marzo 2026
 - Cambio password al primo avvio: modale con nuova password + conferma + toggle visibilità
