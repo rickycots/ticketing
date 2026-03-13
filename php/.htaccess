@@ -1,6 +1,18 @@
 RewriteEngine On
 RewriteBase /ticketing/
 
+# Disable caching for index.html (SPA entry point)
+<Files "index.html">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires "0"
+</Files>
+
+# Disable caching for API responses
+<If "%{REQUEST_URI} =~ m#^/ticketing/api/#">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</If>
+
 # Direct access to existing files (uploads, static assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
