@@ -1,13 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X } from 'lucide-react'
 import { projects, activities, users } from '../../api/client'
 
-const statoColors = {
-  attivo: 'bg-green-100 text-green-800',
-  in_pausa: 'bg-yellow-100 text-yellow-800',
-  completato: 'bg-blue-100 text-blue-800',
-  annullato: 'bg-gray-100 text-gray-600',
+const projectStatusConfig = {
+  chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
+  attivo: { label: 'Attivo', classes: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' },
+  bloccato: { label: 'Bloccato', classes: 'bg-red-100 text-red-800', dot: 'bg-red-500' },
+  senza_attivita: { label: 'Senza attività', classes: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
+}
+
+function computeProjectStatus(attivita) {
+  if (!attivita || attivita.length === 0) return 'senza_attivita'
+  if (attivita.every(a => a.stato === 'completata')) return 'chiuso'
+  if (attivita.some(a => a.stato === 'bloccata')) return 'bloccato'
+  return 'attivo'
 }
 
 const actStatoColors = {
@@ -48,6 +55,7 @@ export default function ProjectDetail() {
   const [actFilter, setActFilter] = useState('attive')
   const [emailFilter, setEmailFilter] = useState('tutte')
   const chatEndRef = useRef(null)
+  const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -186,6 +194,16 @@ export default function ProjectDetail() {
 
   const attAperte = project.attivita.filter(a => a.stato !== 'completata').length
   const attCompletate = project.attivita.filter(a => a.stato === 'completata').length
+  const computedStatus = computeProjectStatus(project.attivita)
+  const statusCfg = projectStatusConfig[computedStatus]
+
+  async function handleDeleteProject() {
+    if (!confirm('Sei sicuro di voler eliminare questo progetto e tutte le sue attività? Questa azione è irreversibile.')) return
+    try {
+      await projects.delete(id)
+      navigate('/admin/timeline')
+    } catch (err) { alert(err.message) }
+  }
   const emailsProgetto = (project.emails || []).filter(e => !e.attivita_id)
   const emailsAttivita = (project.emails || []).filter(e => e.attivita_id)
 
@@ -237,9 +255,21 @@ export default function ProjectDetail() {
               <div>
                 <h1 className="text-2xl font-bold">{project.nome}</h1>
               </div>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[project.stato]}`}>
-                {project.stato.replace('_', ' ')}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>
+                  <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+                  {statusCfg.label}
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={handleDeleteProject}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Elimina progetto"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Progress */}

@@ -4,11 +4,18 @@ import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronR
 import { projects, activities, users as usersApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 
-const statoColors = {
-  attivo: 'bg-green-100 text-green-800',
-  in_pausa: 'bg-yellow-100 text-yellow-800',
-  completato: 'bg-blue-100 text-blue-800',
-  annullato: 'bg-gray-100 text-gray-600',
+const projectStatusConfig = {
+  chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
+  attivo: { label: 'Attivo', classes: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' },
+  bloccato: { label: 'Bloccato', classes: 'bg-red-100 text-red-800', dot: 'bg-red-500' },
+  senza_attivita: { label: 'Senza attività', classes: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
+}
+
+function computeProjectStatus(attivita) {
+  if (!attivita || attivita.length === 0) return 'senza_attivita'
+  if (attivita.every(a => a.stato === 'completata')) return 'chiuso'
+  if (attivita.some(a => a.stato === 'bloccata')) return 'bloccato'
+  return 'attivo'
 }
 
 const selectCls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -106,6 +113,8 @@ export default function ProjectGantt() {
   if (!project) return <div className="text-center text-gray-400 py-12">Progetto non trovato</div>
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
+  const computedStatus = computeProjectStatus(project.attivita)
+  const statusCfg = projectStatusConfig[computedStatus]
 
   return (
     <div>
@@ -143,8 +152,9 @@ export default function ProjectGantt() {
             <p className="text-sm text-gray-500 mt-0.5">{project.cliente_nome}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[project.stato]}`}>
-              {project.stato.replace('_', ' ')}
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>
+              <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+              {statusCfg.label}
             </span>
             {isAdmin && (
               <button

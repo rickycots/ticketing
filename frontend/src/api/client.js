@@ -112,6 +112,7 @@ export const projects = {
   get: (id) => request(`/projects/${id}`),
   create: (data) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
   sendChat: (id, testo) =>
     request(`/projects/${id}/chat`, { method: 'POST', body: JSON.stringify({ testo }) }),
   chatUnread: () => request('/projects/chat-unread'),

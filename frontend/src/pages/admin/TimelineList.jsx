@@ -10,10 +10,15 @@ const LEFT_WIDTH = 250
 
 const statoBarColors = {
   attivo: { bg: '#bfdbfe', fill: '#3b82f6' },
-  in_pausa: { bg: '#fef08a', fill: '#eab308' },
-  completato: { bg: '#bbf7d0', fill: '#22c55e' },
-  annullato: { bg: '#d1d5db', fill: '#9ca3af' },
+  bloccato: { bg: '#fecaca', fill: '#ef4444' },
+  chiuso: { bg: '#bbf7d0', fill: '#22c55e' },
+  senza_attivita: { bg: '#d1d5db', fill: '#9ca3af' },
 }
+
+const STATO_FILTER_OPTIONS = [
+  { label: 'Aperti', value: 'aperti' },
+  { label: 'Tutti', value: 'tutti' },
+]
 
 const RANGE_OPTIONS = [
   { label: '3 mesi', months: 3 },
@@ -36,6 +41,7 @@ export default function TimelineList() {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [rangeMonths, setRangeMonths] = useState(6)
+  const [statoFilter, setStatoFilter] = useState('aperti')
   const [tooltip, setTooltip] = useState(null)
   const [clientList, setClientList] = useState([])
   const [filterCliente, setFilterCliente] = useState('')
@@ -83,12 +89,20 @@ export default function TimelineList() {
     }
   }, [newProject.cliente_id])
 
+  const filteredList = useMemo(() => {
+    if (statoFilter === 'tutti') return list
+    return list.filter(p => {
+      const sc = p.stato_calcolato || 'attivo'
+      return sc === 'attivo' || sc === 'bloccato'
+    })
+  }, [list, statoFilter])
+
   const { timelineStart, months, bars, totalDays } = useMemo(() => {
-    if (!list || list.length === 0) {
+    if (!filteredList || filteredList.length === 0) {
       return { timelineStart: new Date(), months: [], bars: [], totalDays: 30 }
     }
 
-    const barsRaw = list.map(p => {
+    const barsRaw = filteredList.map(p => {
       const start = parseDate(p.data_inizio) || parseDate(p.created_at) || new Date()
       const end = parseDate(p.data_scadenza) || addDays(start, 30)
       const actualEnd = end > start ? end : addDays(start, 30)
@@ -112,7 +126,7 @@ export default function TimelineList() {
     }
 
     return { timelineStart: tStart, months: monthList, bars: barsRaw, totalDays: tDays }
-  }, [list, rangeMonths])
+  }, [filteredList, rangeMonths])
 
   // Group by client when no filter is active
   const SEP_HEIGHT = ROW_HEIGHT / 2
@@ -206,26 +220,64 @@ export default function TimelineList() {
         ) : null
       })()}
 
-      {list.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-12">Nessun progetto</p>
+      {filteredList.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-12">{list.length === 0 ? 'Nessun progetto' : 'Nessun progetto con i filtri selezionati'}</p>
       ) : (
         <div className="relative border border-gray-200 rounded-xl overflow-hidden bg-white" ref={containerRef}>
-          {/* Range filter */}
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-gray-50">
-            <span className="text-xs font-medium text-gray-500">Periodo:</span>
-            {RANGE_OPTIONS.map(opt => (
-              <button
-                key={opt.months}
-                onClick={() => setRangeMonths(opt.months)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                  rangeMonths === opt.months
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          {/* Filters row */}
+          <div className="flex items-center gap-4 px-4 py-2 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Periodo:</span>
+              {RANGE_OPTIONS.map(opt => (
+                <button
+                  key={opt.months}
+                  onClick={() => setRangeMonths(opt.months)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                    rangeMonths === opt.months
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-4 bg-gray-300" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Stato:</span>
+              {STATO_FILTER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatoFilter(opt.value)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                    statoFilter === opt.value
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Legend row */}
+          <div className="flex items-center gap-4 px-4 py-1.5 border-b border-gray-200 bg-gray-50/50">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              <span className="text-xs text-gray-500">Progetto chiuso</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span className="text-xs text-gray-500">Progetto attivo</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <span className="text-xs text-gray-500">Progetto bloccato</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+              <span className="text-xs text-gray-500">Senza attività</span>
+            </div>
           </div>
 
           <div className="flex">
@@ -248,7 +300,7 @@ export default function TimelineList() {
                   )
                 }
                 const bar = row.bar
-                const colors = statoBarColors[bar.stato] || statoBarColors.attivo
+                const colors = statoBarColors[bar.stato_calcolato] || statoBarColors.attivo
                 return (
                   <div
                     key={bar.id}
@@ -307,7 +359,7 @@ export default function TimelineList() {
                     const w = Math.max(daysBetween(bar.barStart, bar.barEnd) * DAY_WIDTH, DAY_WIDTH)
                     const y = row.y + 8
                     const h = ROW_HEIGHT - 16
-                    const colors = statoBarColors[bar.stato] || statoBarColors.attivo
+                    const colors = statoBarColors[bar.stato_calcolato] || statoBarColors.attivo
                     const fillW = w * (bar.avanzamento / 100)
 
                     return (
@@ -354,7 +406,7 @@ export default function TimelineList() {
             >
               <p className="font-semibold mb-1">{tooltip.bar.nome}</p>
               <p>Cliente: {tooltip.bar.cliente_nome}</p>
-              <p>Stato: {tooltip.bar.stato.replace('_', ' ')}</p>
+              <p>Stato: {({chiuso:'Chiuso',attivo:'Attivo',bloccato:'Bloccato',senza_attivita:'Senza attività'})[tooltip.bar.stato_calcolato] || tooltip.bar.stato_calcolato}</p>
               <p>Inizio: {formatDateShort(tooltip.bar.barStart)}</p>
               <p>Fine: {formatDateShort(tooltip.bar.barEnd)}</p>
               <p>Avanzamento: {tooltip.bar.avanzamento}%</p>

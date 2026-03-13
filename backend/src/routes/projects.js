@@ -90,16 +90,25 @@ router.get('/', authenticateToken, (req, res) => {
 
   const data = projects.map(p => {
     const activities = db.prepare(
-      'SELECT avanzamento FROM attivita WHERE progetto_id = ?'
+      'SELECT avanzamento, stato FROM attivita WHERE progetto_id = ?'
     ).all(p.id);
 
     const avanzamento = activities.length > 0
       ? Math.round(activities.reduce((sum, a) => sum + a.avanzamento, 0) / activities.length)
       : 0;
 
+    // Computed project status based on activities
+    let stato_calcolato = 'senza_attivita'
+    if (activities.length > 0) {
+      if (activities.every(a => a.stato === 'completata')) stato_calcolato = 'chiuso'
+      else if (activities.some(a => a.stato === 'bloccata')) stato_calcolato = 'bloccato'
+      else stato_calcolato = 'attivo'
+    }
+
     return {
       ...p,
       avanzamento,
+      stato_calcolato,
       num_attivita: activities.length,
       tecnici: getProjectTecnici(p.id),
       chat_non_lette: chatNonLette(p.id, req.user.id),
@@ -476,6 +485,30 @@ router.delete('/:id/allegati/:allegatoId', authenticateToken, requireAdmin, (req
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
   db.prepare('DELETE FROM allegati_progetto WHERE id = ?').run(req.params.allegatoId);
+  res.json({ success: true });
+});
+
+// DELETE /api/projects/:id — delete project and all related data (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+  const projectId = req.params.id;
+  const project = db.prepare('SELECT id FROM progetti WHERE id = ?').get(projectId);
+  if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
+
+  // Delete all related data
+  const allegatiFiles = db.prepare('SELECT nome_file FROM allegati_progetto WHERE progetto_id = ?').all(projectId);
+  for (const a of allegatiFiles) {
+    const filePath = path.join(uploadDir, a.nome_file);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  }
+  db.prepare('DELETE FROM allegati_progetto WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM note_attivita WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?)').run(projectId);
+  db.prepare('DELETE FROM attivita WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM progetto_tecnici WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM progetto_referenti WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM messaggi_progetto WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM chat_lettura WHERE progetto_id = ?').run(projectId);
+  db.prepare('DELETE FROM progetti WHERE id = ?').run(projectId);
+
   res.json({ success: true });
 });
 

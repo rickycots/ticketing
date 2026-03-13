@@ -96,7 +96,7 @@ export default function UserManagement() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password {editingUser ? t('passwordUnchanged') : '*'}</label>
-                <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required={!editingUser} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value, ...(editingUser && e.target.value ? { cambio_password: 1 } : {}) }))} required={!editingUser} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
             </div>
             <div className="flex gap-6 items-start">
@@ -130,8 +130,8 @@ export default function UserManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('securityOptions') || 'Opzioni Sicurezza'}</label>
                 <div className="flex flex-col gap-2">
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={!!form.cambio_password} onChange={() => setForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} className="rounded border-gray-300" />
+                  <label className={`inline-flex items-center gap-2 text-sm ${editingUser && !form.cambio_password && !form.password ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input type="checkbox" checked={!!form.cambio_password} onChange={() => setForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} disabled={editingUser && !form.cambio_password && !form.password} className="rounded border-gray-300" />
                     {t('forcePasswordChange') || 'Consenti cambio password al primo avvio'}
                   </label>
                   <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
@@ -168,6 +168,7 @@ export default function UserManagement() {
                 <th className="px-4 py-3 font-medium">{t('role')}</th>
                 <th className="px-4 py-3 font-medium">{t('sections')}</th>
                 <th className="px-4 py-3 font-medium">{t('language')}</th>
+                <th className="px-4 py-3 font-medium">2F</th>
                 <th className="px-4 py-3 font-medium">{t('active')}</th>
                 <th className="px-4 py-3 font-medium">{t('actions')}</th>
               </tr>
@@ -203,6 +204,9 @@ export default function UserManagement() {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
                       {u.lingua === 'en' ? '🇬🇧 EN' : u.lingua === 'fr' ? '🇫🇷 FR' : '🇮🇹 IT'}
+                    </td>
+                    <td className="px-4 py-3 text-xs font-medium">
+                      <span className={!!u.two_factor ? 'text-green-600' : 'text-gray-400'}>{!!u.two_factor ? 'SI' : 'NO'}</span>
                     </td>
                     <td className="px-4 py-3">
                       {!isAdmin && !isMe ? (

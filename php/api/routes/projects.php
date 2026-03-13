@@ -76,7 +76,7 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
     $result = [];
     foreach ($projects as $p) {
         $activities = Database::fetchAll(
-            'SELECT avanzamento FROM attivita WHERE progetto_id = ?',
+            'SELECT avanzamento, stato FROM attivita WHERE progetto_id = ?',
             [$p['id']]
         );
 
@@ -88,6 +88,20 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
             $avanzamento = round($sum / count($activities));
         }
 
+        // Computed project status based on activities
+        $stato_calcolato = 'senza_attivita';
+        if (count($activities) > 0) {
+            $allCompleted = true;
+            $anyBlocked = false;
+            foreach ($activities as $a) {
+                if ($a['stato'] !== 'completata') $allCompleted = false;
+                if ($a['stato'] === 'bloccata') $anyBlocked = true;
+            }
+            if ($allCompleted) $stato_calcolato = 'chiuso';
+            elseif ($anyBlocked) $stato_calcolato = 'bloccato';
+            else $stato_calcolato = 'attivo';
+        }
+
         $emailBloccante = null;
         if ($p['blocco'] === 'lato_cliente' && $p['email_bloccante_id']) {
             $emailBloccante = Database::fetchOne(
@@ -97,6 +111,7 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
         }
 
         $p['avanzamento'] = $avanzamento;
+        $p['stato_calcolato'] = $stato_calcolato;
         $p['email_bloccante_oggetto'] = $emailBloccante ? $emailBloccante['oggetto'] : null;
         $p['email_bloccante_corpo'] = $emailBloccante ? $emailBloccante['corpo'] : null;
         $p['email_bloccante_data'] = $emailBloccante ? $emailBloccante['data_ricezione'] : null;
@@ -269,7 +284,7 @@ $router->get('/projects', [Auth::class, 'authenticateToken'], function($req) {
     $data = [];
     foreach ($projects as $p) {
         $activities = Database::fetchAll(
-            'SELECT avanzamento FROM attivita WHERE progetto_id = ?',
+            'SELECT avanzamento, stato FROM attivita WHERE progetto_id = ?',
             [$p['id']]
         );
 
@@ -281,7 +296,21 @@ $router->get('/projects', [Auth::class, 'authenticateToken'], function($req) {
             $avanzamento = round($sum / count($activities));
         }
 
+        $stato_calcolato = 'senza_attivita';
+        if (count($activities) > 0) {
+            $allCompleted = true;
+            $anyBlocked = false;
+            foreach ($activities as $a) {
+                if ($a['stato'] !== 'completata') $allCompleted = false;
+                if ($a['stato'] === 'bloccata') $anyBlocked = true;
+            }
+            if ($allCompleted) $stato_calcolato = 'chiuso';
+            elseif ($anyBlocked) $stato_calcolato = 'bloccato';
+            else $stato_calcolato = 'attivo';
+        }
+
         $p['avanzamento'] = $avanzamento;
+        $p['stato_calcolato'] = $stato_calcolato;
         $p['num_attivita'] = count($activities);
         $p['tecnici'] = getProjectTecnici($p['id']);
         $p['referenti'] = getProjectReferenti($p['id']);
@@ -623,6 +652,29 @@ $router->delete('/projects/:id/allegati/:allegatoId', [Auth::class, 'authenticat
     Upload::deleteFile(UPLOAD_DIR . '/progetti', $allegato['nome_file']);
 
     Database::execute('DELETE FROM allegati_progetto WHERE id = ?', [$req->params['allegatoId']]);
+    Response::success();
+});
+
+// DELETE /api/projects/:id — delete project and all related data (admin only)
+$router->delete('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $projectId = $req->params['id'];
+    $project = Database::fetchOne('SELECT id FROM progetti WHERE id = ?', [$projectId]);
+    if (!$project) Response::error('Progetto non trovato', 404);
+
+    // Delete attachment files
+    $allegati = Database::fetchAll('SELECT nome_file FROM allegati_progetto WHERE progetto_id = ?', [$projectId]);
+    foreach ($allegati as $a) {
+        Upload::deleteFile(UPLOAD_DIR . '/progetti', $a['nome_file']);
+    }
+    Database::execute('DELETE FROM allegati_progetto WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM note_attivita WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?)', [$projectId]);
+    Database::execute('DELETE FROM attivita WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM progetto_tecnici WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM messaggi_progetto WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM chat_lettura WHERE progetto_id = ?', [$projectId]);
+    Database::execute('DELETE FROM progetti WHERE id = ?', [$projectId]);
+
     Response::success();
 });
 
