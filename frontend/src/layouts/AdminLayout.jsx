@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
 import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
+import { APP_VERSION } from '../version'
 
 const allNavItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -124,6 +125,7 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
         <div className="p-4 border-b border-gray-700">
+          <p className="text-[10px] text-gray-500 mb-1">{APP_VERSION}</p>
           <h1 className="text-lg font-bold">Ticketing</h1>
           <p className="text-xs text-gray-400">Pannello Gestione</p>
         </div>

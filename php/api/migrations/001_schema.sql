@@ -181,6 +181,11 @@ CREATE TABLE IF NOT EXISTS utenti_cliente (
   schede_visibili VARCHAR(100) NOT NULL DEFAULT 'ticket,progetti,ai',
   lingua ENUM('it', 'en', 'fr') NOT NULL DEFAULT 'it',
   attivo TINYINT(1) NOT NULL DEFAULT 1,
+  cambio_password TINYINT(1) NOT NULL DEFAULT 1,
+  two_factor TINYINT(1) NOT NULL DEFAULT 0,
+  two_factor_code VARCHAR(6) DEFAULT NULL,
+  two_factor_expires DATETIME DEFAULT NULL,
+  two_factor_attempts INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (cliente_id) REFERENCES clienti(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

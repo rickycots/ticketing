@@ -339,6 +339,20 @@ export const clientAuth = {
   comunicazioni: () => clientRequest('/client-auth/comunicazioni'),
   comunicazioniReadAll: () => clientRequest('/client-auth/comunicazioni/read-all', { method: 'PUT' }),
   comunicazioneRead: (id) => clientRequest(`/client-auth/comunicazioni/${id}/read`, { method: 'PUT' }),
+  changePassword: (newPassword) =>
+    clientRequest('/client-auth/change-password', { method: 'POST', body: JSON.stringify({ newPassword }) }),
+  verify2fa: (temp_token, code) => {
+    const base = import.meta.env.VITE_API_BASE || '/api';
+    return fetch(`${base}/client-auth/verify-2fa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ temp_token, code }),
+    }).then(async r => {
+      const data = await r.json();
+      if (!r.ok) throw { message: data.error, locked: data.locked, remaining: data.remaining };
+      return data;
+    });
+  },
 };
 
 // Client Portal Tickets (authed)

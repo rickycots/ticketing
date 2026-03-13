@@ -132,7 +132,7 @@ $router->delete('/clients/:id/logo', [Auth::class, 'authenticateToken'], [Auth::
 // GET /api/clients/:id/users
 $router->get('/clients/:id/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     Response::json(Database::fetchAll(
-        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome',
+        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at FROM utenti_cliente WHERE cliente_id = ? ORDER BY nome',
         [$req->params['id']]
     ));
 });
@@ -152,12 +152,15 @@ $router->post('/clients/:id/users', [Auth::class, 'authenticateToken'], [Auth::c
     $visibili = $ruolo === 'admin' ? 'ticket,progetti,ai' : ($req->body['schede_visibili'] ?? 'ticket,progetti,ai');
     $lingua = in_array($req->body['lingua'] ?? '', ['it', 'en', 'fr']) ? $req->body['lingua'] : 'it';
 
+    $cambio_password = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 1;
+    $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : 0;
+
     Database::execute(
-        'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [$req->params['id'], $nome, $email, password_hash($password, PASSWORD_BCRYPT), $ruolo, $visibili, $lingua]
+        'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$req->params['id'], $nome, $email, password_hash($password, PASSWORD_BCRYPT), $ruolo, $visibili, $lingua, $cambio_password, $two_factor]
     );
     Response::created(Database::fetchOne(
-        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE id = ?',
+        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at FROM utenti_cliente WHERE id = ?',
         [Database::lastInsertId()]
     ));
 });
@@ -180,14 +183,16 @@ $router->put('/clients/:id/users/:userId', [Auth::class, 'authenticateToken'], [
     $newVisibili = $newRuolo === 'admin' ? 'ticket,progetti,ai' : ($req->body['schede_visibili'] ?? $user['schede_visibili']);
     $newLingua = isset($req->body['lingua']) && in_array($req->body['lingua'], ['it', 'en', 'fr']) ? $req->body['lingua'] : $user['lingua'];
     $attivo = $req->body['attivo'] ?? null;
+    $cambio_password = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : null;
+    $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : null;
 
     Database::execute(
-        'UPDATE utenti_cliente SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, ruolo = ?, schede_visibili = ?, lingua = ?, attivo = COALESCE(?, attivo) WHERE id = ?',
-        [$req->body['nome'] ?? null, $email, $newHash, $newRuolo, $newVisibili, $newLingua, $attivo, $userId]
+        'UPDATE utenti_cliente SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, ruolo = ?, schede_visibili = ?, lingua = ?, attivo = COALESCE(?, attivo), cambio_password = COALESCE(?, cambio_password), two_factor = COALESCE(?, two_factor) WHERE id = ?',
+        [$req->body['nome'] ?? null, $email, $newHash, $newRuolo, $newVisibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
     );
 
     Response::json(Database::fetchOne(
-        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at FROM utenti_cliente WHERE id = ?',
+        'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at FROM utenti_cliente WHERE id = ?',
         [$userId]
     ));
 });

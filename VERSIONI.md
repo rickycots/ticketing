@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V1.8-0313 — 13 Marzo 2026
+- Cambio password al primo avvio: modale con nuova password + conferma + toggle visibilità
+- Autenticazione a 2 fattori via email: codice 6 cifre via noreply, 3 tentativi max, scadenza 10 min
+- Opzioni sicurezza (cambio psw + 2FA) nel form utenti admin e client
+- Versione app nel sidebar admin
+- Nota sotto email referente commerciale in creazione/modifica cliente
+- Nuove colonne DB: cambio_password, two_factor, two_factor_code, two_factor_expires, two_factor_attempts
+- Traduzioni i18n IT/EN/FR per 2FA e cambio password
+
 ## V1.7-0313 — 13 Marzo 2026
 - Aggiunto script `npm run reset` per reset DB finale (solo utente admin)
 - Aggiornate regole Git in CLAUDE.md con procedura versioning dettagliata

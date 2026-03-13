@@ -15,7 +15,7 @@ export default function ClientDetail() {
   const [users, setUsers] = useState([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
+  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
   const fileRef = useRef()
 
   // Knowledge Base state
@@ -167,10 +167,10 @@ export default function ClientDetail() {
   function openUserForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it' })
+      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: user.cambio_password ?? 1, two_factor: user.two_factor ?? 0 })
     } else {
       setEditingUser(null)
-      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
+      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
     }
     setShowUserForm(true)
   }
@@ -298,6 +298,7 @@ export default function ClientDetail() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email Referente Commerciale *</label>
                   <input type="email" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                  <p className="text-xs text-gray-400 mt-1">*questa mail non è un account di accesso al sistema</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
@@ -407,25 +408,40 @@ export default function ClientDetail() {
                     <option value="fr">Français</option>
                   </select>
                 </div>
-                {userForm.ruolo === 'user' && (
+                <div className="flex gap-8">
+                  {userForm.ruolo === 'user' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
+                      <div className="flex flex-col gap-2">
+                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
+                          Ticket
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
+                          Progetti
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
+                          AI Assistant
+                        </label>
+                      </div>
+                    </div>
+                  )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
-                    <div className="flex gap-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Opzioni Sicurezza</label>
+                    <div className="flex flex-col gap-2">
                       <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
-                        Ticket
+                        <input type="checkbox" checked={!!userForm.cambio_password} onChange={() => setUserForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} className="rounded border-gray-300" />
+                        Consenti cambio password al primo avvio
                       </label>
                       <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
-                        Progetti
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
-                        AI Assistant
+                        <input type="checkbox" checked={!!userForm.two_factor} onChange={() => setUserForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
+                        Utilizza autenticazione a 2 fattori
                       </label>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">

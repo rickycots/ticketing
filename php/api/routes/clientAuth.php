@@ -50,20 +50,149 @@ $router->post('/client-auth/login', function($req) {
         'tipo' => 'cliente',
     ]);
 
+    $userData = [
+        'id' => $user['id'],
+        'nome' => $user['nome'],
+        'email' => $user['email'],
+        'cliente_id' => $user['cliente_id'],
+        'nome_azienda' => $user['nome_azienda'],
+        'logo' => $user['logo'],
+        'ruolo' => $userRuolo,
+        'schede_visibili' => $visibili,
+        'lingua' => $user['lingua'] ?? 'it',
+        'cambio_password' => (int)($user['cambio_password'] ?? 0),
+    ];
+
+    // 2FA: generate code, send email, return pending
+    if (!empty($user['two_factor'])) {
+        $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        $expires = date('Y-m-d H:i:s', time() + 600); // 10 min
+
+        Database::execute(
+            'UPDATE utenti_cliente SET two_factor_code = ?, two_factor_expires = ?, two_factor_attempts = 0 WHERE id = ?',
+            [$code, $expires, $user['id']]
+        );
+
+        // Send email
+        try {
+            Mailer::sendNoreply(
+                $user['email'],
+                'Codice di verifica — STM Domotica',
+                '<div style="font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:20px;">
+                    <h2 style="color:#333;margin-bottom:10px;">Codice di Verifica</h2>
+                    <p style="color:#666;font-size:14px;">Inserisci questo codice per completare l\'accesso:</p>
+                    <div style="background:#f5f5f5;border-radius:8px;padding:20px;text-align:center;margin:20px 0;">
+                        <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1a1a1a;">' . $code . '</span>
+                    </div>
+                    <p style="color:#999;font-size:12px;">Il codice scade tra 10 minuti. Se non hai richiesto l\'accesso, ignora questa email.</p>
+                </div>'
+            );
+        } catch (Exception $e) {
+            error_log('2FA email error: ' . $e->getMessage());
+        }
+
+        $tempToken = Auth::generateToken(['id' => $user['id'], 'tipo' => '2fa_pending'], 600);
+
+        Response::json([
+            'require_2fa' => true,
+            'temp_token' => $tempToken,
+            'user' => $userData,
+        ]);
+        return;
+    }
+
     Response::json([
         'token' => $token,
-        'user' => [
-            'id' => $user['id'],
-            'nome' => $user['nome'],
-            'email' => $user['email'],
-            'cliente_id' => $user['cliente_id'],
-            'nome_azienda' => $user['nome_azienda'],
-            'logo' => $user['logo'],
-            'ruolo' => $userRuolo,
-            'schede_visibili' => $visibili,
-            'lingua' => $user['lingua'] ?? 'it',
-        ],
+        'user' => $userData,
     ]);
+});
+
+// POST /api/client-auth/verify-2fa — verify 2FA code
+$router->post('/client-auth/verify-2fa', function($req) {
+    $tempToken = $req->body['temp_token'] ?? '';
+    $code = trim($req->body['code'] ?? '');
+
+    if (!$tempToken || !$code) {
+        Response::error('Token e codice sono obbligatori', 400);
+    }
+
+    $decoded = Auth::verifyToken($tempToken);
+    if (!$decoded || ($decoded['tipo'] ?? '') !== '2fa_pending') {
+        Response::error('Sessione scaduta. Effettua nuovamente il login.', 401);
+    }
+
+    $user = Database::fetchOne(
+        'SELECT uc.*, c.nome_azienda, c.logo FROM utenti_cliente uc JOIN clienti c ON uc.cliente_id = c.id WHERE uc.id = ?',
+        [$decoded['id']]
+    );
+    if (!$user) Response::error('Utente non trovato', 401);
+
+    // Check attempts
+    if ((int)$user['two_factor_attempts'] >= 3) {
+        Database::execute(
+            'UPDATE utenti_cliente SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?',
+            [$user['id']]
+        );
+        Response::json(['error' => 'Troppi tentativi errati. Effettua nuovamente il login.', 'locked' => true], 401);
+    }
+
+    // Check expiry
+    if (empty($user['two_factor_code']) || empty($user['two_factor_expires']) || strtotime($user['two_factor_expires']) < time()) {
+        Response::json(['error' => 'Codice scaduto. Effettua nuovamente il login.', 'locked' => true], 401);
+    }
+
+    // Check code
+    if ($user['two_factor_code'] !== $code) {
+        $attempts = (int)$user['two_factor_attempts'] + 1;
+        Database::execute('UPDATE utenti_cliente SET two_factor_attempts = ? WHERE id = ?', [$attempts, $user['id']]);
+
+        if ($attempts >= 3) {
+            Database::execute(
+                'UPDATE utenti_cliente SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?',
+                [$user['id']]
+            );
+            Response::json(['error' => 'Troppi tentativi errati. Effettua nuovamente il login.', 'locked' => true], 401);
+        }
+
+        Response::json(['error' => 'Codice errato', 'remaining' => 3 - $attempts], 400);
+    }
+
+    // Code correct — clear 2FA, issue real token
+    Database::execute(
+        'UPDATE utenti_cliente SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?',
+        [$user['id']]
+    );
+
+    $userRuolo = $user['ruolo'] ?: 'user';
+    $visibili = $userRuolo === 'admin' ? 'ticket,progetti,ai' : $user['schede_visibili'];
+
+    $token = Auth::generateToken([
+        'id' => $user['id'],
+        'nome' => $user['nome'],
+        'email' => $user['email'],
+        'cliente_id' => $user['cliente_id'],
+        'ruolo' => $userRuolo,
+        'schede_visibili' => $visibili,
+        'tipo' => 'cliente',
+    ]);
+
+    Response::json(['token' => $token]);
+});
+
+// POST /api/client-auth/change-password — first login password change
+$router->post('/client-auth/change-password', [Auth::class, 'authenticateClientToken'], function($req) {
+    $newPassword = $req->body['newPassword'] ?? '';
+    if (!$newPassword || strlen($newPassword) < 6) {
+        Response::error('La password deve avere almeno 6 caratteri', 400);
+    }
+
+    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+    Database::execute(
+        'UPDATE utenti_cliente SET password_hash = ?, cambio_password = 0 WHERE id = ?',
+        [$hash, $req->user['id']]
+    );
+
+    Response::json(['success' => true, 'cambio_password' => 0]);
 });
 
 // GET /api/client-auth/me
@@ -228,14 +357,17 @@ $router->post('/client-auth/portal-users',
         $userLingua = in_array($lingua, ['it', 'en', 'fr']) ? $lingua : 'it';
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
+        $cambio_password = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 1;
+        $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : 0;
+
         Database::execute(
-            'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua)
-             VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [$req->user['cliente_id'], $nome, $email, $passwordHash, 'user', $schede_visibili, $userLingua]
+            'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$req->user['cliente_id'], $nome, $email, $passwordHash, 'user', $schede_visibili, $userLingua, $cambio_password, $two_factor]
         );
 
         $user = Database::fetchOne(
-            'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at
+            'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at
              FROM utenti_cliente WHERE id = ?',
             [Database::lastInsertId()]
         );
@@ -273,6 +405,8 @@ $router->put('/client-auth/portal-users/:userId',
 
         $newHash = $password ? password_hash($password, PASSWORD_BCRYPT) : $user['password_hash'];
         $newLingua = $lingua && in_array($lingua, ['it', 'en', 'fr']) ? $lingua : $user['lingua'];
+        $cambio_password = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : null;
+        $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : null;
 
         Database::execute(
             'UPDATE utenti_cliente SET
@@ -281,13 +415,15 @@ $router->put('/client-auth/portal-users/:userId',
                 password_hash = ?,
                 schede_visibili = COALESCE(?, schede_visibili),
                 lingua = ?,
-                attivo = COALESCE(?, attivo)
+                attivo = COALESCE(?, attivo),
+                cambio_password = COALESCE(?, cambio_password),
+                two_factor = COALESCE(?, two_factor)
              WHERE id = ?',
-            [$nome, $email, $newHash, $schede_visibili, $newLingua, $attivo, $userId]
+            [$nome, $email, $newHash, $schede_visibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
         );
 
         $updated = Database::fetchOne(
-            'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, created_at
+            'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at
              FROM utenti_cliente WHERE id = ?',
             [$userId]
         );

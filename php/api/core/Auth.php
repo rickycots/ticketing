@@ -73,6 +73,18 @@ class Auth {
     }
 
     /**
+     * Verify and decode a JWT token, returns payload array or null
+     */
+    public static function verifyToken(string $token): ?array {
+        try {
+            $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
+            return (array)$decoded;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * Extract Bearer token from Authorization header
      */
     private static function extractToken(stdClass $req): ?string {

@@ -67,6 +67,11 @@ node deploy/deploy.js --php
 3. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
 4. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
 5. Includere `version.js` e `VERSIONI.md` nello stesso commit
+6. **Build + deploy frontend** dopo ogni commit (la versione è nel bundle JS):
+   ```bash
+   cd frontend && npx vite build --emptyOutDir false
+   cd .. && node deploy/deploy.js --frontend
+   ```
 
 ### Esempio completo
 

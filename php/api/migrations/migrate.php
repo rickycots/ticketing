@@ -84,6 +84,27 @@ try {
         }
     }
 
+    // Incremental migrations (ALTER TABLE for existing databases)
+    $alterations = [
+        "ALTER TABLE utenti_cliente ADD COLUMN cambio_password TINYINT(1) NOT NULL DEFAULT 1",
+        "ALTER TABLE utenti_cliente ADD COLUMN two_factor TINYINT(1) NOT NULL DEFAULT 0",
+        "ALTER TABLE utenti_cliente ADD COLUMN two_factor_code VARCHAR(6) DEFAULT NULL",
+        "ALTER TABLE utenti_cliente ADD COLUMN two_factor_expires DATETIME DEFAULT NULL",
+        "ALTER TABLE utenti_cliente ADD COLUMN two_factor_attempts INT NOT NULL DEFAULT 0",
+    ];
+    foreach ($alterations as $alt) {
+        try {
+            $db->exec($alt);
+            echo "OK: $alt\n";
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate column') !== false) {
+                echo "SKIP: Column already exists\n";
+            } else {
+                echo "ERROR: " . $e->getMessage() . "\n";
+            }
+        }
+    }
+
     echo "\nMigration completed. $count statements executed.\n";
     echo "Database: " . DB_NAME . " on " . DB_HOST . "\n";
 

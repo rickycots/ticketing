@@ -8,7 +8,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
+  const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
   const [saving, setSaving] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
 
@@ -22,10 +22,10 @@ export default function UserManagement() {
   function openForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it' })
+      setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: user.cambio_password ?? 1, two_factor: user.two_factor ?? 0 })
     } else {
       setEditingUser(null)
-      setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it' })
+      setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
     }
     setShowForm(true)
   }
@@ -109,21 +109,36 @@ export default function UserManagement() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('visibleSections')}</label>
-              <div className="flex gap-4">
-                <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
-                  Ticket
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
-                  Progetti
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
-                  AI Assistant
-                </label>
+            <div className="flex gap-8">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('visibleSections')}</label>
+                <div className="flex flex-col gap-2">
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={form.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
+                    Ticket
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={form.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
+                    Progetti
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={form.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
+                    AI Assistant
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('securityOptions') || 'Opzioni Sicurezza'}</label>
+                <div className="flex flex-col gap-2">
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={!!form.cambio_password} onChange={() => setForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} className="rounded border-gray-300" />
+                    {t('forcePasswordChange') || 'Consenti cambio password al primo avvio'}
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={!!form.two_factor} onChange={() => setForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
+                    {t('twoFactorAuth') || 'Utilizza autenticazione a 2 fattori'}
+                  </label>
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
