@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V1.7-0313 — 13 Marzo 2026
+- Aggiunto script `npm run reset` per reset DB finale (solo utente admin)
+- Aggiornate regole Git in CLAUDE.md con procedura versioning dettagliata
+
 ## V1.6-0313 — 13 Marzo 2026
 - Disabilitato caching browser per index.html e risposte API (meta tag + .htaccess)
 

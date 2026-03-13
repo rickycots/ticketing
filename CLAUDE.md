@@ -52,8 +52,30 @@ node deploy/deploy.js --frontend
 node deploy/deploy.js --php
 ```
 
-## Regole Git
+## Regole Git e Versioning
 
-- Dopo ogni modifica ai file, chiedere sempre all'utente se vuole fare un commit prima di procedere
 - Branch principale: `main`
 - Repository: `https://github.com/rickycots/ticketing.git`
+- Dopo ogni modifica ai file, chiedere sempre all'utente se vuole fare un commit prima di procedere
+
+### Procedura commit (ogni volta che l'utente conferma il commit)
+
+1. **Incrementare la versione** in `frontend/src/version.js` — formato `V{major}.{minor}-MMGG`
+   - Incrementare il minor per ogni nuovo commit (es. V1.6 → V1.7)
+   - Aggiornare MMGG alla data corrente
+2. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
+3. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
+4. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
+5. Includere `version.js` e `VERSIONI.md` nello stesso commit
+
+### Esempio completo
+
+```bash
+# 1. Aggiornare version.js → V1.7-0313
+# 2. Aggiornare VERSIONI.md con la nuova sezione
+# 3. Commit
+git add <files modificati> frontend/src/version.js VERSIONI.md
+git commit -m "V1.7-0313 Add feature X and fix Y"
+# 4. Tag
+git tag -a v1.7-0313 -m "V1.7-0313 Add feature X and fix Y"
+```
