@@ -300,4 +300,31 @@ CREATE INDEX idx_allegati_progetto ON allegati_progetto(progetto_id);
 CREATE INDEX idx_comunicazioni_cliente ON comunicazioni_cliente(cliente_id);
 CREATE INDEX idx_referenti_progetto_cliente ON referenti_progetto(cliente_id);
 
+-- Audit log for sensitive operations (impersonation, etc.)
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  azione VARCHAR(50) NOT NULL,
+  admin_id INT NOT NULL,
+  admin_nome VARCHAR(255),
+  admin_email VARCHAR(255),
+  target_id INT,
+  target_tipo VARCHAR(50),
+  dettagli TEXT,
+  ip VARCHAR(45),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_azione (azione),
+  INDEX idx_audit_admin (admin_id),
+  INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Rate limiting table for login brute-force protection
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ip VARCHAR(45) NOT NULL,
+  azione VARCHAR(30) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_rate_ip_azione (ip, azione),
+  INDEX idx_rate_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

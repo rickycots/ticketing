@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, authenticateClientToken } = require('../middleware/auth');
 const { sendTicketingEmail, sendNoreplyEmail, wrapEmailTemplate } = require('../services/mailer');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 const router = express.Router();
 
@@ -23,10 +24,7 @@ const ticketUpload = multer({
     },
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowedExts.includes(ext));
-  },
+  fileFilter: createFileFilter(allowedExts),
 }).array('allegati', 5);
 
 function createNotifica(utenteId, tipo, titolo, messaggio, link) {
@@ -186,6 +184,11 @@ router.get('/:id', authenticateToken, (req, res) => {
   `).get(req.params.id);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
 
+  // IDOR protection: tecnico can only see tickets assigned to them
+  if (req.user.ruolo === 'tecnico' && ticket.assegnato_a !== req.user.id) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+
   // Mark as read
   if (!ticket.letta) {
     db.prepare('UPDATE ticket SET letta = 1 WHERE id = ?').run(req.params.id);
@@ -203,7 +206,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // POST /api/tickets — create (client auth, with optional attachments)
-router.post('/', authenticateClientToken, ticketUpload, async (req, res) => {
+router.post('/', authenticateClientToken, ticketUpload, validateUploadedFiles, async (req, res) => {
   const { oggetto, descrizione, categoria, priorita } = req.body;
   const cliente_id = req.user.cliente_id;
   if (!oggetto || !categoria) {
@@ -354,8 +357,13 @@ router.post('/:id/notes', authenticateToken, (req, res) => {
   const { testo } = req.body;
   if (!testo || !testo.trim()) return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
 
-  const ticket = db.prepare('SELECT id FROM ticket WHERE id = ?').get(req.params.id);
+  const ticket = db.prepare('SELECT id, assegnato_a FROM ticket WHERE id = ?').get(req.params.id);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+
+  // IDOR protection: tecnico can only add notes to assigned tickets
+  if (req.user.ruolo === 'tecnico' && ticket.assegnato_a !== req.user.id) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
 
   const result = db.prepare(
     'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)'

@@ -1,0 +1,25 @@
+# SECURITY: Block ALL script execution in uploads directory
+# Files here are user-uploaded and must NEVER be interpreted
+
+# Disable PHP execution
+<FilesMatch "\.ph(p[3-7]?|tml|ar)$">
+    Require all denied
+</FilesMatch>
+
+# Disable all script handlers
+RemoveHandler .php .php3 .php4 .php5 .php7 .phtml .phar .pl .py .cgi .asp .aspx .jsp .sh .shtml
+RemoveType .php .php3 .php4 .php5 .php7 .phtml .phar
+
+# Force all files to be served as downloads (not interpreted)
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'none'"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes -ExecCGI
+
+# Block .htaccess and hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

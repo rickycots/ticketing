@@ -47,6 +47,11 @@ router.post('/ticket-assist', authenticateToken, async (req, res) => {
   `).get(ticket_id);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
 
+  // IDOR protection: tecnico can only query AI for assigned tickets
+  if (req.user.ruolo === 'tecnico' && ticket.assegnato_a !== req.user.id) {
+    return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+
   // 2. KB cards for this client
   const schede = db.prepare(
     'SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?'

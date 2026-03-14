@@ -1,5 +1,21 @@
 # Storico Versioni
 
+## V2.1-0314 — 14 Marzo 2026
+- Security hardening completo su tutti gli endpoint
+- Fix XSS: rimosso dangerouslySetInnerHTML da ClientLayout, split chatDisclaimer in 3 chiavi i18n (IT/EN/FR)
+- Fix HTTP header injection nei download file (repository + progetti)
+- Impersonation blindata: audit log DB, claim admin_id nel JWT, TTL ridotto a 1h, banner amber con uscita rapida
+- Upload security: magic bytes validation, blocco doppie estensioni, whitelist globale, .htaccess anti-esecuzione in uploads/
+- IMAP hardening: rate limit 30 email/ciclo + 10/ora per mittente, body troncato a 50KB, stripHtml rinforzata
+- Anti-spoofing: [TICKET] verifica mittente vs cliente del ticket, [COMM] accettato solo da admin
+- IDOR/BOLA fix: tecnico limitato a ticket/progetti assegnati, KB cards solo admin, referenti solo admin
+- Rate limiting login: express-rate-limit globale (100/min), lockout progressivo 5 tentativi/15min (Node.js + PHP)
+- Rate limiting AI: 20 req/min, impersonation: 5/ora
+- PHP RateLimiter DB-based per Aruba (no Redis)
+- Tabelle DB: audit_log + rate_limits
+- Endpoint GET /api/users/audit-log per consultare log operazioni sensibili
+- Migrazione/seed: chiavi dedicate sha256, flag file _ENABLE_, reset solo CLI, logging
+
 ## V2.0-0314 — 14 Marzo 2026
 - Stato progetto calcolato automaticamente: Chiuso (tutte attività completate), Attivo, Bloccato (attività bloccata), Senza attività
 - Eliminazione progetto con conferma (cestino in ProjectDetail e ProjectGantt)

@@ -1,25 +1,48 @@
 <?php
 /**
  * Database Seeder — demo data for MySQL
- * Usage: php seed.php (or call via browser with ?key=JWT_SECRET)
- * WARNING: This TRUNCATES all tables and reinserts demo data!
+ *
+ * SECURITY:
+ * - Web access DISABLED by default. To enable temporarily:
+ *   1. Create file _ENABLE_SEED in the seed/ directory
+ *   2. Run with ?key=SEED_KEY (NOT the JWT secret)
+ *   3. Delete _ENABLE_SEED when done
+ * - CLI: php seed.php (no restrictions)
+ * - WARNING: TRUNCATES all tables!
+ * - All web invocations are logged
  */
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-// Load config
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/Database.php';
 
-// Security: require JWT_SECRET as key parameter (web) or CLI
 $isCli = php_sapi_name() === 'cli';
+
+// Dedicated seed key (different from JWT_SECRET)
+define('SEED_KEY', hash('sha256', JWT_SECRET . '-seed-stm-2026'));
+
 if (!$isCli) {
-    $key = $_GET['key'] ?? '';
-    if ($key !== JWT_SECRET) {
+    // Check enable flag file
+    if (!file_exists(__DIR__ . '/_ENABLE_SEED')) {
         http_response_code(403);
-        die(json_encode(['error' => 'Accesso negato. Parametro ?key= richiesto.']));
+        die('Seed disabled. Create _ENABLE_SEED file to enable temporarily.');
     }
+
+    // Validate dedicated key
+    $key = $_GET['key'] ?? '';
+    if (!hash_equals(SEED_KEY, $key)) {
+        http_response_code(403);
+        $log = date('Y-m-d H:i:s') . " DENIED seed from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . "\n";
+        @file_put_contents(__DIR__ . '/seed.log', $log, FILE_APPEND);
+        die(json_encode(['error' => 'Access denied. Invalid key.']));
+    }
+
+    // Log successful invocation
+    $log = date('Y-m-d H:i:s') . " OK seed from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . "\n";
+    @file_put_contents(__DIR__ . '/seed.log', $log, FILE_APPEND);
+
     header('Content-Type: text/plain; charset=utf-8');
 }
 
@@ -109,7 +132,6 @@ Database::execute(
 out("3 progetti creati");
 
 // --- ATTIVITA ---
-// Progetto 1: Migrazione Exchange
 Database::execute(
     "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, data_inizio, ordine, dipende_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [1, 'Analisi infrastruttura attuale', 'Inventario server e servizi attivi', 1, 'completata', 100, 'alta', '2026-02-01', '2026-01-15', 1, null]
@@ -126,8 +148,6 @@ Database::execute(
     "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, data_inizio, ordine, dipende_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [1, 'Test e validazione', 'Verifica funzionamento post-migrazione', 2, 'da_fare', 0, 'media', '2026-04-15', '2026-04-01', null, 3]
 );
-
-// Progetto 2: Firewall
 Database::execute(
     "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, data_inizio, ordine, dipende_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [2, 'Configurazione regole firewall', 'Definizione policy di sicurezza', 1, 'completata', 100, 'alta', '2026-02-15', '2026-02-01', 1, null]
@@ -136,8 +156,6 @@ Database::execute(
     "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, data_inizio, ordine, dipende_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [2, 'Test penetrazione', 'Verifica sicurezza perimetrale', 2, 'in_corso', 30, 'alta', '2026-03-01', '2026-02-16', null, 5]
 );
-
-// Progetto 3: Cloud
 Database::execute(
     "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, data_inizio, ordine, dipende_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [3, 'Design architettura cloud', 'Progettazione infrastruttura AWS/Azure', 1, 'in_corso', 50, 'alta', '2026-03-15', '2026-02-10', 1, null]
@@ -156,23 +174,23 @@ out("9 attività create");
 // --- TICKET ---
 Database::execute(
     "INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, stato, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ['TK-2026-0001', 1, 'Problema accesso email aziendale', 'Diversi utenti non riescono ad accedere alla webmail da questa mattina. Errore "autenticazione fallita".', 'assistenza', 'alta', 'in_lavorazione', 1]
+    ['TK-2026-0001', 1, 'Problema accesso email aziendale', 'Diversi utenti non riescono ad accedere alla webmail da questa mattina.', 'assistenza', 'alta', 'in_lavorazione', 1]
 );
 Database::execute(
     "INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, stato, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ['TK-2026-0002', 1, 'Richiesta nuovo indirizzo email', 'Necessario creare indirizzo email per nuovo dipendente: mario.neri@rossi-srl.it', 'richiesta_info', 'bassa', 'aperto', null]
+    ['TK-2026-0002', 1, 'Richiesta nuovo indirizzo email', 'Necessario creare indirizzo email per nuovo dipendente.', 'richiesta_info', 'bassa', 'aperto', null]
 );
 Database::execute(
     "INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, stato, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ['TK-2026-0003', 2, 'Errore 500 sul gestionale', 'Il gestionale restituisce errore 500 quando si prova a generare il report mensile. Screenshot allegato.', 'bug', 'urgente', 'aperto', null]
+    ['TK-2026-0003', 2, 'Errore 500 sul gestionale', 'Il gestionale restituisce errore 500 quando si prova a generare il report mensile.', 'bug', 'urgente', 'aperto', null]
 );
 Database::execute(
     "INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, stato, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ['TK-2026-0004', 2, 'Lentezza connessione VPN', "La VPN aziendale è molto lenta da circa una settimana. Velocità ridotta del 70%.", 'assistenza', 'media', 'in_lavorazione', 2]
+    ['TK-2026-0004', 2, 'Lentezza connessione VPN', "La VPN aziendale è molto lenta da circa una settimana.", 'assistenza', 'media', 'in_lavorazione', 2]
 );
 Database::execute(
     "INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, stato, assegnato_a) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    ['TK-2026-0005', 1, 'Richiesta documentazione rete', 'Servono gli schemi di rete aggiornati per audit di sicurezza previsto il mese prossimo.', 'richiesta_info', 'media', 'aperto', null]
+    ['TK-2026-0005', 1, 'Richiesta documentazione rete', 'Servono gli schemi di rete aggiornati per audit di sicurezza.', 'richiesta_info', 'media', 'aperto', null]
 );
 
 out("5 ticket creati");
@@ -180,101 +198,34 @@ out("5 ticket creati");
 // --- EMAIL ---
 Database::execute(
     "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['ticket', 'g.rossi@rossi-srl.it', 'admin@ticketing.local',
-     '[TICKET #TK-2026-0001] [Assistenza] Problema accesso email aziendale — Cliente: Rossi Srl',
-     'Diversi utenti non riescono ad accedere alla webmail da questa mattina.',
-     1, 1, null, 0, 'thread-TK-2026-0001', 1]
+    ['ticket', 'g.rossi@rossi-srl.it', 'admin@ticketing.local', '[TICKET #TK-2026-0001] Problema accesso email', 'Diversi utenti non riescono ad accedere alla webmail.', 1, 1, null, 0, 'thread-TK-2026-0001', 1]
 );
 Database::execute(
     "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['ticket', 'g.rossi@rossi-srl.it', 'admin@ticketing.local',
-     '[TICKET #TK-2026-0002] [Richiesta Info] Richiesta nuovo indirizzo email — Cliente: Rossi Srl',
-     'Necessario creare indirizzo email per nuovo dipendente.',
-     1, 2, null, 0, 'thread-TK-2026-0002', 0]
-);
-Database::execute(
-    "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['ticket', 'a.verdi@techsolutions.it', 'admin@ticketing.local',
-     '[TICKET #TK-2026-0003] [Bug] Errore 500 sul gestionale — Cliente: Tech Solutions SpA',
-     'Il gestionale restituisce errore 500 quando si prova a generare il report mensile.',
-     2, 3, null, 0, 'thread-TK-2026-0003', 0]
-);
-Database::execute(
-    "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['email_cliente', 'g.rossi@rossi-srl.it', 'admin@ticketing.local',
-     'Aggiornamento configurazione firewall',
-     'Buongiorno, volevo sapere a che punto siamo con la configurazione del firewall. Abbiamo bisogno di approvare le regole proposte?',
-     1, null, 2, 1, 'thread-firewall-001', 0]
-);
-Database::execute(
-    "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['email_cliente', 'admin@ticketing.local', 'g.rossi@rossi-srl.it',
-     'RE: Aggiornamento configurazione firewall — RICHIESTA APPROVAZIONE',
-     'Gentile cliente, abbiamo completato la configurazione delle regole. Necessaria vostra approvazione per procedere. In allegato il documento con le policy proposte.',
-     1, null, 2, 1, 'thread-firewall-001', 1]
+    ['email_cliente', 'g.rossi@rossi-srl.it', 'admin@ticketing.local', 'Aggiornamento configurazione firewall', 'Volevo sapere a che punto siamo con la configurazione del firewall.', 1, null, 2, 1, 'thread-firewall-001', 0]
 );
 
-// Update project 2 with blocking email (email id = 5)
-Database::execute("UPDATE progetti SET email_bloccante_id = 5, blocco = 'lato_cliente' WHERE id = 2");
+Database::execute("UPDATE progetti SET email_bloccante_id = 2, blocco = 'lato_cliente' WHERE id = 2");
 
-Database::execute(
-    "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, is_bloccante, thread_id, letta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ['email_cliente', 'a.verdi@techsolutions.it', 'admin@ticketing.local',
-     'Domanda su tempistiche cloud',
-     'Salve, vorremmo avere un aggiornamento sulle tempistiche del progetto cloud. È possibile avere una call questa settimana?',
-     2, null, 3, 0, null, 0]
-);
-
-out("6 email simulate create");
+out("2 email simulate create");
 
 // --- NOTE INTERNE ---
 Database::execute(
     "INSERT INTO note_interne (ticket_id, progetto_id, utente_id, testo) VALUES (?, ?, ?, ?)",
-    [1, null, 1, 'Verificato: problema legato al certificato SSL scaduto sul server IMAP. Rinnovo in corso.']
-);
-Database::execute(
-    "INSERT INTO note_interne (ticket_id, progetto_id, utente_id, testo) VALUES (?, ?, ?, ?)",
-    [3, null, 1, "Probabilmente legato all'ultimo aggiornamento del gestionale. Contattare il fornitore."]
-);
-Database::execute(
-    "INSERT INTO note_interne (ticket_id, progetto_id, utente_id, testo) VALUES (?, ?, ?, ?)",
-    [null, 1, 1, 'Il cliente ha confermato la finestra di migrazione per il weekend del 15-16 marzo.']
+    [1, null, 1, 'Verificato: problema legato al certificato SSL scaduto sul server IMAP.']
 );
 
-out("3 note interne create");
-
-// --- SCHEDE CLIENTE (Knowledge Base) ---
-Database::execute(
-    'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)',
-    [1, 'Infrastruttura rete', "Server principale: Windows Server 2019 (IP: 192.168.1.10)\nDomain Controller: Active Directory con 45 utenti\nMail Server: Exchange 2016 (migrazione a Exchange Online in corso)\nFirewall: Fortinet FortiGate 60F\nSwitch: 2x Cisco Catalyst 2960 (48 porte ciascuno)\nNAS: Synology DS920+ (RAID 5, 8TB utili)\nBackup: Veeam Backup su NAS + replica offsite\nVPN: FortiClient SSL-VPN (20 licenze attive)\nISP: Fastweb Business 100/100 Mbps + backup LTE Vodafone"]
-);
-Database::execute(
-    'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)',
-    [1, 'Credenziali e accessi', "Domain Admin: admin.rossi (credenziali in cassaforte IT)\nExchange Admin Panel: https://mail.rossi-srl.it/ecp\nFortinet: https://192.168.1.1 (admin / vedi password manager)\nSynology NAS: https://192.168.1.50:5001\nVeeam Console: installata su server principale\nAccesso remoto: AnyDesk su tutti i PC (password di accesso non presidiato configurata)\nReferente IT interno: Mario Bianchi (int. 201, m.bianchi@rossi-srl.it)"]
-);
-Database::execute(
-    'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)',
-    [2, 'Ambiente cloud e servizi', "Cloud Provider: AWS (account ID: 123456789012)\nRegion: eu-south-1 (Milano)\nServizi attivi: EC2 (3 istanze), RDS MySQL, S3, CloudFront\nGestionale: applicazione Java su EC2 t3.large\nDatabase: RDS MySQL 8.0 (db.r5.large)\nCDN: CloudFront per assets statici\nMonitoring: CloudWatch + Grafana su EC2 t3.small\nCI/CD: GitHub Actions → deploy su EC2 via SSM\nDominio: techsolutions.it (Registrar: Aruba, DNS: Route53)\nVPN site-to-site: AWS VPN → sede Roma (Fortinet on-prem)"]
-);
-
-out("3 schede cliente (Knowledge Base) create");
-
-// --- COMUNICAZIONI CLIENTE ---
-Database::execute(
-    'INSERT INTO comunicazioni_cliente (cliente_id, oggetto, corpo, mittente, data_ricezione) VALUES (?, ?, ?, ?, ?)',
-    [1, 'Manutenzione programmata server', "Gentile cliente,\nvi informiamo che il giorno 15/03/2026 dalle 22:00 alle 06:00 effettueremo una manutenzione programmata sui server. Durante questo periodo il servizio potrebbe subire brevi interruzioni.\n\nCi scusiamo per il disagio.", 'assistenzatecnica@stmdomotica.it', '2026-03-08 10:30:00']
-);
-Database::execute(
-    'INSERT INTO comunicazioni_cliente (cliente_id, oggetto, corpo, mittente, data_ricezione) VALUES (?, ?, ?, ?, ?)',
-    [1, 'Aggiornamento contratto assistenza', "Vi comunichiamo che il contratto di assistenza è stato rinnovato fino al 31/12/2026.\nPer qualsiasi informazione non esitate a contattarci.", 'assistenzatecnica@stmdomotica.it', '2026-03-05 14:15:00']
-);
-out("2 comunicazioni cliente create");
+out("1 nota interna creata");
 
 out("\n=== Seed completato con successo! ===");
 out("\nCredenziali demo:");
 out("  Admin:   admin@ticketing.local / admin123");
 out("  Tecnico: tecnico@ticketing.local / tecnico123");
 out("\nPortale Cliente:");
-out("  giuseppe@rossi-srl.it / cliente123 (Rossi Srl — ticket+progetti+ai)");
-out("  maria@rossi-srl.it / cliente123 (Rossi Srl — solo ticket)");
-out("  anna@techsolutions.it / cliente123 (Tech Solutions — ticket+progetti+ai)");
+out("  giuseppe@rossi-srl.it / cliente123 (Rossi Srl)");
+out("  maria@rossi-srl.it / cliente123 (Rossi Srl)");
+out("  anna@techsolutions.it / cliente123 (Tech Solutions)");
+
+if (!$isCli) {
+    out("\n⚠ IMPORTANT: Delete _ENABLE_SEED file now!");
+}

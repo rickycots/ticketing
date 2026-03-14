@@ -81,8 +81,10 @@ $router->delete('/repository/:id', [Auth::class, 'authenticateToken'], [Auth::cl
     Response::success();
 });
 
-// GET /api/repository/:id/download
+// GET /api/repository/:id/download (admin + tecnico only)
 $router->get('/repository/:id/download', [Auth::class, 'authenticateToken'], function($req) {
+    // Repository is accessible to admin and tecnico only — authenticateToken already ensures this
+    // No per-document IDOR since repository is a shared knowledge base (not tenant-specific)
     $doc = Database::fetchOne('SELECT * FROM documenti_repository WHERE id = ?', [$req->params['id']]);
     if (!$doc) Response::error('Documento non trovato', 404);
 
@@ -90,7 +92,7 @@ $router->get('/repository/:id/download', [Auth::class, 'authenticateToken'], fun
     if (!file_exists($filePath)) Response::error('File non trovato su disco', 404);
 
     header('Content-Type: ' . ($doc['tipo_mime'] ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . $doc['nome_originale'] . '"');
+    header('Content-Disposition: attachment; filename="' . basename(str_replace(["\r", "\n", '"'], '', $doc['nome_originale'])) . '"');
     header('Content-Length: ' . filesize($filePath));
     readfile($filePath);
     exit;

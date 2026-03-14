@@ -5,6 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(file.originalname).toLowerCase();
     cb(null, crypto.randomUUID() + ext);
   },
 });
@@ -27,14 +28,7 @@ const allowedExts = ['.txt', '.pdf', '.doc', '.docx', '.md'];
 const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedExts.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Formato non supportato: ${ext}. Formati accettati: ${allowedExts.join(', ')}`));
-    }
-  },
+  fileFilter: createFileFilter(allowedExts),
 });
 
 // Extract text content from file
@@ -86,6 +80,19 @@ router.post('/upload', authenticateToken, requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'Nessun file caricato' });
     }
 
+    // Validate magic bytes
+    const magicErr = (() => {
+      for (const file of req.files) {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (!require('../middleware/uploadSecurity').validateMagicBytes(file.path, ext)) {
+          try { fs.unlinkSync(file.path); } catch {}
+          return `Il contenuto del file "${file.originalname}" non corrisponde all'estensione dichiarata`;
+        }
+      }
+      return null;
+    })();
+    if (magicErr) return res.status(400).json({ error: magicErr });
+
     const categoria = req.body.categoria || 'generale';
     const descrizione = req.body.descrizione || null;
     const results = [];
@@ -132,10 +139,13 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// GET /api/repository/:id/download — download file
+// GET /api/repository/:id/download — download file (admin + tecnico only, not client)
 router.get('/:id/download', authenticateToken, (req, res) => {
   const doc = db.prepare('SELECT * FROM documenti_repository WHERE id = ?').get(req.params.id);
   if (!doc) return res.status(404).json({ error: 'Documento non trovato' });
+
+  // Repository is visible to admin and tecnico only (no client access via this endpoint)
+  // authenticateToken already ensures admin/tecnico — no further IDOR risk since repository is shared
 
   const filePath = path.join(uploadDir, doc.nome_file);
   if (!fs.existsSync(filePath)) {

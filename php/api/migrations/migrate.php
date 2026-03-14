@@ -1,20 +1,51 @@
 <?php
 /**
  * Database migration runner
- * Execute via browser: /api/migrations/migrate.php?key=YOUR_JWT_SECRET
- * Or via CLI: php migrate.php
+ *
+ * SECURITY:
+ * - Web access DISABLED by default. To enable temporarily:
+ *   1. Create file _ENABLE_MIGRATE in the migrations/ directory
+ *   2. Run migration with ?key=MIGRATE_KEY (NOT the JWT secret)
+ *   3. Delete _ENABLE_MIGRATE when done
+ * - CLI access: php migrate.php (no restrictions)
+ * - ?reset=1 only available via CLI
+ * - All web invocations are logged
  */
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/Database.php';
 
-// Security: require key parameter (use JWT_SECRET) unless CLI
-if (php_sapi_name() !== 'cli') {
-    $key = $_GET['key'] ?? '';
-    if ($key !== JWT_SECRET) {
+$isCli = php_sapi_name() === 'cli';
+
+// Dedicated migrate key (different from JWT_SECRET)
+define('MIGRATE_KEY', hash('sha256', JWT_SECRET . '-migrate-stm-2026'));
+
+if (!$isCli) {
+    // Check enable flag file
+    if (!file_exists(__DIR__ . '/_ENABLE_MIGRATE')) {
         http_response_code(403);
-        die('Access denied. Pass ?key=YOUR_JWT_SECRET');
+        die('Migrations disabled. Create _ENABLE_MIGRATE file to enable temporarily.');
     }
+
+    // Validate dedicated key
+    $key = $_GET['key'] ?? '';
+    if (!hash_equals(MIGRATE_KEY, $key)) {
+        http_response_code(403);
+        // Log failed attempt
+        $log = date('Y-m-d H:i:s') . " DENIED migrate from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . " key=" . substr($key, 0, 8) . "...\n";
+        @file_put_contents(__DIR__ . '/migrate.log', $log, FILE_APPEND);
+        die('Access denied. Invalid key.');
+    }
+
+    // Block reset via web — only CLI
+    if (isset($_GET['reset'])) {
+        http_response_code(403);
+        die('Reset is only available via CLI for safety.');
+    }
+
+    // Log successful invocation
+    $log = date('Y-m-d H:i:s') . " OK migrate from " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . "\n";
+    @file_put_contents(__DIR__ . '/migrate.log', $log, FILE_APPEND);
 }
 
 header('Content-Type: text/plain; charset=utf-8');
@@ -22,15 +53,15 @@ header('Content-Type: text/plain; charset=utf-8');
 try {
     $db = Database::get();
 
-    // Drop all tables if ?reset=1 is passed
-    if (isset($_GET['reset']) && $_GET['reset'] === '1') {
+    // Drop all tables if ?reset=1 is passed (CLI ONLY)
+    if ($isCli && isset($argv) && in_array('--reset', $argv)) {
         echo "=== RESET: Dropping all tables ===\n";
         $db->exec('SET FOREIGN_KEY_CHECKS = 0');
         $tables = ['progetto_referenti', 'referenti_progetto',
             'comunicazioni_cliente', 'schede_cliente', 'documenti_repository', 'allegati_progetto',
             'notifiche', 'chat_lettura', 'messaggi_progetto', 'note_attivita', 'note_interne',
             'progetto_tecnici', 'email', 'ticket', 'attivita', 'progetti',
-            'utenti_cliente', 'clienti', 'utenti', 'impostazioni'];
+            'utenti_cliente', 'clienti', 'utenti', 'impostazioni', 'audit_log', 'rate_limits'];
         foreach ($tables as $t) {
             $db->exec("DROP TABLE IF EXISTS {$t}");
             echo "Dropped: {$t}\n";
@@ -51,7 +82,6 @@ try {
     $statements = array_filter(
         array_map('trim', explode(';', $sql)),
         function($s) {
-            // Remove comment-only lines and check if there's actual SQL
             $clean = trim(preg_replace('/--.*$/m', '', $s));
             return $clean !== '';
         }
@@ -59,14 +89,12 @@ try {
 
     $count = 0;
     foreach ($statements as $stmt) {
-        // Skip comments-only statements
         $clean = trim(preg_replace('/--.*$/m', '', $stmt));
         if (empty($clean)) continue;
 
         try {
             $db->exec($stmt);
             $count++;
-            // Extract table name for feedback
             if (preg_match('/CREATE TABLE.*?(\w+)\s*\(/i', $stmt, $m)) {
                 echo "OK: Created table {$m[1]}\n";
             } elseif (preg_match('/CREATE INDEX.*?(\w+)\s+ON/i', $stmt, $m)) {
@@ -75,7 +103,6 @@ try {
                 echo "OK: Executed statement\n";
             }
         } catch (PDOException $e) {
-            // Ignore "already exists" errors
             if (strpos($e->getMessage(), 'already exists') !== false) {
                 echo "SKIP: Already exists\n";
             } else {
@@ -107,6 +134,11 @@ try {
 
     echo "\nMigration completed. $count statements executed.\n";
     echo "Database: " . DB_NAME . " on " . DB_HOST . "\n";
+
+    // Remind to remove enable flag
+    if (!$isCli) {
+        echo "\n⚠ IMPORTANT: Delete _ENABLE_MIGRATE file now!\n";
+    }
 
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage() . "\n");

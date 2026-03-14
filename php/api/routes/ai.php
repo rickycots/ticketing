@@ -46,6 +46,10 @@ function groqChatCompletion(string $systemPrompt, string $userMessage): string {
 
 // POST /api/ai/ticket-assist
 $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function($req) {
+    // Rate limit: 20 AI requests per minute per IP
+    RateLimiter::enforce('ai', 20, 60, 'Troppe richieste AI. Riprova tra un minuto.');
+    RateLimiter::record('ai');
+
     $ticketId = $req->body['ticket_id'] ?? null;
     $domanda = $req->body['domanda'] ?? '';
     if (!$ticketId || !$domanda) Response::error('ticket_id e domanda sono obbligatori', 400);
@@ -57,6 +61,11 @@ $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function(
         [$ticketId]
     );
     if (!$ticket) Response::error('Ticket non trovato', 404);
+
+    // IDOR protection: tecnico can only query AI for assigned tickets
+    if (($req->user['ruolo'] ?? '') === 'tecnico' && $ticket['assegnato_a'] != $req->user['id']) {
+        Response::error('Accesso non consentito', 403);
+    }
 
     $schede = Database::fetchAll('SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?', [$ticket['cliente_id']]);
     $ticketEmails = Database::fetchAll('SELECT mittente, corpo, data_ricezione FROM email WHERE ticket_id = ? ORDER BY data_ricezione ASC', [$ticketId]);
@@ -156,6 +165,10 @@ Se prepari risposte per il cliente, usa un tono professionale ma cordiale.",
 
 // POST /api/ai/client-assist
 $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], function($req) {
+    // Rate limit: 20 AI requests per minute per IP
+    RateLimiter::enforce('ai', 20, 60, 'Troppe richieste AI. Riprova tra un minuto.');
+    RateLimiter::record('ai');
+
     $domanda = $req->body['domanda'] ?? '';
     if (!$domanda) Response::error('domanda è obbligatoria', 400);
     if (!GROQ_API_KEY) Response::error('GROQ_API_KEY non configurata.', 500);

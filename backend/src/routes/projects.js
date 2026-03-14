@@ -5,6 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin, authenticateClientToken } = require('../middleware/auth');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 // Ensure upload directory exists
 const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'progetti');
@@ -12,10 +13,11 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xlsx', '.zip', '.rar', '.7z', '.csv', '.md'];
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(file.originalname).toLowerCase();
     cb(null, crypto.randomUUID() + ext);
   },
 });
@@ -23,6 +25,7 @@ const storage = multer.diskStorage({
 const uploadAllegati = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: createFileFilter(allowedExts),
 });
 
 const router = express.Router();
@@ -451,6 +454,13 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // GET /api/projects/:id/allegati — list attachments (admin/tecnico)
 router.get('/:id/allegati', authenticateToken, (req, res) => {
+  // IDOR protection: tecnico can only list attachments from assigned projects
+  if (req.user.ruolo === 'tecnico') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?')
+      .get(req.params.id, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+
   const allegati = db.prepare(
     'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_progetto WHERE progetto_id = ? ORDER BY created_at DESC'
   ).all(req.params.id);
@@ -458,7 +468,7 @@ router.get('/:id/allegati', authenticateToken, (req, res) => {
 });
 
 // POST /api/projects/:id/allegati — upload attachments (admin only)
-router.post('/:id/allegati', authenticateToken, requireAdmin, uploadAllegati.array('files', 10), (req, res) => {
+router.post('/:id/allegati', authenticateToken, requireAdmin, uploadAllegati.array('files', 10), validateUploadedFiles, (req, res) => {
   const project = db.prepare('SELECT id FROM progetti WHERE id = ?').get(req.params.id);
   if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
 
@@ -514,6 +524,13 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // GET /api/projects/:id/allegati/:allegatoId/download — download attachment (admin/tecnico)
 router.get('/:id/allegati/:allegatoId/download', authenticateToken, (req, res) => {
+  // IDOR protection: tecnico can only download from assigned projects
+  if (req.user.ruolo === 'tecnico') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?')
+      .get(req.params.id, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+
   const allegato = db.prepare('SELECT * FROM allegati_progetto WHERE id = ? AND progetto_id = ?').get(req.params.allegatoId, req.params.id);
   if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
 

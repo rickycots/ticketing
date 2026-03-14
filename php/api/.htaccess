@@ -1,7 +1,10 @@
 RewriteEngine On
 
 # Block access to sensitive files
-<FilesMatch "\.(env|enc|sql|log)$">
+<FilesMatch "\.(env|enc|sql|log|json)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^(config\.php|config\.enc|config\.env|composer\.json|composer\.lock|_ENABLE_.*)$">
     Require all denied
 </FilesMatch>
 
@@ -11,7 +14,8 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 # Allow direct access to existing files (uploads, etc.)
 # But NOT config files (already blocked above)
 RewriteCond %{REQUEST_FILENAME} -f
-RewriteCond %{REQUEST_URI} !\.(env|enc|sql|log)$
+RewriteCond %{REQUEST_URI} !\.(env|enc|sql|log|json)$
+RewriteCond %{REQUEST_URI} !config\.php$
 RewriteRule ^ - [L]
 
 # Allow direct access to migrations (with key protection)

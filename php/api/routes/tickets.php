@@ -198,6 +198,11 @@ $router->get('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) 
     );
     if (!$ticket) Response::error('Ticket non trovato', 404);
 
+    // IDOR protection: tecnico can only see tickets assigned to them
+    if (($req->user['ruolo'] ?? '') === 'tecnico' && $ticket['assegnato_a'] != $req->user['id']) {
+        Response::error('Accesso non consentito', 403);
+    }
+
     // Mark as read
     if (!$ticket['letta']) {
         Database::execute('UPDATE ticket SET letta = 1 WHERE id = ?', [$req->params['id']]);
@@ -427,8 +432,13 @@ $router->post('/tickets/:id/notes', [Auth::class, 'authenticateToken'], function
     $testo = trim($req->body['testo'] ?? '');
     if (!$testo) Response::error('Il testo della nota è obbligatorio', 400);
 
-    $ticket = Database::fetchOne('SELECT id FROM ticket WHERE id = ?', [$req->params['id']]);
+    $ticket = Database::fetchOne('SELECT id, assegnato_a FROM ticket WHERE id = ?', [$req->params['id']]);
     if (!$ticket) Response::error('Ticket non trovato', 404);
+
+    // IDOR protection: tecnico can only add notes to assigned tickets
+    if (($req->user['ruolo'] ?? '') === 'tecnico' && $ticket['assegnato_a'] != $req->user['id']) {
+        Response::error('Accesso non consentito', 403);
+    }
 
     Database::execute(
         'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)',

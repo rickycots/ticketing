@@ -1,6 +1,6 @@
 <?php
 // Force no-cache headers for SPA entry point
-header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0, s-maxage=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 

@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { sendAssistenzaEmail, sendTicketingEmail, wrapEmailTemplate, logoAttachment } = require('../services/mailer');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 const router = express.Router();
 
@@ -23,10 +24,7 @@ const emailUpload = multer({
     },
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowedExts.includes(ext));
-  },
+  fileFilter: createFileFilter(allowedExts),
 }).array('allegati', 5);
 
 // GET /api/emails — list emails with filters (admin only)
@@ -132,7 +130,7 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // POST /api/emails — create email (admin only, with optional attachments)
-router.post('/', authenticateToken, requireAdmin, emailUpload, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, emailUpload, validateUploadedFiles, async (req, res) => {
   const { tipo, destinatario, oggetto, corpo, is_bloccante, thread_id } = req.body;
   // FormData sends everything as strings — parse numeric IDs
   const cliente_id = req.body.cliente_id ? parseInt(req.body.cliente_id) : null;

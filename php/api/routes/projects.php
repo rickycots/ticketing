@@ -210,7 +210,7 @@ $router->get('/projects/client/:clienteId/:projectId/allegati/:allegatoId/downlo
     $filePath = UPLOAD_DIR . '/progetti/' . $allegato['nome_file'];
     if (!file_exists($filePath)) Response::error('File non trovato', 404);
     header('Content-Type: ' . ($allegato['tipo_mime'] ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . $allegato['nome_originale'] . '"');
+    header('Content-Disposition: attachment; filename="' . basename(str_replace(["\r", "\n", '"'], '', $allegato['nome_originale'])) . '"');
     header('Content-Length: ' . filesize($filePath));
     readfile($filePath);
     exit;
@@ -621,7 +621,10 @@ $router->post('/projects/:id/allegati', [Auth::class, 'authenticateToken'], [Aut
     $project = Database::fetchOne('SELECT id FROM progetti WHERE id = ?', [$req->params['id']]);
     if (!$project) Response::error('Progetto non trovato', 404);
 
-    $files = Upload::handleMultiple('files', UPLOAD_DIR . '/progetti');
+    $files = Upload::handleMultiple('files', UPLOAD_DIR . '/progetti', [
+        'maxSize' => 20 * 1024 * 1024,
+        'allowedExts' => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'xlsx', 'zip', 'rar', '7z', 'csv', 'md'],
+    ]);
 
     $results = [];
     foreach ($files as $file) {
@@ -680,6 +683,15 @@ $router->delete('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::clas
 
 // GET /api/projects/:id/allegati/:allegatoId/download — download attachment (admin/tecnico)
 $router->get('/projects/:id/allegati/:allegatoId/download', [Auth::class, 'authenticateToken'], function($req) {
+    // IDOR protection: tecnico can only download from assigned projects
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assigned = Database::fetchOne(
+            'SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?',
+            [$req->params['id'], $req->user['id']]
+        );
+        if (!$assigned) Response::error('Accesso non consentito', 403);
+    }
+
     $allegato = Database::fetchOne(
         'SELECT * FROM allegati_progetto WHERE id = ? AND progetto_id = ?',
         [$req->params['allegatoId'], $req->params['id']]
@@ -689,7 +701,7 @@ $router->get('/projects/:id/allegati/:allegatoId/download', [Auth::class, 'authe
     $filePath = UPLOAD_DIR . '/progetti/' . $allegato['nome_file'];
     if (!file_exists($filePath)) Response::error('File non trovato', 404);
     header('Content-Type: ' . ($allegato['tipo_mime'] ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . $allegato['nome_originale'] . '"');
+    header('Content-Disposition: attachment; filename="' . basename(str_replace(["\r", "\n", '"'], '', $allegato['nome_originale'])) . '"');
     header('Content-Length: ' . filesize($filePath));
     readfile($filePath);
     exit;

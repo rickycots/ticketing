@@ -63,4 +63,13 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/users/audit-log — view audit log (admin-only)
+router.get('/audit-log', authenticateToken, requireAdmin, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const logs = db.prepare(
+    'SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?'
+  ).all(limit);
+  res.json(logs);
+});
+
 module.exports = router;

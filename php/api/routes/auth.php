@@ -5,6 +5,9 @@
 
 // POST /api/auth/login
 $router->post('/auth/login', function($req) {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    RateLimiter::enforce('admin_login', 5, 900, 'Troppi tentativi di login. Riprova tra 15 minuti.');
+
     $email = $req->body['email'] ?? '';
     $password = $req->body['password'] ?? '';
 
@@ -18,8 +21,12 @@ $router->post('/auth/login', function($req) {
     );
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
+        RateLimiter::record('admin_login');
         Response::error("Utente non abilitato o dati errati.\nVerifica le credenziali e riprova.", 401);
     }
+
+    // Success — clear lockout
+    RateLimiter::clear('admin_login');
 
     $token = Auth::generateToken([
         'id' => $user['id'],

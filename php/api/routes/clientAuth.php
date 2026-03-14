@@ -14,6 +14,9 @@ function requireClientAdmin($req) {
 
 // POST /api/client-auth/login
 $router->post('/client-auth/login', function($req) {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    RateLimiter::enforce('client_login', 5, 900, 'Troppi tentativi di login. Riprova tra 15 minuti.');
+
     $email = $req->body['email'] ?? '';
     $password = $req->body['password'] ?? '';
 
@@ -30,12 +33,16 @@ $router->post('/client-auth/login', function($req) {
     );
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
+        RateLimiter::record('client_login');
         Response::error("Utente non abilitato o dati errati.\nVerifica le credenziali e riprova.", 401);
     }
 
     if (!$user['attivo']) {
         Response::error('Account disabilitato', 403);
     }
+
+    // Success — clear lockout
+    RateLimiter::clear('client_login');
 
     $userRuolo = $user['ruolo'] ?: 'user';
     $visibili = $userRuolo === 'admin' ? 'ticket,progetti,ai' : $user['schede_visibili'];
@@ -239,21 +246,33 @@ $router->post('/client-auth/impersonate/:clienteId',
     [Auth::class, 'authenticateToken'],
     [Auth::class, 'requireAdmin'],
     function($req) {
+        // Rate limit: 5 impersonations per hour per IP
+        RateLimiter::enforce('impersonate', 5, 3600, 'Troppi tentativi di impersonation. Riprova tra un\'ora.');
+        RateLimiter::record('impersonate');
+
         $cliente = Database::fetchOne(
             'SELECT * FROM clienti WHERE id = ?',
             [$req->params['clienteId']]
         );
         if (!$cliente) Response::error('Cliente non trovato', 404);
 
+        // Audit log
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        Database::execute(
+            'INSERT INTO audit_log (azione, admin_id, admin_nome, admin_email, target_id, target_tipo, dettagli, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            ['impersonate', $req->user['id'], $req->user['nome'], $req->user['email'], $cliente['id'], 'cliente', "Impersonation cliente: {$cliente['nome_azienda']}", $ip]
+        );
+
         $token = Auth::generateToken([
             'id' => 0,
+            'admin_id' => $req->user['id'],
             'nome' => "Admin ({$req->user['nome']})",
             'email' => $req->user['email'],
             'cliente_id' => $cliente['id'],
             'schede_visibili' => 'ticket,progetti,ai',
             'tipo' => 'cliente',
             'impersonated' => true,
-        ], 14400); // 4h
+        ], 3600); // 1h
 
         Response::json([
             'token' => $token,
@@ -265,6 +284,7 @@ $router->post('/client-auth/impersonate/:clienteId',
                 'nome_azienda' => $cliente['nome_azienda'],
                 'logo' => $cliente['logo'],
                 'schede_visibili' => 'ticket,progetti,ai',
+                'impersonated' => true,
             ],
         ]);
     }

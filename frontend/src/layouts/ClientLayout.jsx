@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck, ShieldAlert } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
 
@@ -39,6 +39,7 @@ export default function ClientLayout() {
   const hasProgetti = schede.includes('progetti')
   const hasAi = schede.includes('ai')
   const isClientAdmin = clientUser.ruolo === 'admin'
+  const isImpersonated = !!clientUser.impersonated
 
   const logoUrl = clientUser.logo ? `${import.meta.env.VITE_API_BASE || '/api'}/uploads/logos/${clientUser.logo}` : null
 
@@ -46,6 +47,12 @@ export default function ClientLayout() {
     sessionStorage.removeItem('clientToken')
     sessionStorage.removeItem('clientUser')
     navigate('/client/login')
+  }
+
+  function handleExitImpersonation() {
+    sessionStorage.removeItem('clientToken')
+    sessionStorage.removeItem('clientUser')
+    window.close()
   }
 
   return (
@@ -147,6 +154,20 @@ export default function ClientLayout() {
           </div>
         </div>
       </header>
+
+      {/* Impersonation banner */}
+      {isImpersonated && (
+        <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-center gap-3 text-sm font-medium shadow-md">
+          <ShieldAlert size={18} />
+          <span>Stai operando come <strong>{clientUser.nome_azienda}</strong> — sessione admin impersonata (scade in 1h)</span>
+          <button
+            onClick={handleExitImpersonation}
+            className="ml-4 bg-white text-amber-700 px-3 py-1 rounded-md text-xs font-bold hover:bg-amber-50 transition-colors cursor-pointer"
+          >
+            Esci
+          </button>
+        </div>
+      )}
 
       {/* Content */}
       <main className="w-full max-w-6xl mx-auto px-4 py-6 flex-1">
@@ -276,7 +297,7 @@ export default function ClientLayout() {
               <h3 className="text-lg font-bold text-gray-900">{t('chatSupport')}</h3>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5">
-              <p className="text-sm text-amber-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: t('chatDisclaimer') }} />
+              <p className="text-sm text-amber-800 leading-relaxed">{t('chatDisclaimerPre')}<strong>{t('chatDisclaimerBold')}</strong>{t('chatDisclaimerPost')}</p>
             </div>
             <div className="flex flex-col gap-2">
               <a

@@ -4,15 +4,44 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin, authenticateClientToken, JWT_SECRET } = require('../middleware/auth');
 const { sendNoreplyEmail } = require('../services/mailer');
+const { loginLimiter, impersonateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
+// Login attempt tracking (in-memory, per IP)
+const clientLoginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkClientLockout(ip) {
+  const record = clientLoginAttempts.get(ip);
+  if (!record) return false;
+  if (Date.now() - record.lastAttempt > LOGIN_LOCKOUT_MS) {
+    clientLoginAttempts.delete(ip);
+    return false;
+  }
+  return record.attempts >= MAX_LOGIN_ATTEMPTS;
+}
+
+function recordClientFailedLogin(ip) {
+  const record = clientLoginAttempts.get(ip) || { attempts: 0, lastAttempt: 0 };
+  record.attempts++;
+  record.lastAttempt = Date.now();
+  clientLoginAttempts.set(ip, record);
+}
+
 // POST /api/client-auth/login
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { email, password } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email e password sono obbligatori' });
+  }
+
+  // Progressive lockout
+  if (checkClientLockout(ip)) {
+    return res.status(429).json({ error: 'Troppi tentativi di login. Riprova tra 15 minuti.' });
   }
 
   const user = db.prepare(`
@@ -26,6 +55,9 @@ router.post('/login', (req, res) => {
     if (!user.attivo) {
       return res.status(403).json({ error: 'Account disabilitato' });
     }
+
+    // Clear lockout on successful login
+    clientLoginAttempts.delete(ip);
 
     const userRuolo = user.ruolo || 'user';
     const visibili = userRuolo === 'admin' ? 'ticket,progetti,ai' : user.schede_visibili;
@@ -108,6 +140,7 @@ router.post('/login', (req, res) => {
     });
   }
 
+  recordClientFailedLogin(ip);
   return res.status(401).json({ error: 'Credenziali non valide' });
 });
 
@@ -243,13 +276,20 @@ router.get('/me', authenticateClientToken, (req, res) => {
 });
 
 // POST /api/client-auth/impersonate/:clienteId — admin impersonates a client (full access)
-router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, res) => {
+router.post('/impersonate/:clienteId', impersonateLimiter, authenticateToken, requireAdmin, (req, res) => {
   const cliente = db.prepare('SELECT * FROM clienti WHERE id = ?').get(req.params.clienteId);
   if (!cliente) return res.status(404).json({ error: 'Cliente non trovato' });
+
+  // Audit log
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  db.prepare(
+    'INSERT INTO audit_log (azione, admin_id, admin_nome, admin_email, target_id, target_tipo, dettagli, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run('impersonate', req.user.id, req.user.nome, req.user.email, cliente.id, 'cliente', `Impersonation cliente: ${cliente.nome_azienda}`, ip);
 
   const token = jwt.sign(
     {
       id: 0,
+      admin_id: req.user.id,
       nome: `Admin (${req.user.nome})`,
       email: req.user.email,
       cliente_id: cliente.id,
@@ -258,7 +298,7 @@ router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, re
       impersonated: true,
     },
     JWT_SECRET,
-    { expiresIn: '4h' }
+    { expiresIn: '1h' }
   );
 
   res.json({
@@ -271,6 +311,7 @@ router.post('/impersonate/:clienteId', authenticateToken, requireAdmin, (req, re
       nome_azienda: cliente.nome_azienda,
       logo: cliente.logo,
       schede_visibili: 'ticket,progetti,ai',
+      impersonated: true,
     },
   });
 });

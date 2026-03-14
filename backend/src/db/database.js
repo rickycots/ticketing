@@ -141,6 +141,25 @@ function runMigrations() {
       valore TEXT
     )
   `);
+
+  // Create audit_log table for sensitive operations (impersonation, etc.)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      azione TEXT NOT NULL,
+      admin_id INTEGER NOT NULL,
+      admin_nome TEXT,
+      admin_email TEXT,
+      target_id INTEGER,
+      target_tipo TEXT,
+      dettagli TEXT,
+      ip TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_audit_azione ON audit_log(azione)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_log(admin_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at)');
 }
 runMigrations();
 

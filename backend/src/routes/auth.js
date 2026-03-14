@@ -4,27 +4,63 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 const { JWT_SECRET } = require('../middleware/auth');
 
-
 const router = express.Router();
+
+// Login attempt tracking (in-memory, per IP — resets on server restart)
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkLoginLockout(ip) {
+  const record = loginAttempts.get(ip);
+  if (!record) return false;
+  if (Date.now() - record.lastAttempt > LOCKOUT_MS) {
+    loginAttempts.delete(ip);
+    return false;
+  }
+  return record.attempts >= MAX_ATTEMPTS;
+}
+
+function recordFailedLogin(ip) {
+  const record = loginAttempts.get(ip) || { attempts: 0, lastAttempt: 0 };
+  record.attempts++;
+  record.lastAttempt = Date.now();
+  loginAttempts.set(ip, record);
+}
+
+function clearLoginAttempts(ip) {
+  loginAttempts.delete(ip);
+}
 
 // POST /api/auth/login
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email e password richiesti' });
   }
 
+  // Progressive lockout check
+  if (checkLoginLockout(ip)) {
+    return res.status(429).json({ error: 'Troppi tentativi di login. Riprova tra 15 minuti.' });
+  }
+
   const user = db.prepare('SELECT * FROM utenti WHERE email = ? AND attivo = 1').get(email);
 
   if (!user) {
+    recordFailedLogin(ip);
     return res.status(401).json({ error: 'Credenziali non valide' });
   }
 
   const validPassword = bcrypt.compareSync(password, user.password_hash);
   if (!validPassword) {
+    recordFailedLogin(ip);
     return res.status(401).json({ error: 'Credenziali non valide' });
   }
+
+  // Success — clear lockout
+  clearLoginAttempts(ip);
 
   const token = jwt.sign(
     { id: user.id, nome: user.nome, email: user.email, ruolo: user.ruolo },

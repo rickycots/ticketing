@@ -4,8 +4,8 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router({ mergeParams: true });
 
-// GET /api/clients/:clienteId/schede — list KB cards for a client
-router.get('/', authenticateToken, (req, res) => {
+// GET /api/clients/:clienteId/schede — list KB cards for a client (admin only)
+router.get('/', authenticateToken, requireAdmin, (req, res) => {
   const schede = db.prepare(
     'SELECT * FROM schede_cliente WHERE cliente_id = ? ORDER BY updated_at DESC'
   ).all(req.params.clienteId);

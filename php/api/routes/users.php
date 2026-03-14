@@ -74,3 +74,13 @@ $router->delete('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 
     Database::execute('DELETE FROM utenti WHERE id = ?', [$id]);
     Response::success();
 });
+
+// GET /api/users/audit-log — view audit log (admin-only)
+$router->get('/users/audit-log', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $limit = min((int)($req->query['limit'] ?? 50), 200);
+    $logs = Database::fetchAll(
+        'SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?',
+        [$limit]
+    );
+    Response::json($logs);
+});

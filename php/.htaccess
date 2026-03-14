@@ -1,13 +1,19 @@
 RewriteEngine On
 RewriteBase /ticketing/
 
-# Disable caching for HTML and API responses
+# Block access to sensitive files
+<FilesMatch "\.(md|env|enc|json|log|sql|sh|gitignore)$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^(composer\.json|config\.enc)$">
+  Require all denied
+</FilesMatch>
+
+# Disable caching for all HTML/PHP responses
 <IfModule mod_headers.c>
-  <FilesMatch "\.(html)$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-    Header set Pragma "no-cache"
-    Header set Expires "0"
-  </FilesMatch>
+  Header set Cache-Control "no-cache, no-store, must-revalidate, private"
+  Header set Pragma "no-cache"
+  Header set Expires "0"
 </IfModule>
 
 # Fallback: disable caching via mod_expires
@@ -17,7 +23,9 @@ RewriteBase /ticketing/
 </IfModule>
 
 # Direct access to existing files (uploads, static assets, etc.)
+# BUT exclude _app.html so it's never served directly
 RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} !_app\.html$
 RewriteRule ^ - [L]
 
 # Direct access to existing directories
@@ -31,5 +39,9 @@ RewriteRule ^api/seed/ - [L]
 RewriteRule ^api/migrations/ - [L]
 RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
-# React SPA fallback (everything else -> index.html)
-RewriteRule ^ index.html [L]
+# React SPA fallback — append unique query string to bust Aruba CDN cache
+RewriteCond %{QUERY_STRING} !_cb=
+RewriteRule ^ index.php?_cb=%{TIME} [QSA,L]
+
+# If already has _cb param, serve normally
+RewriteRule ^ index.php [QSA,L]

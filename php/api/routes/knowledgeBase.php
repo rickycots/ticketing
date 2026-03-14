@@ -3,8 +3,8 @@
  * Knowledge Base routes — KB cards per client
  */
 
-// GET /api/clients/:clienteId/schede
-$router->get('/clients/:clienteId/schede', [Auth::class, 'authenticateToken'], function($req) {
+// GET /api/clients/:clienteId/schede (admin only)
+$router->get('/clients/:clienteId/schede', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     Response::json(Database::fetchAll(
         'SELECT * FROM schede_cliente WHERE cliente_id = ? ORDER BY updated_at DESC',
         [$req->params['clienteId']]

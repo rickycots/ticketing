@@ -5,6 +5,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 // Multer config for logo uploads
 const logoStorage = multer.diskStorage({
@@ -18,15 +19,11 @@ const logoStorage = multer.diskStorage({
     cb(null, `client_${req.params.id}_logo${ext}`);
   },
 });
+const allowedLogoExts = ['.jpg', '.jpeg', '.png'];
 const uploadLogo = multer({
   storage: logoStorage,
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowed.includes(ext)) cb(null, true);
-    else cb(new Error('Solo file JPG e PNG sono consentiti'));
-  },
+  fileFilter: createFileFilter(allowedLogoExts),
 });
 
 const router = express.Router();
@@ -162,6 +159,14 @@ router.post('/:id/logo', authenticateToken, requireAdmin, (req, res) => {
     }
     if (!req.file) {
       return res.status(400).json({ error: 'Nessun file caricato' });
+    }
+
+    // Validate magic bytes
+    const { validateMagicBytes } = require('../middleware/uploadSecurity');
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (!validateMagicBytes(req.file.path, ext)) {
+      try { fs.unlinkSync(req.file.path); } catch {}
+      return res.status(400).json({ error: 'Il contenuto del file non corrisponde all\'estensione dichiarata' });
     }
 
     const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(req.params.id);

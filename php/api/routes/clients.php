@@ -207,8 +207,8 @@ $router->delete('/clients/:id/users/:userId', [Auth::class, 'authenticateToken']
 
 // --- Referenti Progetto (anagrafica referenti del cliente) ---
 
-// GET /api/clients/:id/referenti
-$router->get('/clients/:id/referenti', [Auth::class, 'authenticateToken'], function($req) {
+// GET /api/clients/:id/referenti (admin only)
+$router->get('/clients/:id/referenti', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $referenti = Database::fetchAll(
         'SELECT * FROM referenti_progetto WHERE cliente_id = ? ORDER BY cognome, nome',
         [$req->params['id']]

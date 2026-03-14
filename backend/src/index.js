@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { globalLimiter, loginLimiter, aiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -10,11 +11,14 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Global rate limit — 100 req/min per IP
+app.use('/api/', globalLimiter);
+
 // Static files for uploads (logos, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
+// Routes — with specific rate limits on sensitive endpoints
+app.use('/api/auth', loginLimiter, require('./routes/auth'));
 app.use('/api/client-auth', require('./routes/clientAuth'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/projects', require('./routes/projects'));
@@ -34,8 +38,8 @@ app.use('/api/clients/:clienteId/schede', require('./routes/knowledgeBase'));
 // Repository routes
 app.use('/api/repository', require('./routes/repository'));
 
-// AI routes
-app.use('/api/ai', require('./routes/ai'));
+// AI routes — stricter rate limit
+app.use('/api/ai', aiLimiter, require('./routes/ai'));
 
 // Health check
 app.get('/api/health', (req, res) => {

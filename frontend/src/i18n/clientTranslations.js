@@ -19,7 +19,9 @@ const translations = {
 
     // Teams modal
     chatSupport: 'Chat Supporto',
-    chatDisclaimer: 'Il supporto via chat <strong>non è garantito</strong>. Se non ricevi risposta entro 2 minuti, ti invitiamo ad aprire un ticket per un\'assistenza tracciata e tempestiva.',
+    chatDisclaimerPre: 'Il supporto via chat ',
+    chatDisclaimerBold: 'non è garantito',
+    chatDisclaimerPost: '. Se non ricevi risposta entro 2 minuti, ti invitiamo ad aprire un ticket per un\'assistenza tracciata e tempestiva.',
     openTeamsChat: 'Apri Chat su Teams',
     openATicket: 'Apri un Ticket',
     chatWithUs: 'Chatta con noi su Teams',
@@ -225,7 +227,9 @@ const translations = {
 
     // Teams modal
     chatSupport: 'Chat Support',
-    chatDisclaimer: 'Chat support is <strong>not guaranteed</strong>. If you don\'t receive a response within 2 minutes, please open a ticket for tracked and timely assistance.',
+    chatDisclaimerPre: 'Chat support is ',
+    chatDisclaimerBold: 'not guaranteed',
+    chatDisclaimerPost: '. If you don\'t receive a response within 2 minutes, please open a ticket for tracked and timely assistance.',
     openTeamsChat: 'Open Teams Chat',
     openATicket: 'Open a Ticket',
     chatWithUs: 'Chat with us on Teams',
@@ -431,7 +435,9 @@ const translations = {
 
     // Teams modal
     chatSupport: 'Chat Support',
-    chatDisclaimer: 'Le support par chat <strong>n\'est pas garanti</strong>. Si vous ne recevez pas de réponse dans les 2 minutes, veuillez ouvrir un ticket pour une assistance suivie et rapide.',
+    chatDisclaimerPre: 'Le support par chat ',
+    chatDisclaimerBold: 'n\'est pas garanti',
+    chatDisclaimerPost: '. Si vous ne recevez pas de réponse dans les 2 minutes, veuillez ouvrir un ticket pour une assistance suivie et rapide.',
     openTeamsChat: 'Ouvrir le Chat Teams',
     openATicket: 'Ouvrir un Ticket',
     chatWithUs: 'Chattez avec nous sur Teams',

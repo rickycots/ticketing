@@ -18,6 +18,7 @@ require_once __DIR__ . '/core/Auth.php';
 require_once __DIR__ . '/core/Upload.php';
 require_once __DIR__ . '/core/Mailer.php';
 require_once __DIR__ . '/core/CronRunner.php';
+require_once __DIR__ . '/core/RateLimiter.php';
 
 // Create router with API base path
 $router = new Router(API_BASE);
