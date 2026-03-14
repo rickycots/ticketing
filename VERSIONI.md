@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V3.1.04-0314 — 14 Marzo 2026
+- Fix posizione banner sicurezza AI: ora dentro la colonna chat (stessa larghezza) sia lato admin che client
+
 ## V3.1.03-0314 — 14 Marzo 2026
 - Titolo "Dettaglio Progetto" nella pagina progetto singolo (ProjectGantt)
 - Titolo "Dettaglio Attività" nella pagina attività singola (ActivityDetail) con sottotitolo progetto + nome attività
