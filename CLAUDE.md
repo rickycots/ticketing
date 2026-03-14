@@ -63,15 +63,18 @@ node deploy/deploy.js --php
 1. **Incrementare la versione** in `frontend/src/version.js` — formato `V{major}.{minor}-MMGG`
    - Incrementare il minor per ogni nuovo commit (es. V1.6 → V1.7)
    - Aggiornare MMGG alla data corrente
-2. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
-3. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
-4. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
-5. Includere `version.js` e `VERSIONI.md` nello stesso commit
-6. **Build + deploy frontend** dopo ogni commit (la versione è nel bundle JS):
+2. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
+3. Includere `version.js` e `VERSIONI.md` nello stesso commit
+4. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
+5. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
+6. **Push** su GitHub: `git push && git push --tags`
+7. **Build + deploy frontend** (la versione è nel bundle JS):
    ```bash
    cd frontend && npx vite build --emptyOutDir false
    cd .. && node deploy/deploy.js --frontend
    ```
+
+> **IMPORTANTE**: I passi 1-7 sono TUTTI obbligatori ad ogni commit. Non fermarsi mai al commit senza push e deploy.
 
 ### Esempio completo
 
@@ -83,4 +86,9 @@ git add <files modificati> frontend/src/version.js VERSIONI.md
 git commit -m "V1.7-0313 Add feature X and fix Y"
 # 4. Tag
 git tag -a v1.7-0313 -m "V1.7-0313 Add feature X and fix Y"
+# 5. Push
+git push && git push --tags
+# 6. Build + deploy frontend
+cd frontend && npx vite build --emptyOutDir false
+cd .. && node deploy/deploy.js --frontend
 ```

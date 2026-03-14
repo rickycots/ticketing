@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V2.3-0314 — 14 Marzo 2026
+- CLAUDE.md: procedura commit aggiornata — push e deploy frontend sono ora obbligatori ad ogni commit
+- Aggiunto passo esplicito `git push && git push --tags` e nota IMPORTANTE sulla completezza della procedura
+
 ## V2.2-0314 — 14 Marzo 2026
 - README.md aggiornato alla V2.1: versione, struttura progetto, schema DB 21+ tabelle, sezione sicurezza completa, istruzioni migrazione con flag file + MIGRATE_KEY
 - CLAUDE.md aggiornato: nota migrazioni PHP con flag file e chiave dedicata
