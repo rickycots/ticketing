@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.2-0314 — 14 Marzo 2026
+- README.md aggiornato alla V2.1: versione, struttura progetto, schema DB 21+ tabelle, sezione sicurezza completa, istruzioni migrazione con flag file + MIGRATE_KEY
+- CLAUDE.md aggiornato: nota migrazioni PHP con flag file e chiave dedicata
+- Nuovi file documentati: RateLimiter.php, rateLimiter.js, uploadSecurity.js
+- Sezione sicurezza README riscritta: autenticazione, impersonation, rate limiting, upload security, IDOR/BOLA, IMAP hardening
+
 ## V2.1-0314 — 14 Marzo 2026
 - Security hardening completo su tutti gli endpoint
 - Fix XSS: rimosso dangerouslySetInnerHTML da ClientLayout, split chatDisclaimer in 3 chiavi i18n (IT/EN/FR)

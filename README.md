@@ -2,7 +2,7 @@
 
 Sistema di Ticketing e Project Management con due portali: **Admin Panel** (gestione interna) e **Client Portal** (accesso clienti).
 
-**Versione corrente:** V1.5-0313
+**Versione corrente:** V2.1-0314
 
 **Produzione:** https://www.stmdomotica.cloud/ticketing/
 
@@ -33,7 +33,8 @@ php/                          # Backend PHP (produzione Aruba)
       Mailer.php              # SMTP PHPMailer
       Response.php            # JSON response helper
       Router.php              # Router custom
-      Upload.php              # Upload file handler
+      Upload.php              # Upload file handler (whitelist, magic bytes, double-ext block)
+      RateLimiter.php         # Rate limiter DB-based (no Redis)
       CronRunner.php          # Cron job runner
     routes/
       auth.php                # Login/me admin
@@ -51,9 +52,9 @@ php/                          # Backend PHP (produzione Aruba)
       comunicazioni.php       # CRUD comunicazioni admin
       ai.php                  # AI ticket-assist (admin) + client-assist (client)
     migrations/
-      001_schema.sql          # Schema SQL completo
+      001_schema.sql          # Schema SQL completo (include audit_log, rate_limits)
       fix_referenti.php       # Migrazioni incrementali
-      migrate.php             # Runner migrazioni via browser
+      migrate.php             # Runner migrazioni (flag file + chiave dedicata)
     cron/
       poll_emails.php         # IMAP polling
       scrape_faq.php          # FAQ scraping
@@ -68,6 +69,8 @@ backend/                      # Backend Node.js (sviluppo locale)
     db/database.js            # SQLite + migrazioni
     db/schema.sql             # Schema SQL
     middleware/auth.js         # JWT auth
+    middleware/rateLimiter.js  # Rate limiters (global, login, AI, upload, impersonate)
+    middleware/uploadSecurity.js # Upload validation (whitelist, magic bytes, double-ext)
     routes/                   # Stesse route del PHP
     services/
       mailer.js               # SMTP nodemailer
@@ -135,8 +138,12 @@ node deploy/deploy.js --php
 
 1. Caricare i file PHP via deploy
 2. Creare `php/api/config.env` sul server con le credenziali
-3. Aprire `/api/migrations/migrate.php?key=JWT_SECRET` per creare le tabelle
-4. (Opzionale) Aprire `/api/seed/seed.php?key=JWT_SECRET` per dati demo
+3. Creare file `_ENABLE_MIGRATE` nella cartella `api/migrations/`
+4. Aprire `/api/migrations/migrate.php?key=MIGRATE_KEY` per creare le tabelle
+5. Eliminare `_ENABLE_MIGRATE` subito dopo
+6. (Opzionale) Aprire `/api/seed/seed.php?key=JWT_SECRET` per dati demo
+
+> **Nota**: MIGRATE_KEY è `hash('sha256', JWT_SECRET . '-migrate-stm-2026')`, diversa dal JWT_SECRET.
 
 ## Sviluppo Locale
 
@@ -193,7 +200,7 @@ GROQ_API_KEY=<per AI assistant>
 # Stesse variabili email (opzionali in locale)
 ```
 
-## Database Schema (19+ tabelle)
+## Database Schema (21+ tabelle)
 
 **Core**: `utenti`, `clienti`, `progetti`, `attivita`, `ticket`, `email`
 **Relazioni**: `progetto_tecnici`, `note_interne`, `note_attivita`
@@ -201,16 +208,53 @@ GROQ_API_KEY=<per AI assistant>
 **Portale client**: `utenti_cliente`, `comunicazioni_cliente`, `comunicazioni_lette`
 **Progetti**: `allegati_progetto`, `referenti_progetto`, `progetto_referenti`
 **Features**: `notifiche`, `schede_cliente`, `documenti_repository`
+**Security**: `audit_log`, `rate_limits`
 **Config**: `impostazioni`
 
 ## Autenticazione e Sicurezza
 
+### Autenticazione
 - **Admin/Tecnico**: JWT in `sessionStorage` (key: `token`), 8h expiry
 - **Client**: JWT in `sessionStorage` (key: `clientToken`), 8h expiry
 - **Inactivity timeout**: 30 minuti
 - `sessionStorage` (non localStorage): sessione chiusa con il browser
 - Solo HTTP 401 trigger logout automatico (non 403)
-- Impersonation: admin > client via `POST /api/client-auth/impersonate/:clienteId`
+- **2FA via email**: codice 6 cifre, 3 tentativi max, scadenza 10 min
+- **Cambio password al primo avvio**: modale obbligatoria
+
+### Impersonation (V2.1)
+- Admin > client via `POST /api/client-auth/impersonate/:clienteId`
+- Audit log obbligatorio su DB (`audit_log` table)
+- Claim `admin_id` nel JWT per tracciabilita
+- TTL ridotto a 1h (vs 8h standard)
+- Banner amber nel portale client con pulsante "Esci"
+
+### Rate Limiting (V2.1)
+- **Login**: 5 tentativi / 15 min con lockout progressivo (Node.js in-memory + PHP DB-based)
+- **API globale**: 100 req/min per IP
+- **AI**: 20 req/min per IP
+- **Upload**: 10 req/min per IP
+- **Impersonation**: 5 req/ora per IP
+- PHP usa `rate_limits` table su DB (Aruba non ha Redis)
+
+### Upload Security (V2.1)
+- Whitelist estensioni per tipo di upload
+- Validazione magic bytes (header file reali vs estensione dichiarata)
+- Blocco doppie estensioni (`file.php.jpg`)
+- 30+ estensioni pericolose bloccate (`.php`, `.exe`, `.sh`, ecc.)
+- `.htaccess` anti-esecuzione nella cartella uploads
+- `X-Content-Type-Options: nosniff` su tutti i download
+
+### IDOR/BOLA Protection (V2.1)
+- Tecnico limitato a ticket/progetti assegnati (check ownership server-side)
+- KB cards e referenti: solo admin
+- Anti-spoofing IMAP: verifica mittente vs cliente del ticket
+- Tag `[COMM]` accettato solo da email admin
+
+### IMAP Hardening (V2.1)
+- Rate limit: 30 email/ciclo, 10/ora per mittente
+- Body troncato a 50KB
+- `stripHtml` rinforzata (rimuove script, style, commenti HTML, decodifica entities)
 
 ## Ruoli e Permessi
 
@@ -288,6 +332,7 @@ GROQ_API_KEY=<per AI assistant>
 | `/api/repository` | repository.php | Repository documenti |
 | `/api/comunicazioni` | comunicazioni.php | CRUD comunicazioni admin |
 | `/api/ai` | ai.php | AI assistant |
+| `/api/users/audit-log` | users.php | Audit log operazioni sensibili (admin) |
 
 ## Versioning
 

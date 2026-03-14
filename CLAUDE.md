@@ -35,7 +35,7 @@
 - **sessionStorage** (non localStorage): `token` per admin, `clientToken` per client
 - **Solo HTTP 401 triggera logout** automatico, non 403
 - **Migrazioni Node.js**: in `backend/src/db/database.js` (`runMigrations()`), girano all'avvio
-- **Migrazioni PHP**: in `php/api/migrations/`, eseguite via browser con chiave JWT
+- **Migrazioni PHP**: in `php/api/migrations/`, protette da flag file `_ENABLE_MIGRATE` + chiave dedicata `MIGRATE_KEY`
 - **IMAP tags**: `[TICKET #TK-YYYY-NNNN]` per ticket, `[COMM slug]` per comunicazioni client
 - **Dedup email**: via colonna `message_id` UNIQUE
 
