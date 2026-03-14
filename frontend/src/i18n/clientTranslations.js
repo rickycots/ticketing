@@ -11,9 +11,9 @@ const translations = {
 
     // Layout / Nav
     clientPortal: 'Portale Cliente',
-    myTickets: 'I Miei Ticket',
+    myTickets: 'Ticket',
     openTicket: 'Apri Ticket',
-    myProjects: 'I Miei Progetti',
+    myProjects: 'Progetti',
     users: 'Utenti',
     logout: 'Esci',
 
@@ -235,9 +235,9 @@ const translations = {
 
     // Layout / Nav
     clientPortal: 'Client Portal',
-    myTickets: 'My Tickets',
+    myTickets: 'Tickets',
     openTicket: 'Open Ticket',
-    myProjects: 'My Projects',
+    myProjects: 'Projects',
     users: 'Users',
     logout: 'Logout',
 
@@ -459,9 +459,9 @@ const translations = {
 
     // Layout / Nav
     clientPortal: 'Portail Client',
-    myTickets: 'Mes Tickets',
+    myTickets: 'Tickets',
     openTicket: 'Ouvrir Ticket',
-    myProjects: 'Mes Projets',
+    myProjects: 'Projets',
     users: 'Utilisateurs',
     logout: 'Déconnexion',
 

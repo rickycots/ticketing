@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.3.00-0314 — 14 Marzo 2026
+- CSP Google Fonts: aggiunto `fonts.googleapis.com` e `fonts.gstatic.com` ai Content-Security-Policy su tutti e 3 i livelli (.htaccess, Node.js, PHP)
+- Fix Timeline: progetti "Senza Attività" ora visibili nel filtro "Aperti"
+- Menu portale client su due righe: riga 1 per tutti (Ticket, Progetti, AI), riga 2 solo admin (Dashboard, Utenti)
+- Rinominato "I Miei Ticket" → "Ticket" e "I Miei Progetti" → "Progetti" nel portale client (IT/EN/FR)
+
 ## V3.2.00-0314 — 14 Marzo 2026
 - Dashboard cliente lato portale: nuova pagina `/client/dashboard` con torte ticket/email/progetti, tempi medi, ticket recenti
 - Endpoint `GET /api/client-auth/dashboard` (Node.js + PHP), solo admin cliente

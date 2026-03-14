@@ -15,7 +15,7 @@ RewriteBase /ticketing/
   Header set X-Content-Type-Options "nosniff"
   Header set X-XSS-Protection "1; mode=block"
   Header set Referrer-Policy "strict-origin"
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self'; frame-ancestors 'none'"
   Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
   Header set Cache-Control "no-cache, no-store, must-revalidate, private"
   Header set Pragma "no-cache"
