@@ -354,10 +354,10 @@ router.put('/:id', authenticateToken, (req, res) => {
 
 // POST /api/tickets/:id/notes — create internal note (auth)
 router.post('/:id/notes', authenticateToken, (req, res) => {
-  const { testo } = req.body;
+  const { testo, salva_in_kb } = req.body;
   if (!testo || !testo.trim()) return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
 
-  const ticket = db.prepare('SELECT id, assegnato_a FROM ticket WHERE id = ?').get(req.params.id);
+  const ticket = db.prepare('SELECT id, assegnato_a, cliente_id, codice, oggetto FROM ticket WHERE id = ?').get(req.params.id);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
 
   // IDOR protection: tecnico can only add notes to assigned tickets
@@ -368,6 +368,14 @@ router.post('/:id/notes', authenticateToken, (req, res) => {
   const result = db.prepare(
     'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)'
   ).run(req.params.id, req.user.id, testo.trim());
+
+  // Save to KB if flag is set
+  if (salva_in_kb && ticket.cliente_id) {
+    const titolo = `Nota ${ticket.codice} — ${ticket.oggetto}`;
+    db.prepare(
+      'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)'
+    ).run(ticket.cliente_id, titolo, testo.trim());
+  }
 
   const note = db.prepare(`
     SELECT n.*, u.nome as utente_nome FROM note_interne n

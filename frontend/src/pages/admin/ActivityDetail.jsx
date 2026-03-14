@@ -37,6 +37,7 @@ export default function ActivityDetail() {
   const [userList, setUserList] = useState([])
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
+  const [noteToKB, setNoteToKB] = useState(false)
   const [notesOpen, setNotesOpen] = useState(true)
   const [emailTab, setEmailTab] = useState('tutte')
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -67,9 +68,10 @@ export default function ActivityDetail() {
     if (!noteText.trim()) return
     setSendingNote(true)
     try {
-      await activities.addNote(projectId, activityId, noteText.trim())
+      await activities.addNote(projectId, activityId, noteText.trim(), noteToKB)
       await loadActivity()
       setNoteText('')
+      setNoteToKB(false)
     } catch (err) { console.error(err) }
     finally { setSendingNote(false) }
   }
@@ -314,7 +316,12 @@ export default function ActivityDetail() {
                   <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Aggiungi una nota..." rows={2}
                     className={`${selectCls} resize-none`} />
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+                      <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      Salva in Knowledge Base (disponibile per AI cliente)
+                    </label>
                     <button type="submit" disabled={sendingNote || !noteText.trim()}
                       className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
                       <StickyNote size={14} /> {sendingNote ? 'Salvataggio...' : 'Aggiungi Nota'}

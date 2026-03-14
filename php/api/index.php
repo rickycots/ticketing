@@ -20,6 +20,13 @@ require_once __DIR__ . '/core/Mailer.php';
 require_once __DIR__ . '/core/CronRunner.php';
 require_once __DIR__ . '/core/RateLimiter.php';
 
+// Security headers
+header("X-Frame-Options: DENY");
+header("X-Content-Type-Options: nosniff");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: strict-origin");
+header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'");
+
 // Create router with API base path
 $router = new Router(API_BASE);
 

@@ -430,9 +430,10 @@ $router->put('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) 
 // POST /api/tickets/:id/notes
 $router->post('/tickets/:id/notes', [Auth::class, 'authenticateToken'], function($req) {
     $testo = trim($req->body['testo'] ?? '');
+    $salvaInKb = !empty($req->body['salva_in_kb']);
     if (!$testo) Response::error('Il testo della nota è obbligatorio', 400);
 
-    $ticket = Database::fetchOne('SELECT id, assegnato_a FROM ticket WHERE id = ?', [$req->params['id']]);
+    $ticket = Database::fetchOne('SELECT id, assegnato_a, cliente_id, codice, oggetto FROM ticket WHERE id = ?', [$req->params['id']]);
     if (!$ticket) Response::error('Ticket non trovato', 404);
 
     // IDOR protection: tecnico can only add notes to assigned tickets
@@ -444,6 +445,15 @@ $router->post('/tickets/:id/notes', [Auth::class, 'authenticateToken'], function
         'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)',
         [$req->params['id'], $req->user['id'], $testo]
     );
+
+    // Save to KB if flag is set
+    if ($salvaInKb && $ticket['cliente_id']) {
+        $titolo = "Nota {$ticket['codice']} — {$ticket['oggetto']}";
+        Database::execute(
+            'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)',
+            [$ticket['cliente_id'], $titolo, $testo]
+        );
+    }
 
     $note = Database::fetchOne(
         "SELECT n.*, u.nome as utente_nome FROM note_interne n

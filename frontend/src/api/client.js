@@ -99,8 +99,8 @@ export const tickets = {
   clientGet: (clienteId, ticketId) => request(`/tickets/client/${clienteId}/${ticketId}`),
   clientReply: (clienteId, ticketId, corpo) =>
     request(`/tickets/client/${clienteId}/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ corpo }) }),
-  addNote: (id, testo) =>
-    request(`/tickets/${id}/notes`, { method: 'POST', body: JSON.stringify({ testo }) }),
+  addNote: (id, testo, salva_in_kb = false) =>
+    request(`/tickets/${id}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb }) }),
 };
 
 // Projects
@@ -145,8 +145,8 @@ export const activities = {
     request(`/projects/${projectId}/activities/${activityId}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (projectId, activityId) =>
     request(`/projects/${projectId}/activities/${activityId}`, { method: 'DELETE' }),
-  addNote: (projectId, activityId, testo) =>
-    request(`/projects/${projectId}/activities/${activityId}/notes`, { method: 'POST', body: JSON.stringify({ testo }) }),
+  addNote: (projectId, activityId, testo, salva_in_kb = false) =>
+    request(`/projects/${projectId}/activities/${activityId}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb }) }),
 };
 
 // Clients

@@ -64,31 +64,33 @@ node deploy/deploy.js --php
    - Incrementare il minor per ogni nuovo commit (es. V1.6 → V1.7)
    - Aggiornare MMGG alla data corrente
 2. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
-3. Includere `version.js` e `VERSIONI.md` nello stesso commit
-4. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
-5. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
-6. **Push** su GitHub: `git push && git push --tags`
-7. **Build + deploy frontend** (la versione è nel bundle JS):
+3. **Aggiornare `README.md`**: riflettere le modifiche nella documentazione (nuovi file, struttura, sezioni, endpoint, schema DB, ecc.)
+4. Includere `version.js`, `VERSIONI.md` e `README.md` nello stesso commit
+5. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
+6. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
+7. **Push** su GitHub: `git push && git push --tags`
+8. **Build + deploy frontend** (la versione è nel bundle JS):
    ```bash
    cd frontend && npx vite build --emptyOutDir false
    cd .. && node deploy/deploy.js --frontend
    ```
 
-> **IMPORTANTE**: I passi 1-7 sono TUTTI obbligatori ad ogni commit. Non fermarsi mai al commit senza push e deploy.
+> **IMPORTANTE**: I passi 1-8 sono TUTTI obbligatori ad ogni commit. Non fermarsi mai al commit senza aggiornare README, VERSIONI, push e deploy.
 
 ### Esempio completo
 
 ```bash
 # 1. Aggiornare version.js → V1.7-0313
 # 2. Aggiornare VERSIONI.md con la nuova sezione
-# 3. Commit
-git add <files modificati> frontend/src/version.js VERSIONI.md
+# 3. Aggiornare README.md con le modifiche
+# 4. Commit
+git add <files modificati> frontend/src/version.js VERSIONI.md README.md
 git commit -m "V1.7-0313 Add feature X and fix Y"
-# 4. Tag
+# 5. Tag
 git tag -a v1.7-0313 -m "V1.7-0313 Add feature X and fix Y"
-# 5. Push
+# 6. Push
 git push && git push --tags
-# 6. Build + deploy frontend
+# 7. Build + deploy frontend
 cd frontend && npx vite build --emptyOutDir false
 cd .. && node deploy/deploy.js --frontend
 ```

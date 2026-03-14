@@ -294,12 +294,12 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
 
 // POST /api/projects/:id/activities/:activityId/notes — add note to activity
 router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, res) => {
-  const { testo } = req.body;
+  const { testo, salva_in_kb } = req.body;
   if (!testo || !testo.trim()) {
     return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
   }
 
-  const activity = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?')
+  const activity = db.prepare('SELECT a.id, a.titolo, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?')
     .get(req.params.activityId, req.params.id);
   if (!activity) {
     return res.status(404).json({ error: 'Attività non trovata' });
@@ -309,6 +309,14 @@ router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, r
     INSERT INTO note_attivita (attivita_id, utente_id, testo)
     VALUES (?, ?, ?)
   `).run(req.params.activityId, req.user.id, testo.trim());
+
+  // Save to KB if flag is set
+  if (salva_in_kb && activity.cliente_id) {
+    const titolo = `Nota attività "${activity.titolo}" — ${activity.progetto_nome}`;
+    db.prepare(
+      'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)'
+    ).run(activity.cliente_id, titolo, testo.trim());
+  }
 
   const nota = db.prepare(`
     SELECT n.*, u.nome as utente_nome

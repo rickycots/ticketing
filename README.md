@@ -141,9 +141,11 @@ node deploy/deploy.js --php
 3. Creare file `_ENABLE_MIGRATE` nella cartella `api/migrations/`
 4. Aprire `/api/migrations/migrate.php?key=MIGRATE_KEY` per creare le tabelle
 5. Eliminare `_ENABLE_MIGRATE` subito dopo
-6. (Opzionale) Aprire `/api/seed/seed.php?key=JWT_SECRET` per dati demo
+6. (Opzionale) Per dati demo: creare `_ENABLE_SEED` in `api/seed/`, aprire `/api/seed/seed.php?key=SEED_KEY`, eliminare `_ENABLE_SEED`
 
-> **Nota**: MIGRATE_KEY è `hash('sha256', JWT_SECRET . '-migrate-stm-2026')`, diversa dal JWT_SECRET.
+> **Nota**: MIGRATE_KEY e SEED_KEY sono chiavi dedicate derivate dal JWT_SECRET (non il JWT_SECRET stesso).
+> - `MIGRATE_KEY = hash('sha256', JWT_SECRET . '-migrate-stm-2026')`
+> - `SEED_KEY = hash('sha256', JWT_SECRET . '-seed-stm-2026')`
 
 ## Sviluppo Locale
 
@@ -256,6 +258,14 @@ GROQ_API_KEY=<per AI assistant>
 - Body troncato a 50KB
 - `stripHtml` rinforzata (rimuove script, style, commenti HTML, decodifica entities)
 
+### Security Headers (V2.5)
+- `Content-Security-Policy`: default-src 'self', frame-ancestors 'none'
+- `X-Frame-Options: DENY` — anti-clickjacking
+- `X-Content-Type-Options: nosniff` — anti-MIME sniffing
+- `X-XSS-Protection: 1; mode=block` — protezione XSS browser legacy
+- `Referrer-Policy: strict-origin` — limita leak referrer
+- Applicati globalmente su entrambi i backend (Node.js + PHP)
+
 ## Ruoli e Permessi
 
 | Ruolo | Accesso |
@@ -272,7 +282,7 @@ GROQ_API_KEY=<per AI assistant>
 - Stati: aperto > in_lavorazione > in_attesa > risolto > chiuso
 - Priorita: urgente, alta, media, bassa
 - SLA per cliente: 1g, 3g, nb
-- Note interne, email associate
+- Note interne, email associate, flag "Salva in Knowledge Base" per rendere una nota disponibile all'AI del cliente
 - Client: apertura, risposta, chiusura, riapertura
 
 ### Progetti
@@ -301,8 +311,8 @@ GROQ_API_KEY=<per AI assistant>
 - Polling automatico via cron
 
 ### AI Assistant
-- **Admin**: contesto KB + ticket + email + note + storico + repository
-- **Client**: contesto FAQ + repository docs
+- **Admin**: contesto KB cliente + ticket + email + note + storico + repository + FAQ
+- **Client**: contesto KB cliente (tenant-isolated) + FAQ + repository docs
 - Modello: Groq Llama 3.3 70B (free tier)
 - Risponde nella lingua della domanda
 

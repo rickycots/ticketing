@@ -380,12 +380,13 @@ $router->post('/projects/:id/activities/:activityId/notes', [Auth::class, 'authe
     checkProjectAccess($req);
 
     $testo = $req->body['testo'] ?? null;
+    $salvaInKb = !empty($req->body['salva_in_kb']);
     if (!$testo || !trim($testo)) {
         Response::error('Il testo della nota è obbligatorio', 400);
     }
 
     $activity = Database::fetchOne(
-        'SELECT id FROM attivita WHERE id = ? AND progetto_id = ?',
+        'SELECT a.id, a.titolo, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?',
         [$req->params['activityId'], $req->params['id']]
     );
     if (!$activity) {
@@ -396,6 +397,15 @@ $router->post('/projects/:id/activities/:activityId/notes', [Auth::class, 'authe
         'INSERT INTO note_attivita (attivita_id, utente_id, testo) VALUES (?, ?, ?)',
         [$req->params['activityId'], $req->user['id'], trim($testo)]
     );
+
+    // Save to KB if flag is set
+    if ($salvaInKb && $activity['cliente_id']) {
+        $titolo = "Nota attività \"{$activity['titolo']}\" — {$activity['progetto_nome']}";
+        Database::execute(
+            'INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)',
+            [$activity['cliente_id'], $titolo, trim($testo)]
+        );
+    }
 
     $newId = Database::lastInsertId();
 

@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.5-0314 — 14 Marzo 2026
+- Flag "Salva in Knowledge Base" nelle note interne ticket e note attività
+- Nota salvata anche in schede_cliente per il cliente associato, disponibile per AI (admin + client)
+- Security headers globali (Node.js + PHP): CSP, X-Frame-Options DENY, X-XSS-Protection, Referrer-Policy, X-Content-Type-Options
+- README: corrette istruzioni seed (flag file + SEED_KEY dedicata)
+
 ## V2.4-0314 — 14 Marzo 2026
 - Client AI chat: aggiunto caricamento schede Knowledge Base filtrate per cliente (tenant isolation)
 - Ogni cliente vede solo le proprie schede KB nella chat AI, non quelle di altri clienti
