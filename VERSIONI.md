@@ -1,5 +1,17 @@
 # Storico Versioni
 
+## V3.0-0314 — 14 Marzo 2026
+- Dashboard Cliente: nuova pagina `/admin/clients/:id/dashboard` con statistiche dedicate per cliente
+- Grafici a torta: ticket (aperti/chiusi), email (assegnate/non assegnate), progetti (attivi/chiusi/bloccati/senza attivita)
+- Valori: tempo medio gestione ticket, tempo medio durata attivita di progetto
+- Banner cliente con nome azienda, email, telefono, referente (stile Gantt)
+- Rinominato "Dashboard Sistemi" in "Dashboard Cliente" nella pagina dettaglio cliente
+- AI Assistente admin/tecnico: nuova pagina `/admin/ai` con chat AI general-purpose
+- Pannello informativo su fonti dati AI: Repository documenti, FAQ Suprema, Knowledge Base clienti (incluse note salvate con flag KB)
+- Link "AI Assistente" nel sidebar admin, visibile ad admin e tecnici
+- Nuovo endpoint `POST /api/ai/admin-assist` (Node.js + PHP) con accesso cross-client a tutte le KB
+- Nuovo endpoint `GET /api/dashboard/client/:clienteId` (Node.js + PHP) per statistiche cliente
+
 ## V2.9-0314 — 14 Marzo 2026
 - RAG prompt injection defense: funzione `sanitizeContext()` filtra 20+ pattern di injection dal contesto prima dell'invio al modello AI
 - Pattern filtrati: manipolazione istruzioni, cambio ruolo, data exfiltration, meta-prompt

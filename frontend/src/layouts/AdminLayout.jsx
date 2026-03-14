@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
 
@@ -16,6 +16,7 @@ const allNavItems = [
 ]
 
 const bottomNavItems = [
+  { to: '/admin/ai', icon: Sparkles, label: 'AI Assistente' },
   { to: '/admin/repository', icon: BookOpen, label: 'Repository', adminOnly: true },
 ]
 

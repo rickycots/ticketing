@@ -256,12 +256,12 @@ export default function ClientDetail() {
           >
             <Ticket size={14} /> Accedi Ticketing/Progetti
           </button>
-          <button
-            onClick={() => window.open('/client/login', '_blank')}
+          <Link
+            to={`/admin/clients/${id}/dashboard`}
             className="inline-flex items-center gap-1.5 bg-indigo-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors cursor-pointer"
           >
-            <BarChart3 size={14} /> Dashboard Sistemi
-          </button>
+            <BarChart3 size={14} /> Dashboard Cliente
+          </Link>
         </div>
       </div>
 

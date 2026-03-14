@@ -14,6 +14,8 @@ import TimelineList from './pages/admin/TimelineList'
 import EmailInbox from './pages/admin/EmailInbox'
 import ClientList from './pages/admin/ClientList'
 import ClientDetail from './pages/admin/ClientDetail'
+import ClientDashboard from './pages/admin/ClientDashboard'
+import AdminAiChat from './pages/admin/AdminAiChat'
 import UserList from './pages/admin/UserList'
 import Repository from './pages/admin/Repository'
 import ComunicazioniList from './pages/admin/ComunicazioniList'
@@ -67,8 +69,10 @@ export default function App() {
         <Route path="emails" element={<AdminOnly><EmailInbox /></AdminOnly>} />
         <Route path="clients" element={<AdminOnly><ClientList /></AdminOnly>} />
         <Route path="clients/:id" element={<AdminOnly><ClientDetail /></AdminOnly>} />
+        <Route path="clients/:id/dashboard" element={<AdminOnly><ClientDashboard /></AdminOnly>} />
         <Route path="users" element={<AdminOnly><UserList /></AdminOnly>} />
         <Route path="comunicazioni" element={<AdminOnly><ComunicazioniList /></AdminOnly>} />
+        <Route path="ai" element={<AdminAiChat />} />
       </Route>
 
       {/* Client Portal */}

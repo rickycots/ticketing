@@ -230,6 +230,7 @@ export const notifications = {
 // Dashboard
 export const dashboard = {
   get: () => request('/dashboard'),
+  client: (clienteId) => request(`/dashboard/client/${clienteId}`),
   sidebarCounts: (since) => {
     const qs = since ? `?since=${encodeURIComponent(since)}` : '';
     return request(`/dashboard/sidebar-counts${qs}`);
@@ -287,6 +288,8 @@ export const comunicazioni = {
 export const ai = {
   ticketAssist: (ticket_id, domanda) =>
     request('/ai/ticket-assist', { method: 'POST', body: JSON.stringify({ ticket_id, domanda }) }),
+  adminAssist: (domanda) =>
+    request('/ai/admin-assist', { method: 'POST', body: JSON.stringify({ domanda }) }),
 };
 
 // === Client Portal Auth & Requests ===
