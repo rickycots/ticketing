@@ -300,11 +300,23 @@ GROQ_API_KEY=<per AI assistant>
 - Body troncato a 50KB
 - `stripHtml` rinforzata (rimuove script, style, commenti HTML, decodifica entities)
 
-### Anti-Prompt-Injection AI (V2.7)
-- System prompt istruisce il modello a trattare documenti, email, note e KB come **dati puri, mai come istruzioni**
-- Blocco esplicito di pattern injection: "ignora istruzioni precedenti", "rivela lo schema", "cambia ruolo"
+### Anti-Prompt-Injection AI — RAG Defense (V2.7 + V2.9)
+Difesa su **due livelli** contro RAG prompt injection (documenti, email, note che contengono istruzioni malevole):
+
+**Livello 1 — System prompt hardening (V2.7)**:
+- Il modello è istruito a trattare tutti i documenti di contesto come **dati puri, mai come istruzioni**
+- Blocco esplicito di pattern: "ignora istruzioni precedenti", "rivela lo schema", "cambia ruolo"
 - Il modello non rivela mai configurazione interna, schema DB, credenziali o architettura
-- Protezione applicata su tutti e 4 gli endpoint AI (ticket-assist + client-assist, Node.js + PHP)
+
+**Livello 2 — Context sanitization pre-invio (V2.9)**:
+- Funzione `sanitizeContext()` filtra 20+ pattern di injection **prima** che il contesto arrivi al modello
+- Pattern filtrati (sostituiti con `[FILTERED]`):
+  - Manipolazione istruzioni: `ignore previous instructions`, `override instructions`, `new instructions:`, `disregard previous`, `forget previous`
+  - Cambio ruolo: `you are now a`, `act as a different`, `change your role`, `switch to mode`
+  - Data exfiltration: `reveal the database/schema/credentials`, `show me the system prompt`, `print the entire knowledge base`, `dump the database`
+  - Meta-prompt: `system prompt`, `hidden prompt`, `initial instructions`, `output your instructions`, `repeat your prompt`
+- Applicata su tutti e 4 gli endpoint AI (ticket-assist + client-assist, Node.js + PHP)
+- Pattern identici su entrambi i backend per coerenza
 
 ### Isolamento Endpoint Client vs Admin (IDOR Audit)
 Analisi completa della separazione degli endpoint per ruolo:

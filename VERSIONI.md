@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.9-0314 — 14 Marzo 2026
+- RAG prompt injection defense: funzione `sanitizeContext()` filtra 20+ pattern di injection dal contesto prima dell'invio al modello AI
+- Pattern filtrati: manipolazione istruzioni, cambio ruolo, data exfiltration, meta-prompt
+- Difesa su due livelli: sanitizzazione pre-invio (livello 2) + system prompt hardening (livello 1, V2.7)
+- Applicata su tutti e 4 gli endpoint AI (Node.js + PHP)
+
 ## V2.8-0314 — 14 Marzo 2026
 - README: documentazione completa audit IDOR endpoint client vs admin
 - Tabella copertura validazione su tutti i 10 endpoint client con dettaglio check per ciascuno

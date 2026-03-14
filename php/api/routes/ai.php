@@ -4,6 +4,33 @@
  * Uses Groq API via cURL (replaces groq-sdk)
  */
 
+// RAG prompt injection sanitizer — strips dangerous patterns from context documents
+function sanitizeContext(string $text): string {
+    $patterns = [
+        '/ignore\s+(all\s+)?previous\s+instructions/i',
+        '/ignore\s+(all\s+)?above\s+instructions/i',
+        '/disregard\s+(all\s+)?previous/i',
+        '/forget\s+(all\s+)?previous/i',
+        '/override\s+(all\s+)?instructions/i',
+        '/new\s+instructions?\s*:/i',
+        '/you\s+are\s+now\s+a/i',
+        '/act\s+as\s+(a\s+)?different/i',
+        '/change\s+your\s+role/i',
+        '/switch\s+to\s+(\w+\s+)?mode/i',
+        '/reveal\s+(the\s+)?(system\s+prompt|database|schema|credentials|password|secret|internal|hidden)/i',
+        '/show\s+(me\s+)?(the\s+)?(system\s+prompt|database|schema|credentials|password|secret|internal|admin)/i',
+        '/print\s+(the\s+)?(entire|all|full)\s+(knowledge|database|schema|prompt|instructions)/i',
+        '/dump\s+(the\s+)?(database|schema|tables|credentials)/i',
+        '/what\s+(is|are)\s+(your|the)\s+(system\s+prompt|instructions|rules)/i',
+        '/output\s+(your|the)\s+(system|initial)\s+(prompt|instructions|message)/i',
+        '/repeat\s+(your|the)\s+(system|initial)\s+(prompt|instructions)/i',
+        '/\bsystem\s*prompt\b/i',
+        '/\bhidden\s*prompt\b/i',
+        '/\binitial\s*instructions?\b/i',
+    ];
+    return preg_replace($patterns, '[FILTERED]', $text);
+}
+
 function groqChatCompletion(string $systemPrompt, string $userMessage): string {
     if (!GROQ_API_KEY) {
         throw new \Exception('GROQ_API_KEY non configurata. Aggiungi la chiave nel file config.env.');
@@ -147,6 +174,9 @@ $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function(
         foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
     }
 
+    // Sanitize context before sending to AI
+    $context = sanitizeContext($context);
+
     try {
         $risposta = groqChatCompletion(
             "Sei un assistente tecnico IT esperto. Aiuti i tecnici a risolvere ticket di assistenza.
@@ -228,6 +258,9 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
         $context .= "\n=== DOCUMENTI TECNICI ===\n";
         foreach ($repoDocs as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
     }
+
+    // Sanitize context before sending to AI
+    $context = sanitizeContext($context);
 
     try {
         $risposta = groqChatCompletion(
