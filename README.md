@@ -2,7 +2,7 @@
 
 Sistema di Ticketing e Project Management con due portali: **Admin Panel** (gestione interna) e **Client Portal** (accesso clienti).
 
-**Versione corrente:** V2.1-0314
+**Versione corrente:** V3.0-0314
 
 **Produzione:** https://www.stmdomotica.cloud/ticketing/
 
@@ -50,7 +50,7 @@ php/                          # Backend PHP (produzione Aruba)
       knowledgeBase.php       # Schede cliente (KB cards)
       repository.php          # Repository documenti
       comunicazioni.php       # CRUD comunicazioni admin
-      ai.php                  # AI ticket-assist (admin) + client-assist (client)
+      ai.php                  # AI ticket-assist + client-assist + admin-assist
     migrations/
       001_schema.sql          # Schema SQL completo (include audit_log, rate_limits)
       fix_referenti.php       # Migrazioni incrementali
@@ -104,9 +104,11 @@ frontend/                     # React SPA (condiviso)
         EmailInbox.jsx        # Inbox email
         ClientList.jsx        # Lista clienti
         ClientDetail.jsx      # Dettaglio cliente + KB + utenti portale
+        ClientDashboard.jsx   # Dashboard statistiche per cliente (torte + medie)
         UserList.jsx          # Gestione utenti admin/tecnico
         Repository.jsx        # Repository documenti
         ComunicazioniList.jsx # Gestione comunicazioni client
+        AdminAiChat.jsx       # Chat AI admin/tecnico (general-purpose)
       client/
         TicketList.jsx        # Lista ticket (sidebar + aperti + chiusi)
         TicketDetail.jsx      # Dettaglio ticket
@@ -406,11 +408,22 @@ Analisi completa della separazione degli endpoint per ruolo:
 - Polling automatico via cron
 
 ### AI Assistant
-- **Admin**: contesto KB cliente + ticket + email + note + storico + repository + FAQ
-- **Client**: contesto KB cliente (tenant-isolated) + FAQ + repository docs
+Tre modalita di accesso:
+- **Ticket-assist** (admin/tecnico in dettaglio ticket): contesto KB cliente + ticket + email + note + storico + repository + FAQ
+- **Admin-assist** (pagina dedicata `/admin/ai`, V3.0): contesto repository documenti + FAQ Suprema + Knowledge Base di tutti i clienti (cross-client). Accessibile ad admin e tecnici
+- **Client-assist** (portale client): contesto KB cliente (tenant-isolated) + FAQ + repository docs
 - Modello: Groq Llama 3.3 70B (free tier)
 - Risponde nella lingua della domanda
-- **Anti-prompt-injection (V2.7)**: il system prompt istruisce il modello a trattare tutti i documenti di contesto (email, note, KB, repository, FAQ) come **dati puri, mai come istruzioni**. Tentativi di injection tipo "ignora le istruzioni precedenti", "rivela lo schema DB" o "cambia ruolo" vengono esplicitamente ignorati. Il modello non rivela mai configurazione interna, schema DB, credenziali o architettura.
+- Pannello informativo nella pagina admin AI spiega le fonti dati: repository documenti, FAQ produttore, KB clienti (incluse note ticket/attivita salvate con flag "Salva in Knowledge Base")
+- **Anti-prompt-injection (V2.7+V2.9)**: system prompt hardening + `sanitizeContext()` pre-invio su tutti e 5 gli endpoint AI
+
+### Dashboard Cliente (V3.0)
+- Pagina `/admin/clients/:id/dashboard` con statistiche dedicate per singolo cliente
+- Grafici a torta SVG: ticket (aperti/chiusi), email (assegnate/non assegnate), progetti (attivi/chiusi/bloccati/senza attivita)
+- Valori calcolati: tempo medio gestione ticket (giorni), tempo medio durata attivita progetto (giorni)
+- Banner cliente con nome azienda, email, telefono, referente
+- Ticket recenti del cliente
+- Endpoint: `GET /api/dashboard/client/:clienteId` (solo admin)
 
 ### Repository Documenti
 - Upload (admin), download (tutti), testo estratto per AI
@@ -434,10 +447,10 @@ Analisi completa della separazione degli endpoint per ruolo:
 | `/api/emails` | emails.php | CRUD email |
 | `/api/users` | users.php | CRUD utenti |
 | `/api/notifications` | notifications.php | Notifiche |
-| `/api/dashboard` | dashboard.php | Stats + counts |
+| `/api/dashboard` | dashboard.php | Stats + counts + client dashboard |
 | `/api/repository` | repository.php | Repository documenti |
 | `/api/comunicazioni` | comunicazioni.php | CRUD comunicazioni admin |
-| `/api/ai` | ai.php | AI assistant |
+| `/api/ai` | ai.php | AI assistant (ticket-assist, client-assist, admin-assist) |
 | `/api/users/audit-log` | users.php | Audit log operazioni sensibili (admin) |
 
 ## Versioning
