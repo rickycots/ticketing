@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V3.1.01-0314 — 14 Marzo 2026
+- Fix route PHP dashboard cliente: parametro `:clienteId` al posto di regex `(\d+)` incompatibile con il router
+
 ## V3.1.00-0314 — 14 Marzo 2026
 - Nuovo schema versione a 3 segmenti: `V{X}.{Y}.{ZZ}-MMGG` (major.minor.patch-data)
 - CLAUDE.md riscritto: checklist commit obbligatoria a 8 passi con checkbox
