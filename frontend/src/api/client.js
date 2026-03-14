@@ -338,6 +338,7 @@ export const clientAuth = {
   login: (email, password) =>
     clientRequest('/client-auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => clientRequest('/client-auth/me'),
+  dashboard: () => clientRequest('/client-auth/dashboard'),
   impersonate: (clienteId) =>
     request(`/client-auth/impersonate/${clienteId}`, { method: 'POST' }),
   comunicazioni: () => clientRequest('/client-auth/comunicazioni'),

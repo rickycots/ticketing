@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
+const { sendNoreplyEmail } = require('../services/mailer');
 
 // Multer config for logo uploads
 const logoStorage = multer.diskStorage({
@@ -230,6 +231,33 @@ router.post('/:id/users', authenticateToken, requireAdmin, (req, res) => {
   const user = db.prepare(
     'SELECT id, cliente_id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at FROM utenti_cliente WHERE id = ?'
   ).get(result.lastInsertRowid);
+
+  // Send welcome email
+  const loginUrl = `${process.env.FRONTEND_BASE_URL || 'https://www.stmdomotica.cloud/ticketing'}/client/login`;
+  sendNoreplyEmail(
+    email,
+    'Benvenuto — STM Domotica Ticketing',
+    `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <h2 style="color:#0d9488;margin:0;">STM Domotica</h2>
+        <p style="color:#6b7280;font-size:13px;">Portale Assistenza Tecnica</p>
+      </div>
+      <p>Gentile <strong>${nome}</strong>,</p>
+      <p>BENVENUTO! Ti è stato creato un account per utilizzare il servizio di ticketing di STM Domotica.</p>
+      <p>Segui il link per accedere:</p>
+      <p style="text-align:center;margin:20px 0;">
+        <a href="${loginUrl}" style="background:#0d9488;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Accedi al Portale</a>
+      </p>
+      <p>Di seguito la tua password provvisoria:</p>
+      <p style="text-align:center;margin:20px 0;">
+        <span style="background:#f0f4f8;border:1px solid #d0d7de;border-radius:8px;padding:12px 24px;font-size:20px;font-weight:bold;letter-spacing:2px;display:inline-block;">${password}</span>
+      </p>
+      <p style="color:#6b7280;font-size:12px;">Ti consigliamo di cambiare la password al primo accesso.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+      <p style="color:#9ca3af;font-size:11px;text-align:center;">STM Domotica Corporation S.r.l. — Questo messaggio è stato inviato automaticamente.</p>
+    </div>`
+  ).catch(err => console.error('Welcome email error:', err));
+
   res.status(201).json(user);
 });
 

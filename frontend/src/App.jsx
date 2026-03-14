@@ -26,6 +26,7 @@ import ProjectsView from './pages/client/ProjectsView'
 import ClientProjectDetail from './pages/client/ClientProjectDetail'
 import ClientUserManagement from './pages/client/UserManagement'
 import AiChat from './pages/client/AiChat'
+import ClientDashboardView from './pages/client/ClientDashboardView'
 
 function ProtectedRoute({ children }) {
   const token = sessionStorage.getItem('token')
@@ -89,6 +90,7 @@ export default function App() {
         <Route path="projects/:id" element={<ClientProjectDetail />} />
         <Route path="users" element={<ClientUserManagement />} />
         <Route path="ai" element={<AiChat />} />
+        <Route path="dashboard" element={<ClientDashboardView />} />
       </Route>
 
       {/* Redirect old slug-based URLs */}

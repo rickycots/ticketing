@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V3.2.00-0314 — 14 Marzo 2026
+- Dashboard cliente lato portale: nuova pagina `/client/dashboard` con torte ticket/email/progetti, tempi medi, ticket recenti
+- Endpoint `GET /api/client-auth/dashboard` (Node.js + PHP), solo admin cliente
+- Link Dashboard nel menu portale client (solo admin cliente)
+- Filtro "Solo miei" nella lista ticket client: filtra per `creatore_email` dell'utente loggato
+- Email di benvenuto automatica alla creazione utente cliente (admin + client, Node.js + PHP)
+- Rimosso bottone "Dashboard Sistemi" dalla pagina login clienti
+- Traduzioni i18n IT/EN/FR per dashboard e filtro
+
 ## V3.1.04-0314 — 14 Marzo 2026
 - Fix posizione banner sicurezza AI: ora dentro la colonna chat (stessa larghezza) sia lato admin che client
 

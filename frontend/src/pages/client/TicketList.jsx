@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Ticket, AlertTriangle, Wrench, CheckCircle, Archive, Clock, LayoutList, List, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Ticket, AlertTriangle, Wrench, CheckCircle, Archive, Clock, LayoutList, List, ChevronLeft, ChevronRight, UserRound } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
@@ -65,12 +65,14 @@ export default function ClientTicketList() {
   const [ticketList, setTicketList] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState('esteso')
+  const [onlyMine, setOnlyMine] = useState(false)
   const [openPage, setOpenPage] = useState(1)
   const [closedPage, setClosedPage] = useState(1)
   const PAGE_SIZE = 5
   const navigate = useNavigate()
   const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
   const clienteId = clientUser.cliente_id
+  const myEmail = clientUser.email
 
   useEffect(() => {
     if (!clienteId) return
@@ -81,8 +83,9 @@ export default function ClientTicketList() {
       .finally(() => setLoading(false))
   }, [clienteId])
 
-  const openTickets = ticketList.filter(t => t.stato !== 'chiuso' && t.stato !== 'risolto')
-  const closedTickets = ticketList.filter(t => t.stato === 'chiuso' || t.stato === 'risolto')
+  const filtered = onlyMine ? ticketList.filter(tk => tk.creatore_email === myEmail) : ticketList
+  const openTickets = filtered.filter(t => t.stato !== 'chiuso' && t.stato !== 'risolto')
+  const closedTickets = filtered.filter(t => t.stato === 'chiuso' || t.stato === 'risolto')
 
   if (loading) {
     return <div className="text-center py-12 text-gray-400">{t('loading')}</div>
@@ -174,14 +177,19 @@ export default function ClientTicketList() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{t('openTickets')}</h2>
-              {/* Toggle solo sulla prima colonna */}
-              <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                <button onClick={() => setViewMode('esteso')} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer bg-white shadow-sm text-gray-900">
-                  <LayoutList size={13} /> {t('extended')}
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setOnlyMine(v => !v); setOpenPage(1); setClosedPage(1) }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${onlyMine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}>
+                  <UserRound size={13} /> {t('onlyMine')}
                 </button>
-                <button onClick={() => { setViewMode('compatto'); setOpenPage(1); setClosedPage(1) }} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
-                  <List size={13} /> {t('compact')}
-                </button>
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button onClick={() => setViewMode('esteso')} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer bg-white shadow-sm text-gray-900">
+                    <LayoutList size={13} /> {t('extended')}
+                  </button>
+                  <button onClick={() => { setViewMode('compatto'); setOpenPage(1); setClosedPage(1) }} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
+                    <List size={13} /> {t('compact')}
+                  </button>
+                </div>
               </div>
             </div>
             {openTickets.length === 0 ? (
@@ -308,13 +316,19 @@ export default function ClientTicketList() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{t('ticketManagement')}</h2>
-              <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                <button onClick={() => { setViewMode('esteso'); setOpenPage(1); setClosedPage(1) }} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
-                  <LayoutList size={13} /> {t('extended')}
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setOnlyMine(v => !v); setOpenPage(1); setClosedPage(1) }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${onlyMine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}>
+                  <UserRound size={13} /> {t('onlyMine')}
                 </button>
-                <button onClick={() => setViewMode('compatto')} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer bg-white shadow-sm text-gray-900">
-                  <List size={13} /> {t('compact')}
-                </button>
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button onClick={() => { setViewMode('esteso'); setOpenPage(1); setClosedPage(1) }} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
+                    <LayoutList size={13} /> {t('extended')}
+                  </button>
+                  <button onClick={() => setViewMode('compatto')} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer bg-white shadow-sm text-gray-900">
+                    <List size={13} /> {t('compact')}
+                  </button>
+                </div>
               </div>
             </div>
 

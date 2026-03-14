@@ -174,22 +174,13 @@ export default function ClientLogin() {
               />
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-teal-600 text-white rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {loading ? t('loggingIn') : t('loginButton')}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                className="flex-1 bg-indigo-600 text-white rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {t('dashboardButton')}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-teal-600 text-white rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {loading ? t('loggingIn') : t('loginButton')}
+            </button>
           </form>
         </div>
         <p className="text-xs text-white/80 text-center mt-4 leading-relaxed">

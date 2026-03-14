@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck, ShieldAlert } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck, ShieldAlert, BarChart3 } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
 
@@ -128,6 +128,19 @@ export default function ClientLayout() {
                 >
                   <FolderKanban size={16} />
                   {t('myProjects')}
+                </NavLink>
+              )}
+              {isClientAdmin && (
+                <NavLink
+                  to="/client/dashboard"
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  <BarChart3 size={16} />
+                  {t('dashboard')}
                 </NavLink>
               )}
               {isClientAdmin && (

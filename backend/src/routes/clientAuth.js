@@ -241,6 +241,59 @@ router.post('/change-password', authenticateClientToken, (req, res) => {
   res.json({ success: true, cambio_password: updated.cambio_password });
 });
 
+// GET /api/client-auth/dashboard — client-side dashboard stats (client admin only)
+router.get('/dashboard', authenticateClientToken, (req, res) => {
+  if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin cliente' });
+  const clienteId = req.user.cliente_id;
+
+  const cliente = db.prepare('SELECT id, nome_azienda, email, telefono, referente FROM clienti WHERE id = ?').get(clienteId);
+  if (!cliente) return res.status(404).json({ error: 'Cliente non trovato' });
+
+  // Ticket stats
+  const ticketTotali = db.prepare('SELECT COUNT(*) as count FROM ticket WHERE cliente_id = ?').get(clienteId).count;
+  const ticketAperti = db.prepare("SELECT COUNT(*) as count FROM ticket WHERE cliente_id = ? AND stato IN ('aperto','in_lavorazione','in_attesa')").get(clienteId).count;
+  const ticketChiusi = db.prepare("SELECT COUNT(*) as count FROM ticket WHERE cliente_id = ? AND stato IN ('risolto','chiuso')").get(clienteId).count;
+
+  const tempoMedioTicket = db.prepare(`
+    SELECT AVG(julianday(updated_at) - julianday(created_at)) as avg_days
+    FROM ticket WHERE cliente_id = ? AND stato IN ('risolto','chiuso')
+  `).get(clienteId);
+
+  // Email stats
+  const emailTotali = db.prepare('SELECT COUNT(*) as count FROM email e JOIN ticket t ON e.ticket_id = t.id WHERE t.cliente_id = ?').get(clienteId).count;
+  const emailAssegnate = db.prepare('SELECT COUNT(*) as count FROM email e JOIN ticket t ON e.ticket_id = t.id WHERE t.cliente_id = ? AND e.ticket_id IS NOT NULL').get(clienteId).count;
+  const emailNonAssegnate = db.prepare("SELECT COUNT(*) as count FROM email e LEFT JOIN ticket t ON e.ticket_id = t.id WHERE (t.cliente_id = ? OR e.tipo = 'email_cliente') AND e.ticket_id IS NULL").get(clienteId).count;
+
+  // Project stats (computed dynamically)
+  const allProjects = db.prepare('SELECT id FROM progetti WHERE cliente_id = ?').all(clienteId);
+  let progettiAttivi = 0, progettiChiusi = 0, progettiBloccati = 0, progettiSenzaAttivita = 0;
+  for (const p of allProjects) {
+    const att = db.prepare('SELECT stato FROM attivita WHERE progetto_id = ?').all(p.id);
+    if (att.length === 0) { progettiSenzaAttivita++; continue; }
+    if (att.every(a => a.stato === 'completata')) { progettiChiusi++; continue; }
+    if (att.some(a => a.stato === 'bloccata')) { progettiBloccati++; continue; }
+    progettiAttivi++;
+  }
+
+  const tempoMedioAttivita = db.prepare(`
+    SELECT AVG(julianday(a.data_scadenza) - julianday(a.data_inizio)) as avg_days
+    FROM attivita a JOIN progetti p ON a.progetto_id = p.id
+    WHERE p.cliente_id = ? AND a.stato = 'completata' AND a.data_inizio IS NOT NULL AND a.data_scadenza IS NOT NULL
+  `).get(clienteId);
+
+  const ticketRecenti = db.prepare('SELECT id, codice, oggetto, stato, priorita, created_at FROM ticket WHERE cliente_id = ? ORDER BY created_at DESC LIMIT 5').all(clienteId);
+
+  res.json({
+    cliente,
+    ticket: { totali: ticketTotali, aperti: ticketAperti, chiusi: ticketChiusi },
+    tempo_medio_ticket: tempoMedioTicket.avg_days ? Math.round(tempoMedioTicket.avg_days * 10) / 10 : null,
+    email: { totali: emailTotali, assegnate: emailAssegnate, non_assegnate: emailNonAssegnate },
+    progetti: { totali: allProjects.length, attivi: progettiAttivi, chiusi: progettiChiusi, bloccati: progettiBloccati, senza_attivita: progettiSenzaAttivita },
+    tempo_medio_attivita: tempoMedioAttivita.avg_days ? Math.round(tempoMedioAttivita.avg_days * 10) / 10 : null,
+    ticket_recenti: ticketRecenti,
+  });
+});
+
 // GET /api/client-auth/me
 router.get('/me', authenticateClientToken, (req, res) => {
   // Handle impersonated admin users (id: 0)
@@ -362,6 +415,33 @@ router.post('/portal-users', authenticateClientToken, requireClientAdmin, (req, 
   const user = db.prepare(
     'SELECT id, nome, email, ruolo, schede_visibili, lingua, attivo, cambio_password, two_factor, created_at FROM utenti_cliente WHERE id = ?'
   ).get(result.lastInsertRowid);
+
+  // Send welcome email
+  const loginUrl = `${process.env.FRONTEND_BASE_URL || 'https://www.stmdomotica.cloud/ticketing'}/client/login`;
+  sendNoreplyEmail(
+    email,
+    'Benvenuto — STM Domotica Ticketing',
+    `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <h2 style="color:#0d9488;margin:0;">STM Domotica</h2>
+        <p style="color:#6b7280;font-size:13px;">Portale Assistenza Tecnica</p>
+      </div>
+      <p>Gentile <strong>${nome}</strong>,</p>
+      <p>BENVENUTO! Ti è stato creato un account per utilizzare il servizio di ticketing di STM Domotica.</p>
+      <p>Segui il link per accedere:</p>
+      <p style="text-align:center;margin:20px 0;">
+        <a href="${loginUrl}" style="background:#0d9488;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Accedi al Portale</a>
+      </p>
+      <p>Di seguito la tua password provvisoria:</p>
+      <p style="text-align:center;margin:20px 0;">
+        <span style="background:#f0f4f8;border:1px solid #d0d7de;border-radius:8px;padding:12px 24px;font-size:20px;font-weight:bold;letter-spacing:2px;display:inline-block;">${password}</span>
+      </p>
+      <p style="color:#6b7280;font-size:12px;">Ti consigliamo di cambiare la password al primo accesso.</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;" />
+      <p style="color:#9ca3af;font-size:11px;text-align:center;">STM Domotica Corporation S.r.l. — Questo messaggio è stato inviato automaticamente.</p>
+    </div>`
+  ).catch(err => console.error('Welcome email error:', err));
+
   res.status(201).json(user);
 });
 
