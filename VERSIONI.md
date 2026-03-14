@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.6-0314 — 14 Marzo 2026
+- Security headers globali nel .htaccess root: CSP, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- Headers applicati su 3 livelli: .htaccess root (HTML), PHP router (API), Node.js middleware (dev)
+- Aggiunto Permissions-Policy: disabilita camera, microfono, geolocalizzazione, pagamenti
+- README: sezione .htaccess completa con tabella copertura headers, dettaglio protezioni per livello
+
 ## V2.5-0314 — 14 Marzo 2026
 - Flag "Salva in Knowledge Base" nelle note interne ticket e note attività
 - Nota salvata anche in schede_cliente per il cliente associato, disponibile per AI (admin + client)

@@ -120,6 +120,48 @@ deploy/
   deploy.js                   # Script FTP deploy (--frontend / --php)
 ```
 
+## Protezione .htaccess
+
+Tre file `.htaccess` proteggono l'applicazione in produzione su tre livelli:
+
+### Root (`/ticketing/.htaccess`) — Frontend + Routing
+- **File bloccati**: `.md`, `.env`, `.enc`, `.json`, `.log`, `.sql`, `.sh`, `.gitignore`, `composer.json`, `config.enc`
+- **Security headers globali** (applicati a tutte le risposte HTML/JS/CSS):
+  - `X-Frame-Options: DENY` — anti-clickjacking, impedisce embedding in iframe
+  - `X-Content-Type-Options: nosniff` — impedisce MIME sniffing del browser
+  - `X-XSS-Protection: 1; mode=block` — protezione XSS per browser legacy
+  - `Referrer-Policy: strict-origin` — limita invio referrer a terze parti
+  - `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'` — restringe caricamento risorse alla stessa origin, blocca script/font/connect esterni, impedisce framing
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` — disabilita API browser sensibili
+- **Cache disabled** per HTML/PHP: `no-cache, no-store, must-revalidate`
+- Routing SPA React con cache busting per CDN Aruba
+
+### API (`/ticketing/api/.htaccess`) — Backend PHP
+- **File bloccati**: `.env`, `.enc`, `.sql`, `.log`, `.json`, `config.php`, `config.env`, `composer.json`, `composer.lock`, `_ENABLE_*` (flag files migrazione/seed)
+- Passa header `Authorization` a PHP (necessario per CGI/FastCGI su Aruba)
+- Routing API verso `index.php` front controller
+- **Security headers API** aggiuntivi impostati nel PHP router (`index.php`): stessi header CSP/X-Frame/X-XSS delle risposte HTML
+
+### Uploads (`/ticketing/api/uploads/.htaccess`) — File caricati dagli utenti
+- **Blocca esecuzione** di tutti gli script: `.php`, `.php3-7`, `.phtml`, `.phar`, `.pl`, `.py`, `.cgi`, `.asp`, `.aspx`, `.jsp`, `.sh`, `.shtml`
+- `RemoveHandler` / `RemoveType` per tutti i tipi script — impedisce interpretazione anche se rinominati
+- `Options -Indexes -ExecCGI` — no directory listing, no CGI
+- `X-Content-Type-Options: nosniff` — impedisce al browser di interpretare un file come script
+- `Content-Security-Policy: default-src 'none'` — nessun contenuto attivo consentito
+- Blocca file nascosti (`.htaccess`, `.env`, ecc.)
+
+### Riepilogo copertura security headers
+
+| Header | HTML (root) | API (PHP) | Uploads |
+|--------|:-----------:|:---------:|:-------:|
+| X-Frame-Options: DENY | Si | Si | — |
+| X-Content-Type-Options: nosniff | Si | Si | Si |
+| X-XSS-Protection | Si | Si | — |
+| Content-Security-Policy | Si | Si | Si (none) |
+| Referrer-Policy | Si | Si | — |
+| Permissions-Policy | Si | — | — |
+| Cache-Control: no-store | Si | — | — |
+
 ## Deploy Produzione
 
 ```bash
@@ -259,12 +301,14 @@ GROQ_API_KEY=<per AI assistant>
 - `stripHtml` rinforzata (rimuove script, style, commenti HTML, decodifica entities)
 
 ### Security Headers (V2.5)
-- `Content-Security-Policy`: default-src 'self', frame-ancestors 'none'
-- `X-Frame-Options: DENY` — anti-clickjacking
+- Applicati su **3 livelli**: `.htaccess` root (HTML/CSS/JS), PHP router (API JSON), Node.js middleware (sviluppo)
+- `Content-Security-Policy`: `default-src 'self'`, `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, `img-src 'self' data:`, `connect-src 'self'`, `frame-ancestors 'none'`
+- `X-Frame-Options: DENY` — anti-clickjacking, impedisce embedding in iframe
 - `X-Content-Type-Options: nosniff` — anti-MIME sniffing
 - `X-XSS-Protection: 1; mode=block` — protezione XSS browser legacy
-- `Referrer-Policy: strict-origin` — limita leak referrer
-- Applicati globalmente su entrambi i backend (Node.js + PHP)
+- `Referrer-Policy: strict-origin` — limita leak referrer a terze parti
+- `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` — disabilita API browser sensibili
+- Dettaglio completo nella sezione **Protezione .htaccess**
 
 ## Ruoli e Permessi
 
