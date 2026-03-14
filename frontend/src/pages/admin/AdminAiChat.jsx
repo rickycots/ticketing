@@ -111,17 +111,6 @@ export default function AdminAiChat() {
             </div>
           </div>
 
-          {/* Nota sicurezza */}
-          <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield size={14} className="text-amber-600" />
-              <h4 className="text-xs font-bold text-amber-800">Sicurezza</h4>
-            </div>
-            <p className="text-[11px] text-amber-700 leading-relaxed">
-              I contenuti dei documenti vengono sanitizzati prima dell'invio al modello AI (anti prompt-injection). L'AI non rivela mai configurazione interna, credenziali o schema DB.
-            </p>
-          </div>
-
           {/* Powered by */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
             <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Powered by</p>
@@ -246,6 +235,17 @@ export default function AdminAiChat() {
               </div>
             </>
           )}
+        </div>
+
+        {/* Nota sicurezza sotto la chat */}
+        <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4 mt-4 col-span-full">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield size={14} className="text-amber-600" />
+            <h4 className="text-xs font-bold text-amber-800">Sicurezza</h4>
+          </div>
+          <p className="text-[11px] text-amber-700 leading-relaxed">
+            I contenuti dei documenti vengono sanitizzati prima dell'invio al modello AI (anti prompt-injection). L'AI non rivela mai configurazione interna, credenziali o schema DB.
+          </p>
         </div>
       </div>
     </div>

@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.1.03-0314 — 14 Marzo 2026
+- Titolo "Dettaglio Progetto" nella pagina progetto singolo (ProjectGantt)
+- Titolo "Dettaglio Attività" nella pagina attività singola (ActivityDetail) con sottotitolo progetto + nome attività
+- Banner sicurezza AI spostato sotto la chat nella pagina admin AI
+- Banner sicurezza AI aggiunto nella pagina client AI con traduzioni i18n (IT/EN/FR)
+
 ## V3.1.02-0314 — 14 Marzo 2026
 - Icona Dashboard Cliente in alto a destra di ogni card nella lista clienti
 

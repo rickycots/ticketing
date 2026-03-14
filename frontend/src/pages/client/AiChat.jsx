@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Loader2, Bot, User, RotateCcw, BookOpen, MessageSquare, Zap } from 'lucide-react'
+import { Send, Sparkles, Loader2, Bot, User, RotateCcw, BookOpen, MessageSquare, Zap, Shield } from 'lucide-react'
 import { clientAi } from '../../api/client'
 import { t } from '../../i18n/clientTranslations'
 
@@ -220,6 +220,17 @@ export default function AiChat() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Nota sicurezza sotto la chat */}
+      <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm p-4 mt-4 col-span-full">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield size={14} className="text-amber-600" />
+          <h4 className="text-xs font-bold text-amber-800">{t('aiSecurityTitle') || 'Sicurezza'}</h4>
+        </div>
+        <p className="text-[11px] text-amber-700 leading-relaxed">
+          {t('aiSecurityDesc') || "I contenuti dei documenti vengono sanitizzati prima dell'invio al modello AI (anti prompt-injection). L'AI non rivela mai configurazione interna, credenziali o schema DB."}
+        </p>
       </div>
     </div>
   )

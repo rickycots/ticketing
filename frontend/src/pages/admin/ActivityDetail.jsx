@@ -90,11 +90,10 @@ export default function ActivityDetail() {
       </Link>
 
       {/* Page title */}
-      <h1 className="text-2xl font-bold text-blue-600 mb-1">
-        {activity.nome}
-      </h1>
+      <h1 className="text-2xl font-bold mb-1">Dettaglio Attività</h1>
       <p className="text-sm text-gray-400 mb-4">
-        Progetto: <Link to={`/admin/projects/${projectId}`} className="text-blue-500 hover:underline">{prog.nome || `#${projectId}`}</Link>
+        Progetto: <Link to={`/admin/projects/${projectId}/gantt`} className="text-blue-500 hover:underline">{prog.nome || `#${projectId}`}</Link>
+        {' '}&middot; Attività: <span className="text-gray-600 font-medium">{activity.nome}</span>
         {activity.created_at && <> &middot; Creata il {new Date(activity.created_at).toLocaleDateString('it-IT')}</>}
       </p>
 

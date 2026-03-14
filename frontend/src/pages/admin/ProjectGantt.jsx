@@ -134,6 +134,8 @@ export default function ProjectGantt() {
         </Link>
       </div>
 
+      <h1 className="text-2xl font-bold mb-5">Dettaglio Progetto</h1>
+
       {/* Client Banner */}
       <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-5">
         <div className="flex items-center gap-4">
