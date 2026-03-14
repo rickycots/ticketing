@@ -27,7 +27,7 @@
 - **i18n**: `frontend/src/i18n/clientTranslations.js` — funzioni `t(key)`, `getDateLocale()`, `getClientLang()`
 - **Backend Node.js**: Express router pattern, better-sqlite3 sync queries
 - **Backend PHP**: PDO MySQL, router custom in `php/api/index.php`
-- **Versione**: `frontend/src/version.js` — formato `V{major}.{minor}-MMGG`
+- **Versione**: `frontend/src/version.js` — formato `V{X}.{Y}.{ZZ}-MMGG` (vedi sezione Versioning)
 
 ## Gotcha e Trappole
 
@@ -58,39 +58,61 @@ node deploy/deploy.js --php
 - Repository: `https://github.com/rickycots/ticketing.git`
 - Dopo ogni modifica ai file, chiedere sempre all'utente se vuole fare un commit prima di procedere
 
-### Procedura commit (ogni volta che l'utente conferma il commit)
+### Schema versione: `V{X}.{Y}.{ZZ}-MMGG`
 
-1. **Incrementare la versione** in `frontend/src/version.js` — formato `V{major}.{minor}-MMGG`
-   - Incrementare il minor per ogni nuovo commit (es. V1.6 → V1.7)
-   - Aggiornare MMGG alla data corrente
-2. **Aggiornare `VERSIONI.md`**: aggiungere in cima una nuova sezione con versione, data e lista modifiche
-3. **Aggiornare `README.md`**: riflettere le modifiche nella documentazione (nuovi file, struttura, sezioni, endpoint, schema DB, ecc.)
-4. Includere `version.js`, `VERSIONI.md` e `README.md` nello stesso commit
-5. **Messaggio commit** con prefisso versione: `V1.7-0313 Descrizione breve delle modifiche`
-6. **Creare tag git annotato**: `git tag -a v1.7-0313 -m "V1.7-0313 Descrizione"`
-7. **Push** su GitHub: `git push && git push --tags`
-8. **Build + deploy frontend** (la versione è nel bundle JS):
-   ```bash
-   cd frontend && npx vite build --emptyOutDir false
-   cd .. && node deploy/deploy.js --frontend
-   ```
+| Segmento | Range | Significato | Quando incrementare |
+|----------|-------|-------------|---------------------|
+| **X** | 1-10 | Major | Cambiamento architetturale o milestone importante |
+| **Y** | 0-10 | Minor | Nuova funzionalita significativa |
+| **ZZ** | 00-99 | Patch | Fix, miglioramenti, modifiche piccole |
+| **MMGG** | | Data | Sempre aggiornata alla data corrente |
 
-> **IMPORTANTE**: I passi 1-8 sono TUTTI obbligatori ad ogni commit. Non fermarsi mai al commit senza aggiornare README, VERSIONI, push e deploy.
+**Regole incremento:**
+- **Release maggiore** (utente risponde "maggiore"): incrementare X o Y, azzerare ZZ → es. `3.0.00` → `3.1.00`
+- **Release minore** (utente risponde "minore"): incrementare solo ZZ → es. `3.0.00` → `3.0.01`
+- Versione corrente: `V3.0.00-0314`
+
+---
+
+### CHECKLIST COMMIT — OBBLIGATORIA, NESSUNA ECCEZIONE
+
+**Prima di chiedere conferma al commit, CHIEDI SEMPRE:**
+> "Versione maggiore o minore?"
+
+**Poi esegui TUTTI questi passi nell'ordine. NON saltarne nessuno.**
+
+- [ ] **1. VERSIONE** — Incrementare `frontend/src/version.js` secondo la risposta dell'utente
+- [ ] **2. VERSIONI.md** — Aggiungere sezione in cima con versione, data e lista modifiche
+- [ ] **3. README.md** — Aggiornare la documentazione (nuovi file, struttura, endpoint, sezioni, schema DB, ecc.)
+- [ ] **4. COMMIT** — Includere version.js + VERSIONI.md + README.md + tutti i file modificati
+- [ ] **5. TAG** — `git tag -a vX.Y.ZZ-MMGG -m "VX.Y.ZZ-MMGG Descrizione"`
+- [ ] **6. PUSH** — `git push && git push --tags`
+- [ ] **7. BUILD + DEPLOY FRONTEND** — `cd frontend && npx vite build --emptyOutDir false && cd .. && node deploy/deploy.js --frontend`
+- [ ] **8. DEPLOY PHP** — `node deploy/deploy.js --php` (se sono stati modificati file PHP/backend)
+
+> **NON DIMENTICARE MAI i passi 2, 3, 6, 7.** Ogni commit DEVE includere VERSIONI.md e README.md aggiornati, DEVE essere pushato, e DEVE essere deployato.
+
+**Messaggio al termine:**
+> "VX.Y.ZZ-MMGG committato, taggato, pushato e deployato (frontend + PHP). + agg. README e VERSIONI"
+
+Se README o VERSIONI non sono stati aggiornati, DILLO esplicitamente — non nasconderlo.
 
 ### Esempio completo
 
 ```bash
-# 1. Aggiornare version.js → V1.7-0313
-# 2. Aggiornare VERSIONI.md con la nuova sezione
-# 3. Aggiornare README.md con le modifiche
+# 1. Aggiornare version.js → V3.1.00-0314
+# 2. Aggiornare VERSIONI.md
+# 3. Aggiornare README.md
 # 4. Commit
 git add <files modificati> frontend/src/version.js VERSIONI.md README.md
-git commit -m "V1.7-0313 Add feature X and fix Y"
+git commit -m "V3.1.00-0314 Add feature X and fix Y"
 # 5. Tag
-git tag -a v1.7-0313 -m "V1.7-0313 Add feature X and fix Y"
+git tag -a v3.1.00-0314 -m "V3.1.00-0314 Add feature X and fix Y"
 # 6. Push
 git push && git push --tags
 # 7. Build + deploy frontend
 cd frontend && npx vite build --emptyOutDir false
 cd .. && node deploy/deploy.js --frontend
+# 8. Deploy PHP (se modificato)
+node deploy/deploy.js --php
 ```

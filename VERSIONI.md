@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V3.1.00-0314 — 14 Marzo 2026
+- Nuovo schema versione a 3 segmenti: `V{X}.{Y}.{ZZ}-MMGG` (major.minor.patch-data)
+- CLAUDE.md riscritto: checklist commit obbligatoria a 8 passi con checkbox
+- Domanda "Versione maggiore o minore?" obbligatoria prima di ogni commit
+- Messaggio finale commit con menzione esplicita README e VERSIONI
+- Regole anti-dimenticanza per README.md e VERSIONI.md
+
 ## V3.0-0314 — 14 Marzo 2026
 - Dashboard Cliente: nuova pagina `/admin/clients/:id/dashboard` con statistiche dedicate per cliente
 - Grafici a torta: ticket (aperti/chiusi), email (assegnate/non assegnate), progetti (attivi/chiusi/bloccati/senza attivita)
