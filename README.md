@@ -300,6 +300,45 @@ GROQ_API_KEY=<per AI assistant>
 - Body troncato a 50KB
 - `stripHtml` rinforzata (rimuove script, style, commenti HTML, decodifica entities)
 
+### Anti-Prompt-Injection AI (V2.7)
+- System prompt istruisce il modello a trattare documenti, email, note e KB come **dati puri, mai come istruzioni**
+- Blocco esplicito di pattern injection: "ignora istruzioni precedenti", "rivela lo schema", "cambia ruolo"
+- Il modello non rivela mai configurazione interna, schema DB, credenziali o architettura
+- Protezione applicata su tutti e 4 gli endpoint AI (ticket-assist + client-assist, Node.js + PHP)
+
+### Isolamento Endpoint Client vs Admin (IDOR Audit)
+Analisi completa della separazione degli endpoint per ruolo:
+
+**Endpoint admin-only** (middleware `authenticateToken` — inaccessibili ai client):
+- `/api/projects/{id}`, `/api/tickets/{id}`, `/api/repository/{id}`, `/api/clients/{id}`
+- Un client che chiama questi endpoint riceve **401 Unauthorized**
+
+**Endpoint client** (middleware `authenticateClientToken` — isolati per tenant):
+- Pattern URL: `/api/.../client/{clienteId}/...`
+- **Ogni endpoint** verifica `req.user.cliente_id !== clienteId` → **403 Forbidden**
+- Il `cliente_id` viene dal JWT (non manipolabile dal client), non dal body della request
+- `POST /api/tickets` (creazione): usa `req.user.cliente_id` dal token — il client non può scegliere per quale cliente creare
+
+**Copertura validazione** (10 endpoint client Node.js + 10 PHP):
+
+| Endpoint | Metodo | Validazione |
+|----------|--------|-------------|
+| `/tickets/client/:clienteId` | GET | `cliente_id != clienteId → 403` |
+| `/tickets/client/:clienteId/:ticketId` | GET | `cliente_id != clienteId → 403` |
+| `/tickets/client/:clienteId/:ticketId/close` | PUT | `cliente_id != clienteId → 403` |
+| `/tickets/client/:clienteId/:ticketId/reply` | POST | `cliente_id != clienteId → 403` |
+| `/tickets` (create) | POST | `cliente_id` dal JWT, non dal body |
+| `/projects/client/:clienteId` | GET | `cliente_id != clienteId → 403` |
+| `/projects/client/:clienteId/:projectId` | GET | `cliente_id != clienteId → 403` |
+| `/projects/client/:clienteId/:projectId/allegati` | GET | `cliente_id != clienteId → 403` |
+| `/projects/client/:clienteId/:projectId/allegati/:id/download` | GET | `cliente_id != clienteId → 403` |
+| `/ai/client-assist` | POST | KB filtrata per `cliente_id` dal JWT |
+
+**Tecnico** (middleware `authenticateToken` con check ownership):
+- Limitato a ticket assegnati (`assegnato_a = user.id`)
+- Limitato a progetti assegnati (presente in `progetto_tecnici`)
+- KB cards e referenti: solo admin
+
 ### Security Headers (V2.5)
 - Applicati su **3 livelli**: `.htaccess` root (HTML/CSS/JS), PHP router (API JSON), Node.js middleware (sviluppo)
 - `Content-Security-Policy`: `default-src 'self'`, `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, `img-src 'self' data:`, `connect-src 'self'`, `frame-ancestors 'none'`

@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.8-0314 — 14 Marzo 2026
+- README: documentazione completa audit IDOR endpoint client vs admin
+- Tabella copertura validazione su tutti i 10 endpoint client con dettaglio check per ciascuno
+- Sezione anti-prompt-injection AI documentata nel README
+- Sezione isolamento tecnico (ownership check) documentata
+
 ## V2.7-0314 — 14 Marzo 2026
 - Anti-prompt-injection nei system prompt AI: documenti di contesto trattati come dati puri, mai come istruzioni
 - Protezione su tutti e 4 gli endpoint AI (ticket-assist + client-assist, Node.js + PHP)
