@@ -184,6 +184,11 @@ router.post('/client-assist', authenticateClientToken, async (req, res) => {
     return res.status(500).json({ error: 'GROQ_API_KEY non configurata.' });
   }
 
+  // KB cards for this client (tenant-isolated)
+  const schedeKB = db.prepare(
+    'SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?'
+  ).all(req.user.cliente_id);
+
   // Search FAQ Suprema + repository docs by keywords from question
   const searchTerms = domanda.toLowerCase()
     .replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3).slice(0, 8);
@@ -220,6 +225,14 @@ router.post('/client-assist', authenticateClientToken, async (req, res) => {
   }
 
   let context = '';
+
+  if (schedeKB.length > 0) {
+    context += '=== KNOWLEDGE BASE CLIENTE ===\n';
+    schedeKB.forEach(s => {
+      context += `\n--- ${s.titolo} ---\n${s.contenuto}\n`;
+    });
+    context += '\n';
+  }
 
   if (faqDocs.length > 0) {
     context += '=== FAQ SUPPORTO TECNICO ===\n';

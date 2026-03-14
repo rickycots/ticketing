@@ -173,6 +173,9 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
     if (!$domanda) Response::error('domanda è obbligatoria', 400);
     if (!GROQ_API_KEY) Response::error('GROQ_API_KEY non configurata.', 500);
 
+    // KB cards for this client (tenant-isolated)
+    $schedeKB = Database::fetchAll('SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?', [$req->user['cliente_id']]);
+
     $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 3);
     $words = array_slice(array_values($words), 0, 8);
 
@@ -207,6 +210,11 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
     }
 
     $context = '';
+    if (!empty($schedeKB)) {
+        $context .= "=== KNOWLEDGE BASE CLIENTE ===\n";
+        foreach ($schedeKB as $s) $context .= "\n--- {$s['titolo']} ---\n{$s['contenuto']}\n";
+        $context .= "\n";
+    }
     if (!empty($faqDocs)) {
         $context .= "=== FAQ SUPPORTO TECNICO ===\n";
         foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . substr($d['contenuto_testo'], 0, 3000) . "\n";

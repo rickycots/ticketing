@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V2.4-0314 — 14 Marzo 2026
+- Client AI chat: aggiunto caricamento schede Knowledge Base filtrate per cliente (tenant isolation)
+- Ogni cliente vede solo le proprie schede KB nella chat AI, non quelle di altri clienti
+- Modifica applicata su entrambi i backend (Node.js + PHP)
+
 ## V2.3-0314 — 14 Marzo 2026
 - CLAUDE.md: procedura commit aggiornata — push e deploy frontend sono ora obbligatori ad ogni commit
 - Aggiunto passo esplicito `git push && git push --tags` e nota IMPORTANTE sulla completezza della procedura
