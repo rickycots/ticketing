@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Building2, Ticket, FolderKanban } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Plus, Building2, Ticket, FolderKanban, BarChart3 } from 'lucide-react'
 import { clients } from '../../api/client'
 import Pagination from '../../components/Pagination'
 
@@ -162,7 +162,15 @@ export default function ClientList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {clientList.map(c => (
-            <div key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow">
+            <div key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow relative">
+              <Link
+                to={`/admin/clients/${c.id}/dashboard`}
+                onClick={e => e.stopPropagation()}
+                className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                title="Dashboard Cliente"
+              >
+                <BarChart3 size={16} />
+              </Link>
               <div className="flex items-start gap-3 mb-3">
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <Building2 size={20} className="text-blue-600" />

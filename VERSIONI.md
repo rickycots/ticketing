@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V3.1.02-0314 — 14 Marzo 2026
+- Icona Dashboard Cliente in alto a destra di ogni card nella lista clienti
+
 ## V3.1.01-0314 — 14 Marzo 2026
 - Fix route PHP dashboard cliente: parametro `:clienteId` al posto di regex `(\d+)` incompatibile con il router
 

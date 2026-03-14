@@ -2,7 +2,7 @@
 
 Sistema di Ticketing e Project Management con due portali: **Admin Panel** (gestione interna) e **Client Portal** (accesso clienti).
 
-**Versione corrente:** V3.1.01-0314
+**Versione corrente:** V3.1.02-0314
 
 **Produzione:** https://www.stmdomotica.cloud/ticketing/
 
