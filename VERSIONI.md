@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V2.7-0314 — 14 Marzo 2026
+- Anti-prompt-injection nei system prompt AI: documenti di contesto trattati come dati puri, mai come istruzioni
+- Protezione su tutti e 4 gli endpoint AI (ticket-assist + client-assist, Node.js + PHP)
+- Blocco esplicito di pattern injection: "ignora istruzioni precedenti", "rivela lo schema", "cambia ruolo"
+- AI non rivela mai configurazione interna, schema DB, credenziali o architettura
+
 ## V2.6-0314 — 14 Marzo 2026
 - Security headers globali nel .htaccess root: CSP, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
 - Headers applicati su 3 livelli: .htaccess root (HTML), PHP router (API), Node.js middleware (dev)
