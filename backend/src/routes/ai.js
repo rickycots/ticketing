@@ -229,7 +229,7 @@ router.post('/client-assist', authenticateClientToken, async (req, res) => {
 
   // Search FAQ Suprema + repository docs by keywords from question
   const searchTerms = domanda.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3).slice(0, 8);
+    .replace(/[^a-z0-9\s\-]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 8);
 
   let faqDocs = [];
   let repoDocs = [];
@@ -322,7 +322,7 @@ router.post('/admin-assist', authenticateToken, async (req, res) => {
 
   // Search keywords
   const searchTerms = domanda.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3).slice(0, 8);
+    .replace(/[^a-z0-9\s\-]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 8);
 
   // 1. Repository documents (keyword search + fallback)
   let repoDocs = [];

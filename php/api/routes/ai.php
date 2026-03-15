@@ -117,7 +117,7 @@ $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function(
     );
 
     // FAQ search by keywords
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s]/i', '', strtolower($ticket['oggetto'] . ' ' . ($ticket['descrizione'] ?? ''))), 1), fn($w) => strlen($w) > 3);
+    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($ticket['oggetto'] . ' ' . ($ticket['descrizione'] ?? ''))), 1), fn($w) => strlen($w) > 2);
     $words = array_slice(array_values($words), 0, 5);
     $faqDocs = [];
     if (!empty($words)) {
@@ -211,7 +211,7 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
     // KB cards for this client (tenant-isolated)
     $schedeKB = Database::fetchAll('SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?', [$req->user['cliente_id']]);
 
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 3);
+    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 2);
     $words = array_slice(array_values($words), 0, 8);
 
     $faqDocs = [];
@@ -290,7 +290,7 @@ $router->post('/ai/admin-assist', [Auth::class, 'authenticateToken'], function($
     if (!$domanda) Response::error('domanda è obbligatoria', 400);
     if (!GROQ_API_KEY) Response::error('GROQ_API_KEY non configurata.', 500);
 
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 3);
+    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 2);
     $words = array_slice(array_values($words), 0, 8);
 
     // Repository docs

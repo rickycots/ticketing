@@ -40,6 +40,14 @@ $router->post('/repository/upload', [Auth::class, 'authenticateToken'], [Auth::c
         $filePath = UPLOAD_DIR . '/repository/' . $f['nome_file'];
         if (in_array($ext, ['txt', 'md'])) {
             $contenutoTesto = file_get_contents($filePath);
+        } elseif ($ext === 'pdf') {
+            try {
+                $parser = new \Smalot\PdfParser\Parser();
+                $pdf = $parser->parseFile($filePath);
+                $contenutoTesto = $pdf->getText();
+            } catch (\Exception $e) {
+                error_log('PDF text extraction error: ' . $e->getMessage());
+            }
         }
 
         Database::execute(

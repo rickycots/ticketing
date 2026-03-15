@@ -134,6 +134,7 @@ export default function Repository() {
           <input ref={fileInputRef} type="file" multiple accept=".txt,.pdf,.doc,.docx,.md"
             onChange={e => { handleUpload(e.target.files); e.target.value = '' }}
             className="hidden" />
+          <p className="text-xs text-gray-400 mt-3 italic">*L'estrazione del testo da parte della AI funziona solo con file .txt, .md e .pdf</p>
         </div>
       )}
 

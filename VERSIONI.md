@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.3.02-0315 — 15 Marzo 2026
+- PHP: estrazione testo PDF nel repository via `smalot/pdfparser` (prima solo .txt/.md)
+- AI keyword search: mantiene trattini nei termini di ricerca, soglia abbassata a 3 caratteri (prima 4)
+- Fix applicato su tutti gli endpoint AI (Node.js + PHP)
+- Nota informativa nel box upload repository sui formati supportati dall'AI
+
 ## V3.3.01-0315 — 15 Marzo 2026
 - Messaggio login errato: "Accesso Negato — Verifica i dati" (admin + client)
 - Menu client admin: stessa dimensione dei menu user, allineato a destra
