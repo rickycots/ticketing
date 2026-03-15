@@ -424,7 +424,7 @@ export default function TicketDetail() {
                       }`}>
                         {msg.tipo === 'domanda' && <span className="font-semibold block mb-0.5">Tu:</span>}
                         {msg.tipo === 'risposta' && <span className="font-semibold block mb-0.5 text-purple-600">AI:</span>}
-                        <span className="whitespace-pre-wrap">{msg.testo}</span>
+                        <span className="whitespace-pre-wrap break-words">{msg.testo}</span>
                       </div>
                     ))}
                     {aiLoading && (

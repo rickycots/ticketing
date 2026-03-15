@@ -11,6 +11,10 @@
  * Then DELETE this file from production!
  */
 
+// Increase execution time for shared hosting
+set_time_limit(600);
+ini_set('max_execution_time', 600);
+
 // Security: only run in CLI or with confirmation
 $isCli = php_sapi_name() === 'cli';
 if (!$isCli) {

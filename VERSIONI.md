@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V3.4.00-0315 — 15 Marzo 2026
+- AI referenze: sezione "📎 Fonti:" in fondo ad ogni risposta AI con elenco documenti utilizzati
+- Fix overflow chat AI: testo lungo non esce più dalla finestra (admin, client, ticket)
+- Libreria `smalot/pdfparser` installata su Aruba per estrazione testo PDF
+
 ## V3.3.02-0315 — 15 Marzo 2026
 - PHP: estrazione testo PDF nel repository via `smalot/pdfparser` (prima solo .txt/.md)
 - AI keyword search: mantiene trattini nei termini di ricerca, soglia abbassata a 3 caratteri (prima 4)

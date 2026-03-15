@@ -152,7 +152,7 @@ export default function AiChat() {
                       <Bot size={16} className="text-blue-600" />
                     </div>
                   )}
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white rounded-br-md'
                       : msg.error
