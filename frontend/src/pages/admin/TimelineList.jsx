@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, Building2, Plus, X, Users, UserPlus } from 'lucide-react'
 import { projects, clients as clientsApi, users as usersApi } from '../../api/client'
 
@@ -46,7 +46,8 @@ export default function TimelineList() {
   const [statoFilter, setStatoFilter] = useState('aperti')
   const [tooltip, setTooltip] = useState(null)
   const [clientList, setClientList] = useState([])
-  const [filterCliente, setFilterCliente] = useState('')
+  const [searchParams] = useSearchParams()
+  const [filterCliente, setFilterCliente] = useState(searchParams.get('cliente') || '')
   const [showNewProject, setShowNewProject] = useState(false)
   const [userList, setUserList] = useState([])
   const [newProject, setNewProject] = useState({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [] })

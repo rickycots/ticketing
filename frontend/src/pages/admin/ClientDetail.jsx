@@ -250,12 +250,6 @@ export default function ClientDetail() {
           )}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleImpersonate}
-            className="inline-flex items-center gap-1.5 bg-teal-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-teal-700 transition-colors cursor-pointer"
-          >
-            <Ticket size={14} /> Accedi Ticketing/Progetti
-          </button>
           <Link
             to={`/admin/clients/${id}/dashboard`}
             className="inline-flex items-center gap-1.5 bg-indigo-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors cursor-pointer"

@@ -58,7 +58,7 @@ export default function ClientLogin() {
         navigate('/client')
       }
     } catch (err) {
-      setError(err.message || 'Errore di autenticazione')
+      setError('Accesso Negato — Verifica i dati')
     } finally {
       setLoading(false)
     }

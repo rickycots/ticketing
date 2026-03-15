@@ -141,27 +141,27 @@ export default function ClientLayout() {
           </div>
         </div>
         {isClientAdmin && (
-          <div className="max-w-6xl mx-auto px-4 pb-2 flex gap-1">
+          <div className="max-w-6xl mx-auto px-4 pb-2 flex justify-end gap-1">
             <NavLink
               to="/client/dashboard"
               className={({ isActive }) =>
-                `flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-500 hover:bg-gray-100'
+                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
                 }`
               }
             >
-              <BarChart3 size={14} />
+              <BarChart3 size={16} />
               {t('dashboard')}
             </NavLink>
             <NavLink
               to="/client/users"
               className={({ isActive }) =>
-                `flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-500 hover:bg-gray-100'
+                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
                 }`
               }
             >
-              <Users size={14} />
+              <Users size={16} />
               {t('users')}
             </NavLink>
           </div>

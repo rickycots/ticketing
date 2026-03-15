@@ -56,14 +56,18 @@ function MiniPie({ segments, size = 120 }) {
   )
 }
 
-function StatBox({ icon: Icon, title, color, children }) {
+function StatBox({ icon: Icon, title, color, titleLink, children }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-center gap-2 mb-4">
         <div className={`p-2 rounded-lg ${color}`}>
           <Icon size={18} className="text-white" />
         </div>
-        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+        {titleLink ? (
+          <Link to={titleLink} className="text-sm font-semibold text-blue-600 hover:underline">{title}</Link>
+        ) : (
+          <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+        )}
       </div>
       {children}
     </div>
@@ -143,6 +147,9 @@ export default function ClientDashboard() {
               {tempo_medio_ticket !== null ? 'giorni' : 'Nessun ticket chiuso'}
             </p>
           </div>
+          <div className="border-t border-gray-100 mt-3 pt-3 text-sm text-gray-500 text-center">
+            SLA assegnata: <strong>{cliente.sla_reazione === '1g' ? '1 giorno' : cliente.sla_reazione === '3g' ? '3 giorni' : cliente.sla_reazione === 'nb' ? 'Next Business' : 'Nessuna'}</strong>
+          </div>
         </StatBox>
 
         {/* Email Pie */}
@@ -167,7 +174,7 @@ export default function ClientDashboard() {
         </StatBox>
 
         {/* Progetti Pie */}
-        <StatBox icon={FolderKanban} title="Progetti" color="bg-purple-500">
+        <StatBox icon={FolderKanban} title="Progetti" color="bg-purple-500" titleLink={`/admin/timeline?cliente=${id}`}>
           <div className="flex items-center gap-4">
             <MiniPie segments={[
               { value: progetti.attivi, color: '#3b82f6' },

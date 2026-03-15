@@ -97,7 +97,7 @@ $router->get('/dashboard/client/:clienteId', [Auth::class, 'authenticateToken'],
     if (($req->user['ruolo'] ?? '') !== 'admin') Response::error('Solo admin', 403);
     $clienteId = $req->params['clienteId'];
 
-    $cliente = Database::fetchOne('SELECT id, nome_azienda, email, telefono, referente FROM clienti WHERE id = ?', [$clienteId]);
+    $cliente = Database::fetchOne('SELECT id, nome_azienda, email, telefono, referente, sla_reazione FROM clienti WHERE id = ?', [$clienteId]);
     if (!$cliente) Response::error('Cliente non trovato', 404);
 
     // Ticket stats

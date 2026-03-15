@@ -126,7 +126,7 @@ router.get('/client/:clienteId', authenticateToken, (req, res) => {
   const clienteId = req.params.clienteId;
 
   // Client info
-  const cliente = db.prepare('SELECT id, nome_azienda, email, telefono, referente FROM clienti WHERE id = ?').get(clienteId);
+  const cliente = db.prepare('SELECT id, nome_azienda, email, telefono, referente, sla_reazione FROM clienti WHERE id = ?').get(clienteId);
   if (!cliente) return res.status(404).json({ error: 'Cliente non trovato' });
 
   // Ticket stats

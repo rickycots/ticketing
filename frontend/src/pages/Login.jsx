@@ -22,7 +22,7 @@ export default function Login() {
       sessionStorage.setItem('lastLoginTime', new Date().toISOString())
       navigate('/admin')
     } catch (err) {
-      setError(err.message || 'Errore di autenticazione')
+      setError('Accesso Negato — Verifica i dati')
     } finally {
       setLoading(false)
     }

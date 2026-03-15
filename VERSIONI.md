@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V3.3.01-0315 — 15 Marzo 2026
+- Messaggio login errato: "Accesso Negato — Verifica i dati" (admin + client)
+- Menu client admin: stessa dimensione dei menu user, allineato a destra
+- Rimosso bottone "Accedi Ticketing/Progetti" dalla pagina dettaglio cliente admin
+- Dashboard cliente: link "Progetti" apre Timeline filtrata per cliente
+- Dashboard cliente: SLA assegnata nel box tempo medio gestione ticket
+- Timeline: supporto parametro URL `?cliente=` per filtro preimpostato
+
 ## V3.3.00-0314 — 14 Marzo 2026
 - CSP Google Fonts: aggiunto `fonts.googleapis.com` e `fonts.gstatic.com` ai Content-Security-Policy su tutti e 3 i livelli (.htaccess, Node.js, PHP)
 - Fix Timeline: progetti "Senza Attività" ora visibili nel filtro "Aperti"
