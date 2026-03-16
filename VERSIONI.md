@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.4.02-0316 — 16 Marzo 2026
+- Repository: colonna AI con spunta verde se testo estratto
+- Repository: descrizione spostata sotto la riga con triangolino espandibile, modificabile con matita
+- Repository: 3 categorie fisse (Accessi, TVCC, Altro) con select e filtri dedicati
+- Repository: paginazione a 10 file per pagina
+
 ## V3.4.01-0316 — 16 Marzo 2026
 - Pagina Utenti admin: bottone matita per modifica nome, email e password di ogni tecnico
 - Form Nuovo Tecnico: checkbox "Richiedi cambio password al primo accesso"

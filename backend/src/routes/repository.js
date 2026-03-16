@@ -53,7 +53,7 @@ async function extractText(filePath, mimeType) {
 // GET /api/repository — list documents
 router.get('/', authenticateToken, (req, res) => {
   const { categoria } = req.query;
-  let sql = 'SELECT id, nome_originale, dimensione, tipo_mime, categoria, descrizione, caricato_da, created_at FROM documenti_repository';
+  let sql = "SELECT id, nome_originale, dimensione, tipo_mime, categoria, descrizione, caricato_da, created_at, CASE WHEN contenuto_testo IS NOT NULL AND contenuto_testo != '' THEN 1 ELSE 0 END as ai_parsed FROM documenti_repository";
   const params = [];
   if (categoria) {
     sql += ' WHERE categoria = ?';

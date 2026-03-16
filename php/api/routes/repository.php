@@ -5,7 +5,7 @@
 
 // GET /api/repository
 $router->get('/repository', [Auth::class, 'authenticateToken'], function($req) {
-    $sql = 'SELECT id, nome_originale, dimensione, tipo_mime, categoria, descrizione, caricato_da, created_at FROM documenti_repository';
+    $sql = "SELECT id, nome_originale, dimensione, tipo_mime, categoria, descrizione, caricato_da, created_at, CASE WHEN contenuto_testo IS NOT NULL AND contenuto_testo != '' THEN 1 ELSE 0 END as ai_parsed FROM documenti_repository";
     $params = [];
     if (!empty($req->query['categoria'])) {
         $sql .= ' WHERE categoria = ?';
