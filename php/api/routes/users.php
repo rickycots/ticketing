@@ -25,13 +25,14 @@ $router->post('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
     if ($existing) Response::error('Email già in uso', 400);
 
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+    $cambioPwd = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 0;
     Database::execute(
-        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo) VALUES (?, ?, ?, ?, 1)',
-        [$nome, $email, $passwordHash, 'tecnico']
+        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password) VALUES (?, ?, ?, ?, 1, ?)',
+        [$nome, $email, $passwordHash, 'tecnico', $cambioPwd]
     );
 
     $user = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?',
         [Database::lastInsertId()]
     );
     Response::created($user);
@@ -45,6 +46,7 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
 
     $nome = $req->body['nome'] ?? null;
     $email = $req->body['email'] ?? null;
+    $password = $req->body['password'] ?? null;
     $attivo = $req->body['attivo'] ?? null;
 
     if ($email && $email !== $user['email']) {
@@ -52,13 +54,15 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
         if ($existing) Response::error('Email già in uso', 400);
     }
 
+    $newHash = $password ? password_hash($password, PASSWORD_BCRYPT) : $user['password_hash'];
+
     Database::execute(
-        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), attivo = COALESCE(?, attivo) WHERE id = ?',
-        [$nome, $email, $attivo, $id]
+        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo) WHERE id = ?',
+        [$nome, $email, $newHash, $attivo, $id]
     );
 
     $updated = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?',
         [$id]
     );
     Response::json($updated);

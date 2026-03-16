@@ -74,9 +74,27 @@ router.post('/login', (req, res) => {
       id: user.id,
       nome: user.nome,
       email: user.email,
-      ruolo: user.ruolo
+      ruolo: user.ruolo,
+      cambio_password: user.cambio_password || 0
     }
   });
+});
+
+// PUT /api/auth/change-password — change password (authenticated)
+router.put('/change-password', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Non autenticato' });
+
+  let decoded;
+  try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token non valido' }); }
+
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+
+  const hash = bcrypt.hashSync(password, 10);
+  db.prepare('UPDATE utenti SET password_hash = ?, cambio_password = 0 WHERE id = ?').run(hash, decoded.id);
+  res.json({ success: true });
 });
 
 // GET /api/auth/me — verify token AND check user still active in DB

@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V3.4.01-0316 — 16 Marzo 2026
+- Pagina Utenti admin: bottone matita per modifica nome, email e password di ogni tecnico
+- Form Nuovo Tecnico: checkbox "Richiedi cambio password al primo accesso"
+- Login admin: schermata cambio password obbligatorio al primo accesso (come portale client)
+- Endpoint `PUT /api/auth/change-password` per admin (Node.js + PHP)
+- Migrazione DB: colonna `cambio_password` aggiunta a tabella `utenti`
+- Dettaglio Progetto (Gantt): gestione referenti — aggiungi da elenco esistente, crea nuovo, rimuovi
+
 ## V3.4.00-0315 — 15 Marzo 2026
 - AI referenze: sezione "📎 Fonti:" in fondo ad ogni risposta AI con elenco documenti utilizzati
 - Fix overflow chat AI: testo lungo non esce più dalla finestra (admin, client, ticket)

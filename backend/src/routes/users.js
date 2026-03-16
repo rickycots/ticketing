@@ -15,7 +15,7 @@ router.get('/', authenticateToken, requireAdmin, (req, res) => {
 
 // POST /api/users — create technician (admin-only)
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, password } = req.body;
+  const { nome, email, password, cambio_password } = req.body;
   if (!nome || !email || !password) {
     return res.status(400).json({ error: 'Campi obbligatori: nome, email, password' });
   }
@@ -27,16 +27,16 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
-    'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo) VALUES (?, ?, ?, ?, 1)'
-  ).run(nome, email, password_hash, 'tecnico');
+    'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password) VALUES (?, ?, ?, ?, 1, ?)'
+  ).run(nome, email, password_hash, 'tecnico', cambio_password ? 1 : 0);
 
-  const user = db.prepare('SELECT id, nome, email, ruolo, attivo, created_at FROM utenti WHERE id = ?').get(result.lastInsertRowid);
+  const user = db.prepare('SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(user);
 });
 
 // PUT /api/users/:id — update user (admin-only)
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const { nome, email, attivo } = req.body;
+  const { nome, email, password, attivo } = req.body;
   const user = db.prepare('SELECT * FROM utenti WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
@@ -45,11 +45,13 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     if (existing) return res.status(400).json({ error: 'Email già in uso' });
   }
 
-  db.prepare(
-    'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), attivo = COALESCE(?, attivo) WHERE id = ?'
-  ).run(nome || null, email || null, attivo !== undefined ? attivo : null, req.params.id);
+  const newHash = password ? bcrypt.hashSync(password, 10) : user.password_hash;
 
-  const updated = db.prepare('SELECT id, nome, email, ruolo, attivo, created_at FROM utenti WHERE id = ?').get(req.params.id);
+  db.prepare(
+    'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo) WHERE id = ?'
+  ).run(nome || null, email || null, newHash, attivo !== undefined ? attivo : null, req.params.id);
+
+  const updated = db.prepare('SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?').get(req.params.id);
   res.json(updated);
 });
 

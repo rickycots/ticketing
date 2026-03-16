@@ -118,6 +118,7 @@ try {
         "ALTER TABLE utenti_cliente ADD COLUMN two_factor_code VARCHAR(6) DEFAULT NULL",
         "ALTER TABLE utenti_cliente ADD COLUMN two_factor_expires DATETIME DEFAULT NULL",
         "ALTER TABLE utenti_cliente ADD COLUMN two_factor_attempts INT NOT NULL DEFAULT 0",
+        "ALTER TABLE utenti ADD COLUMN cambio_password TINYINT(1) NOT NULL DEFAULT 0",
     ];
     foreach ($alterations as $alt) {
         try {

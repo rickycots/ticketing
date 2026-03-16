@@ -84,6 +84,8 @@ export const auth = {
   login: (email, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => request('/auth/me'),
+  changePassword: (password) =>
+    request('/auth/change-password', { method: 'PUT', body: JSON.stringify({ password }) }),
 };
 
 // Tickets

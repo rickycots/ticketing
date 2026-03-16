@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2, Users } from 'lucide-react'
-import { projects, activities, users as usersApi } from '../../api/client'
+import { projects, activities, users as usersApi, clients as clientsApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 
 const projectStatusConfig = {
@@ -33,6 +33,10 @@ export default function ProjectGantt() {
   const [showDesc, setShowDesc] = useState(false)
   const [showAllegati, setShowAllegati] = useState(false)
   const [showReferenti, setShowReferenti] = useState(false)
+  const [showAddRef, setShowAddRef] = useState(false)
+  const [showNewRefForm, setShowNewRefForm] = useState(false)
+  const [clientReferenti, setClientReferenti] = useState([])
+  const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
   const [allegati, setAllegati] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
@@ -86,6 +90,53 @@ export default function ProjectGantt() {
         a.click()
         URL.revokeObjectURL(a.href)
       })
+  }
+
+  function loadClientReferenti() {
+    if (project?.cliente_id) {
+      clientsApi.getReferenti(project.cliente_id)
+        .then(data => setClientReferenti(Array.isArray(data) ? data : []))
+        .catch(() => {})
+    }
+  }
+
+  function handleOpenAddRef() {
+    setShowAddRef(true)
+    setShowNewRefForm(false)
+    loadClientReferenti()
+  }
+
+  async function handleAssignExisting(refId) {
+    const currentIds = (project.referenti || []).map(r => r.id)
+    if (currentIds.includes(refId)) return
+    try {
+      await projects.update(id, { referenti: [...currentIds, refId] })
+      loadProject()
+      setShowAddRef(false)
+    } catch (err) { alert(err.message) }
+  }
+
+  async function handleCreateAndAssign(e) {
+    e.preventDefault()
+    if (!newRefForm.nome.trim() || !newRefForm.email.trim()) return
+    try {
+      const created = await clientsApi.createReferente(project.cliente_id, newRefForm)
+      const currentIds = (project.referenti || []).map(r => r.id)
+      await projects.update(id, { referenti: [...currentIds, created.id] })
+      setNewRefForm({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
+      setShowNewRefForm(false)
+      setShowAddRef(false)
+      loadProject()
+    } catch (err) { alert(err.message) }
+  }
+
+  async function handleRemoveRef(refId) {
+    if (!confirm('Rimuovere questo referente dal progetto?')) return
+    const currentIds = (project.referenti || []).map(r => r.id).filter(rid => rid !== refId)
+    try {
+      await projects.update(id, { referenti: currentIds })
+      loadProject()
+    } catch (err) { alert(err.message) }
   }
 
   useEffect(() => {
@@ -324,8 +375,68 @@ export default function ProjectGantt() {
                     {r.ruolo && (
                       <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
                     )}
+                    {isAdmin && (
+                      <button onClick={() => handleRemoveRef(r.id)} className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0" title="Rimuovi dal progetto">
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                 ))}
+              </div>
+            )}
+            {isAdmin && (
+              <div className="border-t border-teal-200 p-3">
+                {!showAddRef ? (
+                  <button onClick={handleOpenAddRef} className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer">
+                    <Plus size={14} /> Aggiungi referente
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Existing referenti from client */}
+                    {(() => {
+                      const assignedIds = (project.referenti || []).map(r => r.id)
+                      const available = clientReferenti.filter(r => !assignedIds.includes(r.id))
+                      return available.length > 0 ? (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Referenti esistenti del cliente:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {available.map(r => (
+                              <button key={r.id} onClick={() => handleAssignExisting(r.id)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-teal-300 text-teal-700 hover:bg-teal-100 cursor-pointer transition-colors">
+                                <Plus size={12} /> {r.nome} {r.cognome}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic">Nessun altro referente disponibile per questo cliente</p>
+                      )
+                    })()}
+                    {/* New referente form */}
+                    {!showNewRefForm ? (
+                      <button onClick={() => setShowNewRefForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 cursor-pointer mt-2">
+                        <User size={14} /> Crea nuovo referente
+                      </button>
+                    ) : (
+                      <form onSubmit={handleCreateAndAssign} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2 mt-2">
+                        <p className="text-xs font-semibold text-gray-700">Nuovo referente</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" placeholder="Nome *" value={newRefForm.nome} onChange={e => setNewRefForm(f => ({ ...f, nome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" required />
+                          <input type="text" placeholder="Cognome" value={newRefForm.cognome} onChange={e => setNewRefForm(f => ({ ...f, cognome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <input type="email" placeholder="Email *" value={newRefForm.email} onChange={e => setNewRefForm(f => ({ ...f, email: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" required />
+                          <input type="text" placeholder="Telefono" value={newRefForm.telefono} onChange={e => setNewRefForm(f => ({ ...f, telefono: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        </div>
+                        <input type="text" placeholder="Ruolo (opzionale)" value={newRefForm.ruolo} onChange={e => setNewRefForm(f => ({ ...f, ruolo: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <div className="flex gap-2">
+                          <button type="submit" className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 cursor-pointer">Crea e assegna</button>
+                          <button type="button" onClick={() => setShowNewRefForm(false)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-200 cursor-pointer">Annulla</button>
+                        </div>
+                      </form>
+                    )}
+                    <div className="flex justify-end mt-1">
+                      <button onClick={() => setShowAddRef(false)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">Chiudi</button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

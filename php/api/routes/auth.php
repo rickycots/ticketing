@@ -42,8 +42,21 @@ $router->post('/auth/login', function($req) {
             'nome' => $user['nome'],
             'email' => $user['email'],
             'ruolo' => $user['ruolo'],
+            'cambio_password' => (int)($user['cambio_password'] ?? 0),
         ],
     ]);
+});
+
+// PUT /api/auth/change-password
+$router->put('/auth/change-password', [Auth::class, 'authenticateToken'], function($req) {
+    $password = $req->body['password'] ?? '';
+    if (!$password || strlen($password) < 6) {
+        Response::error('La password deve avere almeno 6 caratteri', 400);
+    }
+
+    $hash = password_hash($password, PASSWORD_BCRYPT);
+    Database::execute('UPDATE utenti SET password_hash = ?, cambio_password = 0 WHERE id = ?', [$hash, $req->user['id']]);
+    Response::json(['success' => true]);
 });
 
 // GET /api/auth/me
