@@ -57,6 +57,7 @@ function runMigrations() {
     "ALTER TABLE clienti ADD COLUMN servizio_ticket INTEGER NOT NULL DEFAULT 1",
     "ALTER TABLE clienti ADD COLUMN servizio_progetti INTEGER NOT NULL DEFAULT 1",
     "ALTER TABLE clienti ADD COLUMN servizio_ai INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE utenti ADD COLUMN abilitato_ai INTEGER NOT NULL DEFAULT 1",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }

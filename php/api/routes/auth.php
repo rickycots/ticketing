@@ -43,6 +43,7 @@ $router->post('/auth/login', function($req) {
             'email' => $user['email'],
             'ruolo' => $user['ruolo'],
             'cambio_password' => (int)($user['cambio_password'] ?? 0),
+            'abilitato_ai' => (int)($user['abilitato_ai'] ?? 1),
         ],
     ]);
 });

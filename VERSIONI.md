@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.6.00-0318 — 18 Marzo 2026
+- Abilitazione AI per tecnico: flag `abilitato_ai` su tabella utenti
+- Checkbox "Abilita AI Assistant" nel form creazione e modifica tecnico (estesa + compatta)
+- Menu AI admin nascosto per tecnici non abilitati
+- Fix modifica utente in vista compatta: form inline sotto la riga con Salva/Annulla
+
 ## V3.5.00-0317 — 17 Marzo 2026
 - Servizi per cliente: 3 flag (Ticket, Progetti, AI) configurabili in creazione e dettaglio cliente
 - Portale client: menu e accesso pagine filtrati per servizi attivi del cliente

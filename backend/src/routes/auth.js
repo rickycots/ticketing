@@ -75,7 +75,8 @@ router.post('/login', (req, res) => {
       nome: user.nome,
       email: user.email,
       ruolo: user.ruolo,
-      cambio_password: user.cambio_password || 0
+      cambio_password: user.cambio_password || 0,
+      abilitato_ai: user.abilitato_ai ?? 1
     }
   });
 });

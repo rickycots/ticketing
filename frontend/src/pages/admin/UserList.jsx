@@ -6,10 +6,10 @@ export default function UserList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true })
+  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: true })
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({ nome: '', email: '', password: '' })
+  const [editForm, setEditForm] = useState({ nome: '', email: '', password: '', abilitato_ai: true })
   const [viewMode, setViewMode] = useState('esteso')
 
   function loadUsers() {
@@ -23,8 +23,8 @@ export default function UserList() {
     e.preventDefault()
     setError('')
     try {
-      await users.create({ ...form, cambio_password: form.cambio_password ? 1 : 0 })
-      setForm({ nome: '', email: '', password: '', cambio_password: true })
+      await users.create({ ...form, cambio_password: form.cambio_password ? 1 : 0, abilitato_ai: form.abilitato_ai ? 1 : 0 })
+      setForm({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: true })
       setShowForm(false)
       loadUsers()
     } catch (err) {
@@ -34,13 +34,13 @@ export default function UserList() {
 
   function startEdit(user) {
     setEditingId(user.id)
-    setEditForm({ nome: user.nome, email: user.email, password: '' })
+    setEditForm({ nome: user.nome, email: user.email, password: '', abilitato_ai: !!user.abilitato_ai })
   }
 
   async function handleSaveEdit(e) {
     e.preventDefault()
     try {
-      const data = { nome: editForm.nome, email: editForm.email }
+      const data = { nome: editForm.nome, email: editForm.email, abilitato_ai: editForm.abilitato_ai ? 1 : 0 }
       if (editForm.password) data.password = editForm.password
       await users.update(editingId, data)
       setEditingId(null)
@@ -108,10 +108,16 @@ export default function UserList() {
                 <input type="password" value={form.password} onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))} required minLength={6} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.cambio_password} onChange={e => setForm(f => ({ ...f, cambio_password: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm text-gray-700">Richiedi cambio password al primo accesso</span>
-            </label>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.cambio_password} onChange={e => setForm(f => ({ ...f, cambio_password: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-sm text-gray-700">Richiedi cambio password al primo accesso</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.abilitato_ai} onChange={e => setForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-sm text-gray-700">Abilita AI Assistant</span>
+              </label>
+            </div>
             <p className="text-xs text-gray-500">Il ruolo sarà automaticamente impostato a "Tecnico"</p>
             <div className="flex gap-2">
               <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">Crea Tecnico</button>
@@ -147,6 +153,10 @@ export default function UserList() {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Nuova password <span className="text-gray-400">(lascia vuoto per non cambiare)</span></label>
                     <input type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} minLength={6} className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="••••••••" />
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editForm.abilitato_ai} onChange={e => setEditForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <span className="text-xs text-gray-700">Abilita AI Assistant</span>
+                  </label>
                   <div className="flex gap-2">
                     <button type="submit" className="bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-700 cursor-pointer">Salva</button>
                     <button type="button" onClick={() => setEditingId(null)} className="bg-gray-100 text-gray-600 rounded-lg px-3 py-1.5 text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
@@ -208,31 +218,65 @@ export default function UserList() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {userList.map(u => (
-                <tr key={u.id} className={`hover:bg-gray-50 ${!u.attivo ? 'opacity-50' : ''}`}>
-                  <td className="px-4 py-2.5 font-medium text-gray-900">{u.nome}</td>
-                  <td className="px-4 py-2.5 text-gray-500">{u.email}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${u.ruolo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                      {u.ruolo}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-xs font-medium ${u.attivo ? 'text-green-600' : 'text-gray-400'}`}>
-                      {u.attivo ? 'Attivo' : 'Disattivato'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    {u.ruolo !== 'admin' && (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => startEdit(u)} className="p-1 rounded text-gray-400 hover:text-blue-600 cursor-pointer" title="Modifica"><Pencil size={14} /></button>
-                        <button onClick={() => handleToggleActive(u)} className="p-1 rounded text-gray-400 hover:text-amber-600 cursor-pointer" title={u.attivo ? 'Disattiva' : 'Attiva'}>
-                          <UserCog size={14} />
-                        </button>
-                        <button onClick={() => handleDelete(u)} className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer" title="Elimina"><Trash2 size={14} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+                <>
+                  <tr key={u.id} className={`hover:bg-gray-50 ${!u.attivo ? 'opacity-50' : ''}`}>
+                    <td className="px-4 py-2.5 font-medium text-gray-900">{u.nome}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{u.email}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${u.ruolo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {u.ruolo}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-xs font-medium ${u.attivo ? 'text-green-600' : 'text-gray-400'}`}>
+                        {u.attivo ? 'Attivo' : 'Disattivato'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {u.ruolo !== 'admin' && (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => editingId === u.id ? setEditingId(null) : startEdit(u)} className={`p-1 rounded cursor-pointer ${editingId === u.id ? 'text-blue-600' : 'text-gray-400 hover:text-blue-600'}`} title="Modifica"><Pencil size={14} /></button>
+                          <button onClick={() => handleToggleActive(u)} className="p-1 rounded text-gray-400 hover:text-amber-600 cursor-pointer" title={u.attivo ? 'Disattiva' : 'Attiva'}>
+                            <UserCog size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(u)} className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer" title="Elimina"><Trash2 size={14} /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                  {editingId === u.id && (
+                    <tr key={`${u.id}-edit`} className="bg-blue-50">
+                      <td colSpan={5} className="px-4 py-3">
+                        <form onSubmit={handleSaveEdit}>
+                          <div className="flex items-end gap-3">
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Nome</label>
+                              <input type="text" value={editForm.nome} onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                              <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Nuova password <span className="text-gray-400">(opz.)</span></label>
+                              <input type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} minLength={6} className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="••••••••" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 mt-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={editForm.abilitato_ai} onChange={e => setEditForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-xs text-gray-700">Abilita AI Assistant</span>
+                            </label>
+                            <div className="flex gap-2 ml-auto">
+                              <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-medium hover:bg-blue-700 cursor-pointer">Salva</button>
+                              <button type="button" onClick={() => setEditingId(null)} className="bg-gray-100 text-gray-600 rounded-lg px-4 py-1.5 text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
+                            </div>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

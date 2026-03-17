@@ -123,6 +123,7 @@ try {
         "ALTER TABLE clienti ADD COLUMN servizio_ticket TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE clienti ADD COLUMN servizio_progetti TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE clienti ADD COLUMN servizio_ai TINYINT(1) NOT NULL DEFAULT 1",
+        "ALTER TABLE utenti ADD COLUMN abilitato_ai TINYINT(1) NOT NULL DEFAULT 1",
     ];
     foreach ($alterations as $alt) {
         try {

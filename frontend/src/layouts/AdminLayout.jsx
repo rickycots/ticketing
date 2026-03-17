@@ -25,7 +25,11 @@ export default function AdminLayout() {
   const location = useLocation()
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
-  const bottomItems = bottomNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
+  const bottomItems = bottomNavItems.filter(item => {
+    if (item.adminOnly && user.ruolo !== 'admin') return false
+    if (item.to === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) return false
+    return true
+  })
   const [chatNotifs, setChatNotifs] = useState([])
   const [sidebarCounts, setSidebarCounts] = useState({ tickets_nuovi: 0, email_nuove: 0 })
 

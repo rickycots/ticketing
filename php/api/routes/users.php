@@ -26,13 +26,14 @@ $router->post('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
 
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
     $cambioPwd = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 0;
+    $abilitatoAi = isset($req->body['abilitato_ai']) ? (int)$req->body['abilitato_ai'] : 1;
     Database::execute(
-        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password) VALUES (?, ?, ?, ?, 1, ?)',
-        [$nome, $email, $passwordHash, 'tecnico', $cambioPwd]
+        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password, abilitato_ai) VALUES (?, ?, ?, ?, 1, ?, ?)',
+        [$nome, $email, $passwordHash, 'tecnico', $cambioPwd, $abilitatoAi]
     );
 
     $user = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, created_at FROM utenti WHERE id = ?',
         [Database::lastInsertId()]
     );
     Response::created($user);
@@ -48,6 +49,7 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $email = $req->body['email'] ?? null;
     $password = $req->body['password'] ?? null;
     $attivo = $req->body['attivo'] ?? null;
+    $abilitatoAi = isset($req->body['abilitato_ai']) ? (int)$req->body['abilitato_ai'] : null;
 
     if ($email && $email !== $user['email']) {
         $existing = Database::fetchOne('SELECT id FROM utenti WHERE email = ? AND id != ?', [$email, $id]);
@@ -57,12 +59,12 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $newHash = $password ? password_hash($password, PASSWORD_BCRYPT) : $user['password_hash'];
 
     Database::execute(
-        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo) WHERE id = ?',
-        [$nome, $email, $newHash, $attivo, $id]
+        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo), abilitato_ai = COALESCE(?, abilitato_ai) WHERE id = ?',
+        [$nome, $email, $newHash, $attivo, $abilitatoAi, $id]
     );
 
     $updated = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, cambio_password, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, created_at FROM utenti WHERE id = ?',
         [$id]
     );
     Response::json($updated);
