@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V3.4.03-0317 — 17 Marzo 2026
+- AI: rimossi tutti i limiti di ricerca documenti (LIMIT e troncamento 2000 char)
+- AI: carica tutti i documenti repository + tutte le FAQ Suprema ad ogni domanda (128K token Groq)
+- Repository: fix allineamento colonne tabella (header/body)
+- Repository: fix categoria editing (select parte da "Altro" per categorie non standard)
+- Migrazione: rinominata categoria "generale" → "Altro"
+
 ## V3.4.02-0316 — 16 Marzo 2026
 - Repository: colonna AI con spunta verde se testo estratto
 - Repository: descrizione spostata sotto la riga con triangolino espandibile, modificabile con matita

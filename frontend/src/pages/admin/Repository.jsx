@@ -70,7 +70,8 @@ export default function Repository() {
   function startEdit(doc) {
     setEditingDoc(doc.id)
     setExpandedDoc(doc.id)
-    setEditForm({ categoria: doc.categoria, descrizione: doc.descrizione || '' })
+    const validCats = ['Accessi', 'TVCC', 'Altro']
+    setEditForm({ categoria: validCats.includes(doc.categoria) ? doc.categoria : 'Altro', descrizione: doc.descrizione || '' })
   }
 
   async function saveEdit(id) {
@@ -180,10 +181,10 @@ export default function Repository() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {paginatedDocs.map(doc => (
-                  <tr key={doc.id} className="group">
-                    <td colSpan={6} className="p-0">
-                      <div className="flex items-center hover:bg-gray-50">
-                        <div className="px-4 py-3 flex items-center gap-2 flex-1 min-w-0">
+                  <>
+                    <tr key={doc.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => setExpandedDoc(expandedDoc === doc.id ? null : doc.id)}
                             className="text-gray-400 hover:text-gray-600 cursor-pointer shrink-0"
@@ -193,60 +194,62 @@ export default function Repository() {
                           <FileText size={16} className="text-gray-400 shrink-0" />
                           <span className="font-medium text-gray-900 truncate">{doc.nome_originale}</span>
                         </div>
-                        <div className="px-4 py-3 shrink-0">
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingDoc === doc.id ? (
+                          <select value={editForm.categoria} onChange={e => setEditForm(f => ({ ...f, categoria: e.target.value }))}
+                            className="rounded border border-gray-300 px-2 py-1 text-xs">
+                            <option value="Accessi">Accessi</option>
+                            <option value="TVCC">TVCC</option>
+                            <option value="Altro">Altro</option>
+                          </select>
+                        ) : (
+                          <span className={`${badgeCls} bg-gray-100 text-gray-700`}>{doc.categoria}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{formatSize(doc.dimensione)}</td>
+                      <td className="px-4 py-3 text-center">
+                        {!!doc.ai_parsed ? (
+                          <span className="text-green-500" title="Testo estratto per AI">✓</span>
+                        ) : (
+                          <span className="text-gray-300" title="Testo non disponibile per AI">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{new Date(doc.created_at).toLocaleDateString('it-IT')}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1">
                           {editingDoc === doc.id ? (
-                            <select value={editForm.categoria} onChange={e => setEditForm(f => ({ ...f, categoria: e.target.value }))}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs">
-                              <option value="Accessi">Accessi</option>
-                              <option value="TVCC">TVCC</option>
-                              <option value="Altro">Altro</option>
-                            </select>
+                            <>
+                              <button onClick={() => saveEdit(doc.id)} className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 cursor-pointer" title="Salva">
+                                <Save size={14} />
+                              </button>
+                              <button onClick={() => { setEditingDoc(null); setExpandedDoc(null) }} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 cursor-pointer" title="Annulla">
+                                <X size={14} />
+                              </button>
+                            </>
                           ) : (
-                            <span className={`${badgeCls} bg-gray-100 text-gray-700`}>{doc.categoria}</span>
+                            <>
+                              <button onClick={() => handleDownload(doc)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer" title="Scarica">
+                                <Download size={14} />
+                              </button>
+                              {isAdmin && (
+                                <>
+                                  <button onClick={() => startEdit(doc)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer" title="Modifica">
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button onClick={() => handleDelete(doc.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer" title="Elimina">
+                                    <Trash2 size={14} />
+                                  </button>
+                                </>
+                              )}
+                            </>
                           )}
                         </div>
-                        <div className="px-4 py-3 text-gray-500 text-xs shrink-0">{formatSize(doc.dimensione)}</div>
-                        <div className="px-4 py-3 text-center shrink-0">
-                          {!!doc.ai_parsed ? (
-                            <span className="text-green-500" title="Testo estratto per AI">✓</span>
-                          ) : (
-                            <span className="text-gray-300" title="Testo non disponibile per AI">—</span>
-                          )}
-                        </div>
-                        <div className="px-4 py-3 text-gray-500 text-xs shrink-0">{new Date(doc.created_at).toLocaleDateString('it-IT')}</div>
-                        <div className="px-4 py-3 shrink-0">
-                          <div className="flex gap-1">
-                            {editingDoc === doc.id ? (
-                              <>
-                                <button onClick={() => saveEdit(doc.id)} className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 cursor-pointer" title="Salva">
-                                  <Save size={14} />
-                                </button>
-                                <button onClick={() => { setEditingDoc(null); setExpandedDoc(null) }} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 cursor-pointer" title="Annulla">
-                                  <X size={14} />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button onClick={() => handleDownload(doc)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer" title="Scarica">
-                                  <Download size={14} />
-                                </button>
-                                {isAdmin && (
-                                  <>
-                                    <button onClick={() => startEdit(doc)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer" title="Modifica">
-                                      <Pencil size={14} />
-                                    </button>
-                                    <button onClick={() => handleDelete(doc.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer" title="Elimina">
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {expandedDoc === doc.id && (
-                        <div className="px-4 pb-3 pl-14">
+                      </td>
+                    </tr>
+                    {expandedDoc === doc.id && (
+                      <tr key={`${doc.id}-desc`} className="bg-gray-50">
+                        <td colSpan={6} className="px-4 pb-3 pt-0 pl-14">
                           {editingDoc === doc.id ? (
                             <div>
                               <label className="block text-xs font-medium text-gray-500 mb-1">Descrizione</label>
@@ -259,10 +262,10 @@ export default function Repository() {
                               {doc.descrizione || 'Nessuna descrizione'}
                             </p>
                           )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>

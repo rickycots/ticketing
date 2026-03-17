@@ -108,28 +108,21 @@ router.post('/ticket-assist', authenticateToken, async (req, res) => {
     ORDER BY t.updated_at DESC LIMIT 10
   `).all(ticket.cliente_id, ticket_id);
 
-  // 5. Repository documents (top 5 with text, truncated)
+  // 5. Repository documents (all with text)
   const documenti = db.prepare(`
     SELECT nome_originale, categoria, contenuto_testo
     FROM documenti_repository
     WHERE contenuto_testo IS NOT NULL AND contenuto_testo != '' AND categoria != 'FAQ Suprema'
-    ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
+    ORDER BY created_at DESC
   `).all();
 
-  // 6. FAQ Suprema — search by keywords from ticket subject/description
-  const searchTerms = (ticket.oggetto + ' ' + (ticket.descrizione || '')).toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3).slice(0, 5);
-  let faqDocs = [];
-  if (searchTerms.length > 0) {
-    const likeClauses = searchTerms.map(() => "contenuto_testo LIKE ?").join(' OR ');
-    const likeParams = searchTerms.map(w => `%${w}%`);
-    faqDocs = db.prepare(`
-      SELECT nome_originale, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria = 'FAQ Suprema' AND (${likeClauses})
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
-    `).all(...likeParams);
-  }
+  // 6. FAQ Suprema (all)
+  const faqDocs = db.prepare(`
+    SELECT nome_originale, contenuto_testo
+    FROM documenti_repository
+    WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+    ORDER BY id DESC
+  `).all();
 
   // Build context
   let context = '';
@@ -175,7 +168,7 @@ router.post('/ticket-assist', authenticateToken, async (req, res) => {
   if (documenti.length > 0) {
     context += '=== DOCUMENTI REPOSITORY ===\n';
     documenti.forEach(d => {
-      const testo = d.contenuto_testo.substring(0, 2000);
+      const testo = d.contenuto_testo;
       context += `\n--- ${d.nome_originale} (${d.categoria}) ---\n${testo}\n`;
     });
   }
@@ -183,7 +176,7 @@ router.post('/ticket-assist', authenticateToken, async (req, res) => {
   if (faqDocs.length > 0) {
     context += '\n=== FAQ SUPREMA (Knowledge Base Produttore) ===\n';
     faqDocs.forEach(d => {
-      const testo = d.contenuto_testo.substring(0, 2000);
+      const testo = d.contenuto_testo;
       context += `\n--- ${d.nome_originale} ---\n${testo}\n`;
     });
   }
@@ -229,40 +222,20 @@ router.post('/client-assist', authenticateClientToken, async (req, res) => {
     'SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?'
   ).all(req.user.cliente_id);
 
-  // Search FAQ Suprema + repository docs by keywords from question
-  const searchTerms = domanda.toLowerCase()
-    .replace(/[^a-z0-9\s\-]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 8);
+  // Load all repository docs and FAQ Suprema
+  const faqDocs = db.prepare(`
+    SELECT nome_originale, contenuto_testo
+    FROM documenti_repository
+    WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+    ORDER BY id DESC
+  `).all();
 
-  let faqDocs = [];
-  let repoDocs = [];
-
-  if (searchTerms.length > 0) {
-    const likeClauses = searchTerms.map(() => "contenuto_testo LIKE ?").join(' OR ');
-    const likeParams = searchTerms.map(w => `%${w}%`);
-
-    faqDocs = db.prepare(`
-      SELECT nome_originale, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria = 'FAQ Suprema' AND (${likeClauses})
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
-    `).all(...likeParams);
-
-    repoDocs = db.prepare(`
-      SELECT nome_originale, categoria, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != '' AND (${likeClauses})
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 3
-    `).all(...likeParams);
-  }
-
-  if (repoDocs.length === 0) {
-    repoDocs = db.prepare(`
-      SELECT nome_originale, categoria, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 3
-    `).all();
-  }
+  const repoDocs = db.prepare(`
+    SELECT nome_originale, categoria, contenuto_testo
+    FROM documenti_repository
+    WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+    ORDER BY created_at DESC
+  `).all();
 
   let context = '';
 
@@ -285,7 +258,7 @@ router.post('/client-assist', authenticateClientToken, async (req, res) => {
   if (repoDocs.length > 0) {
     context += '\n=== DOCUMENTI TECNICI ===\n';
     repoDocs.forEach(d => {
-      const testo = d.contenuto_testo.substring(0, 2000);
+      const testo = d.contenuto_testo;
       context += `\n--- ${d.nome_originale} (${d.categoria}) ---\n${testo}\n`;
     });
   }
@@ -324,43 +297,21 @@ router.post('/admin-assist', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'GROQ_API_KEY non configurata.' });
   }
 
-  // Search keywords
-  const searchTerms = domanda.toLowerCase()
-    .replace(/[^a-z0-9\s\-]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 8);
+  // 1. All repository documents
+  const repoDocs = db.prepare(`
+    SELECT nome_originale, categoria, contenuto_testo
+    FROM documenti_repository
+    WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+    ORDER BY created_at DESC
+  `).all();
 
-  // 1. Repository documents (keyword search + fallback)
-  let repoDocs = [];
-  if (searchTerms.length > 0) {
-    const likeClauses = searchTerms.map(() => "contenuto_testo LIKE ?").join(' OR ');
-    const likeParams = searchTerms.map(w => `%${w}%`);
-    repoDocs = db.prepare(`
-      SELECT nome_originale, categoria, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != '' AND (${likeClauses})
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
-    `).all(...likeParams);
-  }
-  if (repoDocs.length === 0) {
-    repoDocs = db.prepare(`
-      SELECT nome_originale, categoria, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
-    `).all();
-  }
-
-  // 2. FAQ Suprema
-  let faqDocs = [];
-  if (searchTerms.length > 0) {
-    const likeClauses = searchTerms.map(() => "contenuto_testo LIKE ?").join(' OR ');
-    const likeParams = searchTerms.map(w => `%${w}%`);
-    faqDocs = db.prepare(`
-      SELECT nome_originale, contenuto_testo
-      FROM documenti_repository
-      WHERE categoria = 'FAQ Suprema' AND (${likeClauses})
-      ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5
-    `).all(...likeParams);
-  }
+  // 2. All FAQ Suprema
+  const faqDocs = db.prepare(`
+    SELECT nome_originale, contenuto_testo
+    FROM documenti_repository
+    WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+    ORDER BY id DESC
+  `).all();
 
   // 3. All KB cards (cross-client, admin sees everything)
   const schedeKB = db.prepare(`
@@ -376,14 +327,14 @@ router.post('/admin-assist', authenticateToken, async (req, res) => {
   if (repoDocs.length > 0) {
     context += '=== DOCUMENTI REPOSITORY ===\n';
     repoDocs.forEach(d => {
-      context += `\n--- ${d.nome_originale} (${d.categoria}) ---\n${d.contenuto_testo.substring(0, 2000)}\n`;
+      context += `\n--- ${d.nome_originale} (${d.categoria}) ---\n${d.contenuto_testo}\n`;
     });
   }
 
   if (faqDocs.length > 0) {
     context += '\n=== FAQ SUPREMA (Knowledge Base Produttore) ===\n';
     faqDocs.forEach(d => {
-      context += `\n--- ${d.nome_originale} ---\n${d.contenuto_testo.substring(0, 2000)}\n`;
+      context += `\n--- ${d.nome_originale} ---\n${d.contenuto_testo}\n`;
     });
   }
 

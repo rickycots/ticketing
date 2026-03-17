@@ -113,23 +113,15 @@ $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function(
     $documenti = Database::fetchAll(
         "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
          WHERE contenuto_testo IS NOT NULL AND contenuto_testo != '' AND categoria != 'FAQ Suprema'
-         ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5"
+         ORDER BY created_at DESC"
     );
 
-    // FAQ search by keywords
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($ticket['oggetto'] . ' ' . ($ticket['descrizione'] ?? ''))), 1), fn($w) => strlen($w) > 2);
-    $words = array_slice(array_values($words), 0, 5);
-    $faqDocs = [];
-    if (!empty($words)) {
-        $likeClauses = implode(' OR ', array_fill(0, count($words), 'contenuto_testo LIKE ?'));
-        $likeParams = array_map(fn($w) => "%{$w}%", $words);
-        $faqDocs = Database::fetchAll(
-            "SELECT nome_originale, contenuto_testo FROM documenti_repository
-             WHERE categoria = 'FAQ Suprema' AND ({$likeClauses})
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5",
-            $likeParams
-        );
-    }
+    // All FAQ Suprema
+    $faqDocs = Database::fetchAll(
+        "SELECT nome_originale, contenuto_testo FROM documenti_repository
+         WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+         ORDER BY id DESC"
+    );
 
     // Build context
     $context = '';
@@ -166,12 +158,12 @@ $router->post('/ai/ticket-assist', [Auth::class, 'authenticateToken'], function(
 
     if (!empty($documenti)) {
         $context .= "=== DOCUMENTI REPOSITORY ===\n";
-        foreach ($documenti as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
+        foreach ($documenti as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . $d['contenuto_testo'] . "\n";
     }
 
     if (!empty($faqDocs)) {
         $context .= "\n=== FAQ SUPREMA (Knowledge Base Produttore) ===\n";
-        foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
+        foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . $d['contenuto_testo'] . "\n";
     }
 
     // Sanitize context before sending to AI
@@ -213,38 +205,18 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
     // KB cards for this client (tenant-isolated)
     $schedeKB = Database::fetchAll('SELECT titolo, contenuto FROM schede_cliente WHERE cliente_id = ?', [$req->user['cliente_id']]);
 
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 2);
-    $words = array_slice(array_values($words), 0, 8);
+    // Load all repository docs and FAQ
+    $faqDocs = Database::fetchAll(
+        "SELECT nome_originale, contenuto_testo FROM documenti_repository
+         WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+         ORDER BY id DESC"
+    );
 
-    $faqDocs = [];
-    $repoDocs = [];
-
-    if (!empty($words)) {
-        $likeClauses = implode(' OR ', array_fill(0, count($words), 'contenuto_testo LIKE ?'));
-        $likeParams = array_map(fn($w) => "%{$w}%", $words);
-
-        $faqDocs = Database::fetchAll(
-            "SELECT nome_originale, contenuto_testo FROM documenti_repository
-             WHERE categoria = 'FAQ Suprema' AND ({$likeClauses})
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5",
-            $likeParams
-        );
-
-        $repoDocs = Database::fetchAll(
-            "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
-             WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != '' AND ({$likeClauses})
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 3",
-            $likeParams
-        );
-    }
-
-    if (empty($repoDocs)) {
-        $repoDocs = Database::fetchAll(
-            "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
-             WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 3"
-        );
-    }
+    $repoDocs = Database::fetchAll(
+        "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
+         WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+         ORDER BY created_at DESC"
+    );
 
     $context = '';
     if (!empty($schedeKB)) {
@@ -258,7 +230,7 @@ $router->post('/ai/client-assist', [Auth::class, 'authenticateClientToken'], fun
     }
     if (!empty($repoDocs)) {
         $context .= "\n=== DOCUMENTI TECNICI ===\n";
-        foreach ($repoDocs as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
+        foreach ($repoDocs as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . $d['contenuto_testo'] . "\n";
     }
 
     // Sanitize context before sending to AI
@@ -294,41 +266,19 @@ $router->post('/ai/admin-assist', [Auth::class, 'authenticateToken'], function($
     if (!$domanda) Response::error('domanda è obbligatoria', 400);
     if (!GROQ_API_KEY) Response::error('GROQ_API_KEY non configurata.', 500);
 
-    $words = array_filter(str_word_count(preg_replace('/[^a-z0-9\s\-]/i', '', strtolower($domanda)), 1), fn($w) => strlen($w) > 2);
-    $words = array_slice(array_values($words), 0, 8);
+    // All repository docs
+    $repoDocs = Database::fetchAll(
+        "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
+         WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+         ORDER BY created_at DESC"
+    );
 
-    // Repository docs
-    $repoDocs = [];
-    if (!empty($words)) {
-        $likeClauses = implode(' OR ', array_fill(0, count($words), 'contenuto_testo LIKE ?'));
-        $likeParams = array_map(fn($w) => "%{$w}%", $words);
-        $repoDocs = Database::fetchAll(
-            "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
-             WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != '' AND ({$likeClauses})
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5",
-            $likeParams
-        );
-    }
-    if (empty($repoDocs)) {
-        $repoDocs = Database::fetchAll(
-            "SELECT nome_originale, categoria, contenuto_testo FROM documenti_repository
-             WHERE categoria != 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5"
-        );
-    }
-
-    // FAQ Suprema
-    $faqDocs = [];
-    if (!empty($words)) {
-        $likeClauses = implode(' OR ', array_fill(0, count($words), 'contenuto_testo LIKE ?'));
-        $likeParams = array_map(fn($w) => "%{$w}%", $words);
-        $faqDocs = Database::fetchAll(
-            "SELECT nome_originale, contenuto_testo FROM documenti_repository
-             WHERE categoria = 'FAQ Suprema' AND ({$likeClauses})
-             ORDER BY LENGTH(contenuto_testo) DESC LIMIT 5",
-            $likeParams
-        );
-    }
+    // All FAQ Suprema
+    $faqDocs = Database::fetchAll(
+        "SELECT nome_originale, contenuto_testo FROM documenti_repository
+         WHERE categoria = 'FAQ Suprema' AND contenuto_testo IS NOT NULL AND contenuto_testo != ''
+         ORDER BY id DESC"
+    );
 
     // All KB cards
     $schedeKB = Database::fetchAll(
@@ -340,11 +290,11 @@ $router->post('/ai/admin-assist', [Auth::class, 'authenticateToken'], function($
     $context = '';
     if (!empty($repoDocs)) {
         $context .= "=== DOCUMENTI REPOSITORY ===\n";
-        foreach ($repoDocs as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
+        foreach ($repoDocs as $d) $context .= "\n--- {$d['nome_originale']} ({$d['categoria']}) ---\n" . $d['contenuto_testo'] . "\n";
     }
     if (!empty($faqDocs)) {
         $context .= "\n=== FAQ SUPREMA (Knowledge Base Produttore) ===\n";
-        foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . substr($d['contenuto_testo'], 0, 2000) . "\n";
+        foreach ($faqDocs as $d) $context .= "\n--- {$d['nome_originale']} ---\n" . $d['contenuto_testo'] . "\n";
     }
     if (!empty($schedeKB)) {
         $context .= "\n=== KNOWLEDGE BASE CLIENTI ===\n";
