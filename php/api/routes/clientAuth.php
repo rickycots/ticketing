@@ -25,7 +25,7 @@ $router->post('/client-auth/login', function($req) {
     }
 
     $user = Database::fetchOne(
-        'SELECT uc.*, c.nome_azienda, c.logo
+        'SELECT uc.*, c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai
          FROM utenti_cliente uc
          JOIN clienti c ON uc.cliente_id = c.id
          WHERE uc.email = ?',
@@ -68,6 +68,9 @@ $router->post('/client-auth/login', function($req) {
         'schede_visibili' => $visibili,
         'lingua' => $user['lingua'] ?? 'it',
         'cambio_password' => (int)($user['cambio_password'] ?? 0),
+        'servizio_ticket' => (int)($user['servizio_ticket'] ?? 1),
+        'servizio_progetti' => (int)($user['servizio_progetti'] ?? 1),
+        'servizio_ai' => (int)($user['servizio_ai'] ?? 1),
     ];
 
     // 2FA: generate code, send email, return pending
@@ -129,7 +132,7 @@ $router->post('/client-auth/verify-2fa', function($req) {
     }
 
     $user = Database::fetchOne(
-        'SELECT uc.*, c.nome_azienda, c.logo FROM utenti_cliente uc JOIN clienti c ON uc.cliente_id = c.id WHERE uc.id = ?',
+        'SELECT uc.*, c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai FROM utenti_cliente uc JOIN clienti c ON uc.cliente_id = c.id WHERE uc.id = ?',
         [$decoded['id']]
     );
     if (!$user) Response::error('Utente non trovato', 401);
@@ -253,7 +256,7 @@ $router->get('/client-auth/me', [Auth::class, 'authenticateClientToken'], functi
     // Handle impersonated admin
     if (!empty($req->user['impersonated'])) {
         $cliente = Database::fetchOne(
-            'SELECT id, nome_azienda, logo FROM clienti WHERE id = ?',
+            'SELECT id, nome_azienda, logo, servizio_ticket, servizio_progetti, servizio_ai FROM clienti WHERE id = ?',
             [$req->user['cliente_id']]
         );
         if (!$cliente) Response::error('Cliente non trovato', 401);
@@ -268,12 +271,15 @@ $router->get('/client-auth/me', [Auth::class, 'authenticateClientToken'], functi
             'attivo' => 1,
             'nome_azienda' => $cliente['nome_azienda'],
             'logo' => $cliente['logo'],
+            'servizio_ticket' => (int)($cliente['servizio_ticket'] ?? 1),
+            'servizio_progetti' => (int)($cliente['servizio_progetti'] ?? 1),
+            'servizio_ai' => (int)($cliente['servizio_ai'] ?? 1),
         ]);
     }
 
     $user = Database::fetchOne(
         'SELECT uc.id, uc.nome, uc.email, uc.cliente_id, uc.ruolo, uc.schede_visibili, uc.lingua, uc.attivo,
-                c.nome_azienda, c.logo
+                c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai
          FROM utenti_cliente uc
          JOIN clienti c ON uc.cliente_id = c.id
          WHERE uc.id = ?',
@@ -331,6 +337,9 @@ $router->post('/client-auth/impersonate/:clienteId',
                 'logo' => $cliente['logo'],
                 'schede_visibili' => 'ticket,progetti,ai',
                 'impersonated' => true,
+                'servizio_ticket' => (int)($cliente['servizio_ticket'] ?? 1),
+                'servizio_progetti' => (int)($cliente['servizio_progetti'] ?? 1),
+                'servizio_ai' => (int)($cliente['servizio_ai'] ?? 1),
             ],
         ]);
     }

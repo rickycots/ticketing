@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V3.5.00-0317 — 17 Marzo 2026
+- Servizi per cliente: 3 flag (Ticket, Progetti, AI) configurabili in creazione e dettaglio cliente
+- Portale client: menu e accesso pagine filtrati per servizi attivi del cliente
+- Protezione URL diretto: redirect automatico se servizio disattivato
+- Creazione utente portale (admin + client): checkbox disabilitate per servizi non attivi
+- Pagina Utenti admin: toggle vista Estesa/Compatta (tabella)
+- Pagina Clienti admin: toggle vista Estesa/Compatta (tabella con SLA, ticket, progetti)
+- Migrazione DB: colonne servizio_ticket, servizio_progetti, servizio_ai su tabella clienti
+
 ## V3.4.03-0317 — 17 Marzo 2026
 - AI: rimossi tutti i limiti di ricerca documenti (LIMIT e troncamento 2000 char)
 - AI: carica tutti i documenti repository + tutte le FAQ Suprema ad ogni domanda (128K token Groq)

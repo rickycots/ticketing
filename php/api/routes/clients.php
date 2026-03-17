@@ -53,9 +53,13 @@ $router->post('/clients', [Auth::class, 'authenticateToken'], [Auth::class, 'req
     $slug = generateSlug($nomeAzienda);
     $sla = in_array($req->body['sla_reazione'] ?? '', ['1g', '3g', 'nb']) ? $req->body['sla_reazione'] : 'nb';
 
+    $srvTicket = !empty($req->body['servizio_ticket']) ? 1 : 0;
+    $srvProgetti = !empty($req->body['servizio_progetti']) ? 1 : 0;
+    $srvAi = !empty($req->body['servizio_ai']) ? 1 : 0;
+
     Database::execute(
-        'INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$nomeAzienda, $req->body['referente'] ?? null, $email, $req->body['telefono'] ?? null, $req->body['indirizzo'] ?? null, $req->body['citta'] ?? null, $req->body['provincia'] ?? null, $req->body['note'] ?? null, $slug, $sla]
+        'INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$nomeAzienda, $req->body['referente'] ?? null, $email, $req->body['telefono'] ?? null, $req->body['indirizzo'] ?? null, $req->body['citta'] ?? null, $req->body['provincia'] ?? null, $req->body['note'] ?? null, $slug, $sla, $srvTicket, $srvProgetti, $srvAi]
     );
     Response::created(Database::fetchOne('SELECT * FROM clienti WHERE id = ?', [Database::lastInsertId()]));
 });
@@ -74,8 +78,12 @@ $router->put('/clients/:id', [Auth::class, 'authenticateToken'], [Auth::class, '
 
     $sla = isset($req->body['sla_reazione']) ? (in_array($req->body['sla_reazione'], ['1g', '3g', 'nb']) ? $req->body['sla_reazione'] : $client['sla_reazione']) : $client['sla_reazione'];
 
+    $srvTicket = array_key_exists('servizio_ticket', $req->body) ? ($req->body['servizio_ticket'] ? 1 : 0) : $client['servizio_ticket'];
+    $srvProgetti = array_key_exists('servizio_progetti', $req->body) ? ($req->body['servizio_progetti'] ? 1 : 0) : $client['servizio_progetti'];
+    $srvAi = array_key_exists('servizio_ai', $req->body) ? ($req->body['servizio_ai'] ? 1 : 0) : $client['servizio_ai'];
+
     Database::execute(
-        'UPDATE clienti SET nome_azienda = COALESCE(?, nome_azienda), referente = ?, email = COALESCE(?, email), telefono = ?, indirizzo = ?, citta = ?, provincia = ?, note = ?, portale_slug = ?, sla_reazione = ? WHERE id = ?',
+        'UPDATE clienti SET nome_azienda = COALESCE(?, nome_azienda), referente = ?, email = COALESCE(?, email), telefono = ?, indirizzo = ?, citta = ?, provincia = ?, note = ?, portale_slug = ?, sla_reazione = ?, servizio_ticket = ?, servizio_progetti = ?, servizio_ai = ? WHERE id = ?',
         [
             $req->body['nome_azienda'] ?? null,
             array_key_exists('referente', $req->body) ? $req->body['referente'] : $client['referente'],
@@ -87,6 +95,7 @@ $router->put('/clients/:id', [Auth::class, 'authenticateToken'], [Auth::class, '
             array_key_exists('note', $req->body) ? $req->body['note'] : $client['note'],
             $newSlug ?: $client['portale_slug'],
             $sla,
+            $srvTicket, $srvProgetti, $srvAi,
             $id,
         ]
     );

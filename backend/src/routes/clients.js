@@ -81,7 +81,7 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // POST /api/clients — create client (admin only)
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
-  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, sla_reazione } = req.body;
+  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai } = req.body;
 
   if (!nome_azienda || !email) {
     return res.status(400).json({ error: 'Campi obbligatori: nome_azienda, email' });
@@ -91,9 +91,9 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
   const sla = ['1g', '3g', 'nb'].includes(sla_reazione) ? sla_reazione : 'nb';
 
   const result = db.prepare(`
-    INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(nome_azienda, referente || null, email, telefono || null, indirizzo || null, citta || null, provincia || null, note || null, portale_slug, sla);
+    INSERT INTO clienti (nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(nome_azienda, referente || null, email, telefono || null, indirizzo || null, citta || null, provincia || null, note || null, portale_slug, sla, servizio_ticket ? 1 : 0, servizio_progetti ? 1 : 0, servizio_ai ? 1 : 0);
 
   const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(client);
@@ -101,7 +101,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
 // PUT /api/clients/:id — update client (admin only)
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione } = req.body;
+  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai } = req.body;
 
   const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(req.params.id);
   if (!client) {
@@ -132,7 +132,10 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       provincia = ?,
       note = ?,
       portale_slug = ?,
-      sla_reazione = ?
+      sla_reazione = ?,
+      servizio_ticket = COALESCE(?, servizio_ticket),
+      servizio_progetti = COALESCE(?, servizio_progetti),
+      servizio_ai = COALESCE(?, servizio_ai)
     WHERE id = ?
   `).run(
     nome_azienda || null,
@@ -145,6 +148,9 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     note !== undefined ? note : client.note,
     newSlug || client.portale_slug,
     sla,
+    servizio_ticket !== undefined ? (servizio_ticket ? 1 : 0) : null,
+    servizio_progetti !== undefined ? (servizio_progetti ? 1 : 0) : null,
+    servizio_ai !== undefined ? (servizio_ai ? 1 : 0) : null,
     req.params.id
   );
 

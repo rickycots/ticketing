@@ -113,18 +113,15 @@ export default function UserManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('visibleSections')}</label>
                 <div className="flex flex-col gap-2">
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
-                    Ticket
-                  </label>
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
-                    Progetti
-                  </label>
-                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
-                    AI Assistant
-                  </label>
+                  {[['ticket', 'Ticket', 'servizio_ticket'], ['progetti', 'Progetti', 'servizio_progetti'], ['ai', 'AI Assistant', 'servizio_ai']].map(([key, label, srv]) => {
+                    const attivo = !!currentUser[srv]
+                    return (
+                      <label key={key} className={`inline-flex items-center gap-2 text-sm ${!attivo ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <input type="checkbox" checked={form.schede_visibili.includes(key)} onChange={() => toggleScheda(key)} disabled={!attivo} className="rounded border-gray-300" />
+                        {label} {!attivo && <span className="text-[10px] text-red-400">(non attivo)</span>}
+                      </label>
+                    )
+                  })}
                 </div>
               </div>
               <div>

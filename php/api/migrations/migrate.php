@@ -120,6 +120,9 @@ try {
         "ALTER TABLE utenti_cliente ADD COLUMN two_factor_attempts INT NOT NULL DEFAULT 0",
         "ALTER TABLE utenti ADD COLUMN cambio_password TINYINT(1) NOT NULL DEFAULT 0",
         "UPDATE documenti_repository SET categoria = 'Altro' WHERE categoria = 'generale'",
+        "ALTER TABLE clienti ADD COLUMN servizio_ticket TINYINT(1) NOT NULL DEFAULT 1",
+        "ALTER TABLE clienti ADD COLUMN servizio_progetti TINYINT(1) NOT NULL DEFAULT 1",
+        "ALTER TABLE clienti ADD COLUMN servizio_ai TINYINT(1) NOT NULL DEFAULT 1",
     ];
     foreach ($alterations as $alt) {
         try {

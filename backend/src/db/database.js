@@ -54,6 +54,9 @@ function runMigrations() {
     "ALTER TABLE utenti_cliente ADD COLUMN two_factor_expires TEXT",
     "ALTER TABLE utenti_cliente ADD COLUMN two_factor_attempts INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE utenti ADD COLUMN cambio_password INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE clienti ADD COLUMN servizio_ticket INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE clienti ADD COLUMN servizio_progetti INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE clienti ADD COLUMN servizio_ai INTEGER NOT NULL DEFAULT 1",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }

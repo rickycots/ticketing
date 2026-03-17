@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck, ShieldAlert, BarChart3 } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
@@ -35,11 +35,18 @@ export default function ClientLayout() {
   if (!clientUser) return <Navigate to="/client/login" replace />
 
   const schede = (clientUser.schede_visibili || '').split(',').filter(Boolean)
-  const hasTicket = schede.includes('ticket')
-  const hasProgetti = schede.includes('progetti')
-  const hasAi = schede.includes('ai')
+  const hasTicket = schede.includes('ticket') && (clientUser.servizio_ticket !== 0)
+  const hasProgetti = schede.includes('progetti') && (clientUser.servizio_progetti !== 0)
+  const hasAi = schede.includes('ai') && (clientUser.servizio_ai !== 0)
   const isClientAdmin = clientUser.ruolo === 'admin'
   const isImpersonated = !!clientUser.impersonated
+  const location = useLocation()
+
+  // Block access to disabled services via direct URL
+  const path = location.pathname
+  if (!hasTicket && (path.includes('/client/tickets') || path === '/client')) return <Navigate to={hasProgetti ? '/client/projects' : hasAi ? '/client/ai' : '/client/users'} replace />
+  if (!hasProgetti && path.includes('/client/projects')) return <Navigate to={hasTicket ? '/client/tickets' : hasAi ? '/client/ai' : '/client/users'} replace />
+  if (!hasAi && path.includes('/client/ai')) return <Navigate to={hasTicket ? '/client/tickets' : hasProgetti ? '/client/projects' : '/client/users'} replace />
 
   const logoUrl = clientUser.logo ? `${import.meta.env.VITE_API_BASE || '/api'}/uploads/logos/${clientUser.logo}` : null
 

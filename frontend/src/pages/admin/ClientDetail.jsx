@@ -55,6 +55,9 @@ export default function ClientDetail() {
           provincia: c.provincia || '',
           sla_reazione: c.sla_reazione || 'nb',
           note: c.note || '',
+          servizio_ticket: !!c.servizio_ticket,
+          servizio_progetti: !!c.servizio_progetti,
+          servizio_ai: !!c.servizio_ai,
         })
       })
       .catch(console.error)
@@ -141,7 +144,7 @@ export default function ClientDetail() {
     e.preventDefault()
     setSaving(true)
     try {
-      const updated = await clients.update(id, form)
+      const updated = await clients.update(id, { ...form, servizio_ticket: form.servizio_ticket ? 1 : 0, servizio_progetti: form.servizio_progetti ? 1 : 0, servizio_ai: form.servizio_ai ? 1 : 0 })
       setClient(updated)
     } catch (err) { console.error(err) }
     finally { setSaving(false) }
@@ -323,6 +326,15 @@ export default function ClientDetail() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
                 <textarea value={form.note || ''} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={3} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700">Servizi attivi:</span>
+                {[['servizio_ticket', 'Ticket'], ['servizio_progetti', 'Progetti'], ['servizio_ai', 'AI']].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={!!form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <span className="text-sm text-gray-600">{label}</span>
+                  </label>
+                ))}
+              </div>
               <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer">
                 <Save size={16} /> {saving ? 'Salvataggio...' : 'Salva Modifiche'}
               </button>
@@ -407,17 +419,17 @@ export default function ClientDetail() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
                       <div className="flex flex-col gap-2">
-                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} className="rounded border-gray-300" />
-                          Ticket
+                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_ticket ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} disabled={!client?.servizio_ticket} className="rounded border-gray-300" />
+                          Ticket {!client?.servizio_ticket && <span className="text-[10px] text-red-400">(non attivo)</span>}
                         </label>
-                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} className="rounded border-gray-300" />
-                          Progetti
+                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_progetti ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} disabled={!client?.servizio_progetti} className="rounded border-gray-300" />
+                          Progetti {!client?.servizio_progetti && <span className="text-[10px] text-red-400">(non attivo)</span>}
                         </label>
-                        <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} className="rounded border-gray-300" />
-                          AI Assistant
+                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_ai ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} disabled={!client?.servizio_ai} className="rounded border-gray-300" />
+                          AI Assistant {!client?.servizio_ai && <span className="text-[10px] text-red-400">(non attivo)</span>}
                         </label>
                       </div>
                     </div>

@@ -45,7 +45,7 @@ router.post('/login', loginLimiter, (req, res) => {
   }
 
   const user = db.prepare(`
-    SELECT uc.*, c.nome_azienda, c.logo
+    SELECT uc.*, c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai
     FROM utenti_cliente uc
     JOIN clienti c ON uc.cliente_id = c.id
     WHERE uc.email = ?
@@ -105,6 +105,9 @@ router.post('/login', loginLimiter, (req, res) => {
           schede_visibili: visibili,
           lingua: user.lingua || 'it',
           cambio_password: user.cambio_password || 0,
+          servizio_ticket: user.servizio_ticket ?? 1,
+          servizio_progetti: user.servizio_progetti ?? 1,
+          servizio_ai: user.servizio_ai ?? 1,
         },
       });
     }
@@ -136,6 +139,9 @@ router.post('/login', loginLimiter, (req, res) => {
         schede_visibili: visibili,
         lingua: user.lingua || 'it',
         cambio_password: user.cambio_password || 0,
+        servizio_ticket: user.servizio_ticket ?? 1,
+        servizio_progetti: user.servizio_progetti ?? 1,
+        servizio_ai: user.servizio_ai ?? 1,
       },
     });
   }
@@ -165,7 +171,7 @@ router.post('/verify-2fa', (req, res) => {
   }
 
   const user = db.prepare(`
-    SELECT uc.*, c.nome_azienda, c.logo
+    SELECT uc.*, c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai
     FROM utenti_cliente uc
     JOIN clienti c ON uc.cliente_id = c.id
     WHERE uc.id = ?
@@ -298,7 +304,7 @@ router.get('/dashboard', authenticateClientToken, (req, res) => {
 router.get('/me', authenticateClientToken, (req, res) => {
   // Handle impersonated admin users (id: 0)
   if (req.user.impersonated) {
-    const cliente = db.prepare('SELECT id, nome_azienda, logo FROM clienti WHERE id = ?').get(req.user.cliente_id);
+    const cliente = db.prepare('SELECT id, nome_azienda, logo, servizio_ticket, servizio_progetti, servizio_ai FROM clienti WHERE id = ?').get(req.user.cliente_id);
     if (!cliente) return res.status(401).json({ error: 'Cliente non trovato' });
     return res.json({
       id: 0,
@@ -310,12 +316,15 @@ router.get('/me', authenticateClientToken, (req, res) => {
       attivo: 1,
       nome_azienda: cliente.nome_azienda,
       logo: cliente.logo,
+      servizio_ticket: cliente.servizio_ticket ?? 1,
+      servizio_progetti: cliente.servizio_progetti ?? 1,
+      servizio_ai: cliente.servizio_ai ?? 1,
     });
   }
 
   const user = db.prepare(`
     SELECT uc.id, uc.nome, uc.email, uc.cliente_id, uc.ruolo, uc.schede_visibili, uc.lingua, uc.attivo,
-           c.nome_azienda, c.logo
+           c.nome_azienda, c.logo, c.servizio_ticket, c.servizio_progetti, c.servizio_ai
     FROM utenti_cliente uc
     JOIN clienti c ON uc.cliente_id = c.id
     WHERE uc.id = ?
@@ -365,6 +374,9 @@ router.post('/impersonate/:clienteId', impersonateLimiter, authenticateToken, re
       logo: cliente.logo,
       schede_visibili: 'ticket,progetti,ai',
       impersonated: true,
+      servizio_ticket: cliente.servizio_ticket ?? 1,
+      servizio_progetti: cliente.servizio_progetti ?? 1,
+      servizio_ai: cliente.servizio_ai ?? 1,
     },
   });
 });
