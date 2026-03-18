@@ -290,11 +290,13 @@ export default function TicketDetail() {
                 placeholder="Aggiungi una nota interna..." rows={2}
                 className={`${selectCls} resize-none`} />
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
-                  <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                  Salva in Knowledge Base (disponibile per AI cliente)
-                </label>
+                {(isAdmin || currentUser.abilitato_ai) ? (
+                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+                    <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    Salva in Knowledge Base (disponibile per AI cliente)
+                  </label>
+                ) : <span />}
                 <button type="submit" disabled={sendingNote || !noteText.trim()}
                   className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   <StickyNote size={14} /> {sendingNote ? 'Salvataggio...' : 'Aggiungi Nota'}

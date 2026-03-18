@@ -6,7 +6,7 @@
 // GET /api/users
 $router->get('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $users = Database::fetchAll(
-        'SELECT id, nome, email, ruolo, attivo, created_at FROM utenti ORDER BY ruolo, nome'
+        'SELECT id, nome, email, ruolo, attivo, abilitato_ai, created_at FROM utenti ORDER BY ruolo, nome'
     );
     Response::json($users);
 });
@@ -26,7 +26,7 @@ $router->post('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
 
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
     $cambioPwd = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 0;
-    $abilitatoAi = isset($req->body['abilitato_ai']) ? (int)$req->body['abilitato_ai'] : 1;
+    $abilitatoAi = !empty($req->body['abilitato_ai']) ? 1 : 0;
     Database::execute(
         'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password, abilitato_ai) VALUES (?, ?, ?, ?, 1, ?, ?)',
         [$nome, $email, $passwordHash, 'tecnico', $cambioPwd, $abilitatoAi]

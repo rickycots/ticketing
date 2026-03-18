@@ -8,7 +8,7 @@ const router = express.Router();
 // GET /api/users — list active users (admin-only)
 router.get('/', authenticateToken, requireAdmin, (req, res) => {
   const users = db.prepare(
-    'SELECT id, nome, email, ruolo, attivo, created_at FROM utenti ORDER BY ruolo, nome'
+    'SELECT id, nome, email, ruolo, attivo, abilitato_ai, created_at FROM utenti ORDER BY ruolo, nome'
   ).all();
   res.json(users);
 });
@@ -28,7 +28,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
   const password_hash = bcrypt.hashSync(password, 10);
   const result = db.prepare(
     'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password, abilitato_ai) VALUES (?, ?, ?, ?, 1, ?, ?)'
-  ).run(nome, email, password_hash, 'tecnico', cambio_password ? 1 : 0, abilitato_ai !== undefined ? (abilitato_ai ? 1 : 0) : 1);
+  ).run(nome, email, password_hash, 'tecnico', cambio_password ? 1 : 0, abilitato_ai ? 1 : 0);
 
   const user = db.prepare('SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, created_at FROM utenti WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(user);

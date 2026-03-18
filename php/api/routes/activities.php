@@ -52,6 +52,14 @@ $router->get('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
         Response::error('Attività non trovata', 404);
     }
 
+    // Tecnico can only view activities assigned to them
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assignedIds = array_filter(array_map('intval', explode(',', $activity['tecnici_ids'] ?? '')));
+        if ($activity['assegnato_a'] != $req->user['id'] && !in_array((int)$req->user['id'], $assignedIds)) {
+            Response::error('Non sei abilitato su questa attività', 403);
+        }
+    }
+
     // Project info
     $project = Database::fetchOne(
         "SELECT p.id, p.nome, p.stato, c.nome_azienda as cliente_nome, c.id as cliente_id,
@@ -99,12 +107,23 @@ $router->get('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
         [$req->params['activityId']]
     );
 
+    // Resolve tecnici names
+    $tecniciNomi = [];
+    if (!empty($activity['tecnici_ids'])) {
+        $ids = array_filter(array_map('intval', explode(',', $activity['tecnici_ids'])));
+        foreach ($ids as $tid) {
+            $u = Database::fetchOne('SELECT id, nome FROM utenti WHERE id = ?', [$tid]);
+            if ($u) $tecniciNomi[] = $u;
+        }
+    }
+
     $activity['progetto'] = $project;
     $activity['note_attivita'] = $noteAttivita;
     $activity['dipendenza'] = $dipendenza ?: null;
     $activity['dipendenti'] = $dipendenti;
     $activity['email_bloccante'] = $emailBloccante ?: null;
     $activity['emails'] = $emails;
+    $activity['tecnici_nomi'] = $tecniciNomi;
 
     Response::json($activity);
 });
@@ -168,8 +187,8 @@ $router->post('/projects/:id/activities', [Auth::class, 'authenticateToken'], [A
     }
 
     Database::execute(
-        "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da, tecnici_ids)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             $progettoId,
             $nome,
@@ -182,7 +201,8 @@ $router->post('/projects/:id/activities', [Auth::class, 'authenticateToken'], [A
             $note ?: null,
             $data_inizio ?: null,
             $finalOrdine,
-            $dipende_da ?: null
+            $dipende_da ?: null,
+            isset($req->body['tecnici_ids']) ? (is_array($req->body['tecnici_ids']) ? implode(',', $req->body['tecnici_ids']) : $req->body['tecnici_ids']) : null
         ]
     );
 
@@ -247,7 +267,9 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
 
     // Tecnico can only update stato and note on activities assigned to them
     if ($req->user['ruolo'] === 'tecnico') {
-        if ($activity['assegnato_a'] != $req->user['id']) {
+        $assignedIds = array_filter(array_map('intval', explode(',', $activity['tecnici_ids'] ?? '')));
+        $isAssigned = $activity['assegnato_a'] == $req->user['id'] || in_array((int)$req->user['id'], $assignedIds);
+        if (!$isAssigned) {
             Response::error('Puoi modificare solo le attività assegnate a te', 403);
         }
 
@@ -339,6 +361,7 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
                 data_inizio = COALESCE(?, data_inizio),
                 ordine = ?,
                 dipende_da = ?,
+                tecnici_ids = COALESCE(?, tecnici_ids),
                 updated_at = NOW()
              WHERE id = ?",
             [
@@ -354,6 +377,7 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
                 $data_inizio ?: null,
                 $finalOrdine,
                 $finalDipendeDa,
+                isset($body['tecnici_ids']) ? (is_array($body['tecnici_ids']) ? implode(',', $body['tecnici_ids']) : $body['tecnici_ids']) : null,
                 $activityId
             ]
         );
@@ -386,11 +410,19 @@ $router->post('/projects/:id/activities/:activityId/notes', [Auth::class, 'authe
     }
 
     $activity = Database::fetchOne(
-        'SELECT a.id, a.titolo, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?',
+        'SELECT a.*, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?',
         [$req->params['activityId'], $req->params['id']]
     );
     if (!$activity) {
         Response::error('Attività non trovata', 404);
+    }
+
+    // Tecnico can only add notes on activities assigned to them
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assignedIds = array_filter(array_map('intval', explode(',', $activity['tecnici_ids'] ?? '')));
+        if ($activity['assegnato_a'] != $req->user['id'] && !in_array((int)$req->user['id'], $assignedIds)) {
+            Response::error('Non sei abilitato su questa attività', 403);
+        }
     }
 
     Database::execute(

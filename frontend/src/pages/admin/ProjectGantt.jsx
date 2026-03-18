@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronRight, Star, Info, ExternalLink, Paperclip, FileText, Download, Upload, Trash2, Users, UserCog } from 'lucide-react'
 import { projects, activities, users as usersApi, clients as clientsApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 
@@ -33,6 +33,7 @@ export default function ProjectGantt() {
   const [showDesc, setShowDesc] = useState(false)
   const [showAllegati, setShowAllegati] = useState(false)
   const [showReferenti, setShowReferenti] = useState(false)
+  const [showTecnici, setShowTecnici] = useState(false)
   const [showAddRef, setShowAddRef] = useState(false)
   const [showNewRefForm, setShowNewRefForm] = useState(false)
   const [clientReferenti, setClientReferenti] = useState([])
@@ -135,6 +136,17 @@ export default function ProjectGantt() {
     const currentIds = (project.referenti || []).map(r => r.id).filter(rid => rid !== refId)
     try {
       await projects.update(id, { referenti: currentIds })
+      loadProject()
+    } catch (err) { alert(err.message) }
+  }
+
+  async function handleToggleTecnico(tecnicoId) {
+    const current = project.tecnici || []
+    const updated = current.includes(tecnicoId)
+      ? current.filter(id => id !== tecnicoId)
+      : [...current, tecnicoId]
+    try {
+      await projects.update(id, { tecnici: updated })
       loadProject()
     } catch (err) { alert(err.message) }
   }
@@ -277,6 +289,17 @@ export default function ProjectGantt() {
             <span className="font-medium">Referenti</span>
             <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowTecnici(prev => !prev)}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showTecnici ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <ChevronRight size={14} className={`transition-transform ${showTecnici ? 'rotate-90' : ''}`} />
+              <UserCog size={14} className={showTecnici ? 'text-indigo-500' : ''} />
+              <span className="font-medium">Tecnici</span>
+              <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.tecnici || []).length}</span>
+            </button>
+          )}
           {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
         </div>
 
@@ -439,6 +462,37 @@ export default function ProjectGantt() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Expanded tecnici */}
+        {showTecnici && isAdmin && (
+          <div className="mt-3 bg-indigo-50 rounded-lg border border-indigo-200 overflow-hidden">
+            <div className="p-3">
+              <p className="text-xs font-medium text-gray-500 mb-2">Seleziona i tecnici abilitati su questo progetto:</p>
+              <div className="flex flex-wrap gap-2">
+                {tecnici.map(u => {
+                  const assigned = (project.tecnici || []).includes(u.id)
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => handleToggleTecnico(u.id)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                        assigned
+                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          : 'bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                    >
+                      <UserCog size={13} />
+                      {u.nome}
+                    </button>
+                  )
+                })}
+              </div>
+              {tecnici.length === 0 && (
+                <p className="text-xs text-gray-400 italic">Nessun tecnico disponibile</p>
+              )}
+            </div>
           </div>
         )}
       </div>

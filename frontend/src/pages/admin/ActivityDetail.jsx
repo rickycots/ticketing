@@ -34,7 +34,9 @@ export default function ActivityDetail() {
   const { id: projectId, activityId } = useParams()
   const [activity, setActivity] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
   const [userList, setUserList] = useState([])
+  const [showTecniciDropdown, setShowTecniciDropdown] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
@@ -47,7 +49,12 @@ export default function ActivityDetail() {
     try {
       const data = await activities.get(projectId, activityId)
       setActivity(data)
-    } catch (err) { console.error(err) }
+    } catch (err) {
+      if (err.message && (err.message.includes('abilitato') || err.message.includes('403') || err.message.includes('consentito'))) {
+        setAccessDenied(true)
+      }
+      console.error(err)
+    }
     finally { setLoading(false) }
   }
 
@@ -77,6 +84,16 @@ export default function ActivityDetail() {
   }
 
   if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">Caricamento...</div>
+  if (accessDenied) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-4">
+      <Lock size={48} className="text-gray-300" />
+      <p className="text-lg font-semibold text-gray-500">Utente non abilitato</p>
+      <p className="text-sm text-gray-400">Non hai i permessi per accedere a questa attività</p>
+      <Link to={`/admin/projects/${projectId}/gantt`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+        <ArrowLeft size={14} /> Torna al progetto
+      </Link>
+    </div>
+  )
   if (!activity) return <div className="text-center text-gray-400 py-12">Attività non trovata</div>
 
   const isCompleted = activity.stato === 'completata'
@@ -153,10 +170,14 @@ export default function ActivityDetail() {
 
             {/* Metadata */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100">
-              {activity.assegnato_nome && (
+              {(activity.tecnici_nomi?.length > 0 || activity.assegnato_nome) && (
                 <div>
                   <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Assegnato a</p>
-                  <p className="text-sm font-medium text-gray-700">{activity.assegnato_nome}</p>
+                  <p className="text-sm font-medium text-gray-700">
+                    {activity.tecnici_nomi?.length > 0
+                      ? activity.tecnici_nomi.map(t => t.nome).join(', ')
+                      : activity.assegnato_nome}
+                  </p>
                 </div>
               )}
               {activity.data_inizio && (
@@ -316,11 +337,13 @@ export default function ActivityDetail() {
                     placeholder="Aggiungi una nota..." rows={2}
                     className={`${selectCls} resize-none`} />
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
-                      <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      Salva in Knowledge Base (disponibile per AI cliente)
-                    </label>
+                    {(isAdmin || currentUser.abilitato_ai) ? (
+                      <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+                        <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        Salva in Knowledge Base (disponibile per AI cliente)
+                      </label>
+                    ) : <span />}
                     <button type="submit" disabled={sendingNote || !noteText.trim()}
                       className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
                       <StickyNote size={14} /> {sendingNote ? 'Salvataggio...' : 'Aggiungi Nota'}
@@ -367,12 +390,56 @@ export default function ActivityDetail() {
                 </div>
               </div>
               {isAdmin && (
-                <div>
+                <div className="relative">
                   <label className="block text-xs font-medium text-gray-500 mb-1">Assegna a</label>
-                  <select value={activity.assegnato_a || ''} onChange={(e) => handleFieldChange('assegnato_a', e.target.value ? Number(e.target.value) : null)} className={selectCls}>
-                    <option value="">Non assegnato</option>
-                    {userList.map(u => <option key={u.id} value={u.id}>{u.nome} ({u.ruolo})</option>)}
-                  </select>
+                  {(() => {
+                    const selectedIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number)
+                    const selectedNames = userList.filter(u => selectedIds.includes(u.id)).map(u => u.nome)
+                    const label = selectedNames.length === 0 ? 'Non assegnato' : selectedNames.length === 1 ? selectedNames[0] : `Abilitati ${selectedNames.length}`
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowTecniciDropdown(prev => !prev)}
+                          className={`${selectCls} text-left flex items-center justify-between cursor-pointer`}
+                        >
+                          <span className={selectedNames.length === 0 ? 'text-gray-400' : ''}>{label}</span>
+                          <ChevronDown size={14} className="text-gray-400" />
+                        </button>
+                        {showTecniciDropdown && (
+                          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                            {userList.map(u => {
+                              const checked = selectedIds.includes(u.id)
+                              return (
+                                <label key={u.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={async () => {
+                                      const updated = checked ? selectedIds.filter(id => id !== u.id) : [...selectedIds, u.id]
+                                      try {
+                                        const result = await activities.update(projectId, activityId, {
+                                          tecnici_ids: updated.join(',') || null,
+                                          assegnato_a: updated.length > 0 ? updated[0] : null
+                                        })
+                                        setActivity(prev => ({ ...prev, ...result }))
+                                      } catch (err) { alert(err.message) }
+                                    }}
+                                    className="rounded border-gray-300 text-blue-600"
+                                  />
+                                  <span>{u.nome}</span>
+                                  <span className="text-xs text-gray-400">({u.ruolo})</span>
+                                </label>
+                              )
+                            })}
+                            <div className="border-t border-gray-100 px-3 py-1.5 flex justify-end">
+                              <button type="button" onClick={() => setShowTecniciDropdown(false)} className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer font-medium">Chiudi</button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               )}
             </div>

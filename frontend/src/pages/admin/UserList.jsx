@@ -6,7 +6,7 @@ export default function UserList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: true })
+  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false })
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ nome: '', email: '', password: '', abilitato_ai: true })
@@ -24,7 +24,7 @@ export default function UserList() {
     setError('')
     try {
       await users.create({ ...form, cambio_password: form.cambio_password ? 1 : 0, abilitato_ai: form.abilitato_ai ? 1 : 0 })
-      setForm({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: true })
+      setForm({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false })
       setShowForm(false)
       loadUsers()
     } catch (err) {

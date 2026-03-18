@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V3.7.00-0318 — 18 Marzo 2026
+- Gestione tecnici nel dettaglio progetto (Gantt): toggle per assegnare/rimuovere tecnici
+- Multi-tecnico per attività: dropdown con checkbox, campo `tecnici_ids`
+- Accesso attività per tecnico: solo attività assegnate, pagina "Utente non abilitato" se non autorizzato
+- Nomi tecnici visibili per tutti (anche tecnici non admin) tramite `tecnici_nomi` dal backend
+- Knowledge Base checkbox nascosta per tecnici senza AI
+- Default `abilitato_ai = 0` per nuovi tecnici, reset tutti i tecnici esistenti a 0
+- Fix lista utenti: campo `abilitato_ai` incluso nella query GET
+
 ## V3.6.00-0318 — 18 Marzo 2026
 - Abilitazione AI per tecnico: flag `abilitato_ai` su tabella utenti
 - Checkbox "Abilita AI Assistant" nel form creazione e modifica tecnico (estesa + compatta)

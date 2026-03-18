@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
 import { LayoutDashboard, Ticket, Mail, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
@@ -30,6 +30,11 @@ export default function AdminLayout() {
     if (item.to === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) return false
     return true
   })
+  // Block direct URL access to AI for non-enabled technicians
+  if (location.pathname === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) {
+    return <Navigate to="/admin" replace />
+  }
+
   const [chatNotifs, setChatNotifs] = useState([])
   const [sidebarCounts, setSidebarCounts] = useState({ tickets_nuovi: 0, email_nuove: 0 })
 

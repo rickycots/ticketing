@@ -40,6 +40,14 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     return res.status(404).json({ error: 'Attività non trovata' });
   }
 
+  // Tecnico can only view activities assigned to them
+  if (req.user.ruolo === 'tecnico') {
+    const assignedIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number);
+    if (activity.assegnato_a !== req.user.id && !assignedIds.includes(req.user.id)) {
+      return res.status(403).json({ error: 'Non sei abilitato su questa attività' });
+    }
+  }
+
   // Project info
   const project = db.prepare(`
     SELECT p.id, p.nome, p.stato, c.nome_azienda as cliente_nome, c.id as cliente_id,
@@ -77,6 +85,16 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     SELECT * FROM email WHERE attivita_id = ? ORDER BY data_ricezione ASC
   `).all(req.params.activityId);
 
+  // Resolve tecnici names
+  let tecnici_nomi = [];
+  if (activity.tecnici_ids) {
+    const ids = activity.tecnici_ids.split(',').filter(Boolean).map(Number);
+    tecnici_nomi = ids.map(tid => {
+      const u = db.prepare('SELECT id, nome FROM utenti WHERE id = ?').get(tid);
+      return u ? { id: u.id, nome: u.nome } : null;
+    }).filter(Boolean);
+  }
+
   res.json({
     ...activity,
     progetto: project,
@@ -84,14 +102,15 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     dipendenza,
     dipendenti,
     email_bloccante: email_bloccante || null,
-    emails
+    emails,
+    tecnici_nomi
   });
 });
 
 // POST /api/projects/:id/activities — create activity (admin only)
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
   const progettoId = req.params.id;
-  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da } = req.body;
+  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da, tecnici_ids } = req.body;
 
   if (!nome) {
     return res.status(400).json({ error: 'Campo obbligatorio: nome' });
@@ -126,8 +145,8 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO attivita (progetto_id, nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da, tecnici_ids)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     progettoId,
     nome,
@@ -140,7 +159,8 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
     note || null,
     data_inizio || null,
     finalOrdine,
-    dipende_da || null
+    dipende_da || null,
+    tecnici_ids ? (Array.isArray(tecnici_ids) ? tecnici_ids.join(',') : tecnici_ids) : null
   );
 
   db.prepare("UPDATE progetti SET updated_at = datetime('now') WHERE id = ?").run(progettoId);
@@ -158,7 +178,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 // PUT /api/projects/:id/activities/:activityId — update activity
 // Admin: can update everything. Tecnico: can update stato and note on assigned activities.
 router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => {
-  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da } = req.body;
+  const { nome, descrizione, assegnato_a, stato, avanzamento, priorita, data_scadenza, note, data_inizio, ordine, dipende_da, tecnici_ids } = req.body;
 
   const activity = db.prepare('SELECT * FROM attivita WHERE id = ? AND progetto_id = ?')
     .get(req.params.activityId, req.params.id);
@@ -179,7 +199,9 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
 
   // Tecnico can only update stato and note on activities assigned to them
   if (req.user.ruolo === 'tecnico') {
-    if (activity.assegnato_a !== req.user.id) {
+    const assignedIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number);
+    const isAssigned = activity.assegnato_a === req.user.id || assignedIds.includes(req.user.id);
+    if (!isAssigned) {
       return res.status(403).json({ error: 'Puoi modificare solo le attività assegnate a te' });
     }
     // Only allow stato and note updates
@@ -261,6 +283,7 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
         data_inizio = COALESCE(?, data_inizio),
         ordine = ?,
         dipende_da = ?,
+        tecnici_ids = COALESCE(?, tecnici_ids),
         updated_at = datetime('now')
       WHERE id = ?
     `).run(
@@ -276,6 +299,7 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
       data_inizio || null,
       finalOrdine,
       finalDipendeDa,
+      tecnici_ids !== undefined ? (Array.isArray(tecnici_ids) ? tecnici_ids.join(',') : tecnici_ids) : null,
       req.params.activityId
     );
   }
@@ -299,10 +323,18 @@ router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, r
     return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
   }
 
-  const activity = db.prepare('SELECT a.id, a.titolo, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?')
+  const activity = db.prepare('SELECT a.*, p.cliente_id, p.nome as progetto_nome FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE a.id = ? AND a.progetto_id = ?')
     .get(req.params.activityId, req.params.id);
   if (!activity) {
     return res.status(404).json({ error: 'Attività non trovata' });
+  }
+
+  // Tecnico can only add notes on activities assigned to them
+  if (req.user.ruolo === 'tecnico') {
+    const assignedIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number);
+    if (activity.assegnato_a !== req.user.id && !assignedIds.includes(req.user.id)) {
+      return res.status(403).json({ error: 'Non sei abilitato su questa attività' });
+    }
   }
 
   const result = db.prepare(`
