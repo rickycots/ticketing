@@ -49,6 +49,10 @@ php/api/vendor/
 php/api/config.env
 php/api/composer.phar
 
+# Documentazione privata (solo locale)
+README.md
+CLAUDE.md
+
 # Personal files
 TODO personale.txt
 msg avvio nuova chat.txt

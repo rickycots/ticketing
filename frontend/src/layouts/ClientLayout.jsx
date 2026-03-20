@@ -40,6 +40,7 @@ export default function ClientLayout() {
   const hasAi = schede.includes('ai') && (clientUser.servizio_ai !== 0)
   const isClientAdmin = clientUser.ruolo === 'admin'
   const isImpersonated = !!clientUser.impersonated
+  document.title = `STM-Portal : ${isClientAdmin ? 'client' : 'user'}`
   const location = useLocation()
 
   // Block access to disabled services via direct URL

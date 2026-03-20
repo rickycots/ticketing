@@ -24,6 +24,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+  document.title = `STM-Portal : ${user.ruolo === 'admin' ? 'admin' : 'tecnico'}`
   const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
   const bottomItems = bottomNavItems.filter(item => {
     if (item.adminOnly && user.ruolo !== 'admin') return false

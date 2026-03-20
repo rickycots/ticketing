@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V3.7.01-0320 — 20 Marzo 2026
+- Titolo tab browser: "STM-Portal" (login), "STM-Portal : admin/tecnico/client/user" (dopo login)
+- Ticket dettaglio tecnico: nascosto "Assegna a" (solo admin), nascosto "Assistente AI" se tecnico non abilitato AI
+- Fix rendering "0" nel box AI quando abilitato_ai=0 (usato !! per boolean)
+- Aggiornamento README.md e CLAUDE.md con versione corrente e nuove sezioni
+
 ## V3.7.00-0318 — 18 Marzo 2026
 - Gestione tecnici nel dettaglio progetto (Gantt): toggle per assegnare/rimuovere tecnici
 - Multi-tecnico per attività: dropdown con checkbox, campo `tecnici_ids`
