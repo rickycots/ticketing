@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V4.0.00-0321 — 21 Marzo 2026
+- Email associate attività: blocco sempre visibile anche senza email, con triangolino collapsabile
+- Messaggio "Nessuna email associata" quando vuoto
+
 ## V3.9.00-0321 — 21 Marzo 2026
 - Attività programmate: nuova tabella `attivita_programmate` con nota, data, referenti
 - Calendario mini nella sidebar attività con pallini rossi sui giorni con eventi

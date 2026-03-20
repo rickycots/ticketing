@@ -51,6 +51,7 @@ export default function ActivityDetail() {
   const [noteToKB, setNoteToKB] = useState(false)
   const [notesOpen, setNotesOpen] = useState(true)
   const [emailTab, setEmailTab] = useState('tutte')
+  const [showEmails, setShowEmails] = useState(true)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -247,64 +248,70 @@ export default function ActivityDetail() {
           </div>
 
           {/* Associated Emails with tabs */}
-          {activity.emails && activity.emails.length > 0 && (() => {
-            const allEmails = activity.emails
-            const bloccanti = allEmails.filter(e => e.is_bloccante)
-            const rilevanti = allEmails.filter(e => e.rilevanza === 'rilevante')
-            const contesto = allEmails.filter(e => e.rilevanza === 'di_contesto')
-            const tabs = [
-              { key: 'tutte', label: 'Tutte', count: allEmails.length },
-              { key: 'bloccanti', label: 'Bloccanti', count: bloccanti.length },
-              { key: 'rilevanti', label: 'Rilevanti', count: rilevanti.length },
-              { key: 'contesto', label: 'Di contesto', count: contesto.length },
-            ]
-            const filtered = emailTab === 'bloccanti' ? bloccanti
-              : emailTab === 'rilevanti' ? rilevanti
-              : emailTab === 'contesto' ? contesto
-              : allEmails
-            return (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                  <Mail size={18} className="text-blue-500" />
-                  <h2 className="text-lg font-semibold">Email Associate</h2>
-                  <span className="text-xs text-gray-400">({allEmails.length})</span>
-                </div>
-                <div className="flex border-b border-gray-100">
-                  {tabs.map(t => (
-                    <button key={t.key} onClick={() => setEmailTab(t.key)}
-                      className={`flex-1 px-3 py-2 text-xs font-medium text-center cursor-pointer transition-colors ${
-                        emailTab === t.key
-                          ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                      }`}>
-                      {t.label} {t.count > 0 && <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{t.count}</span>}
-                    </button>
-                  ))}
-                </div>
-                {filtered.length > 0 ? (
-                  <div className="divide-y divide-gray-100">
-                    {filtered.map(e => (
-                      <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-red-50/50' : e.rilevanza === 'rilevante' ? 'bg-amber-50/50' : ''}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium">{e.mittente}</p>
-                            {e.is_bloccante && <span className="text-xs font-semibold bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">Bloccante</span>}
-                            {e.rilevanza === 'rilevante' && <span className="text-xs font-semibold bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">Rilevante</span>}
-                            {e.rilevanza === 'di_contesto' && <span className="text-xs font-semibold bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">Contesto</span>}
-                          </div>
-                          <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                        </div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">{e.oggetto}</p>
-                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
-                      </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <button onClick={() => setShowEmails(!showEmails)} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <Mail size={18} className="text-blue-500" />
+                <h2 className="text-lg font-semibold">Email Associate</h2>
+                <span className="text-xs text-gray-400">({(activity.emails || []).length})</span>
+              </div>
+              {showEmails ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+            </button>
+            {showEmails && (() => {
+              const allEmails = activity.emails || []
+              if (allEmails.length === 0) return <div className="p-6 text-center text-sm text-gray-400 border-t border-gray-100">Nessuna email associata</div>
+              const bloccanti = allEmails.filter(e => e.is_bloccante)
+              const rilevanti = allEmails.filter(e => e.rilevanza === 'rilevante')
+              const contesto = allEmails.filter(e => e.rilevanza === 'di_contesto')
+              const tabs = [
+                { key: 'tutte', label: 'Tutte', count: allEmails.length },
+                { key: 'bloccanti', label: 'Bloccanti', count: bloccanti.length },
+                { key: 'rilevanti', label: 'Rilevanti', count: rilevanti.length },
+                { key: 'contesto', label: 'Di contesto', count: contesto.length },
+              ]
+              const filtered = emailTab === 'bloccanti' ? bloccanti
+                : emailTab === 'rilevanti' ? rilevanti
+                : emailTab === 'contesto' ? contesto
+                : allEmails
+              return (
+                <>
+                  <div className="flex border-b border-gray-100 border-t">
+                    {tabs.map(t => (
+                      <button key={t.key} onClick={() => setEmailTab(t.key)}
+                        className={`flex-1 px-3 py-2 text-xs font-medium text-center cursor-pointer transition-colors ${
+                          emailTab === t.key
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}>
+                        {t.label} {t.count > 0 && <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{t.count}</span>}
+                      </button>
                     ))}
                   </div>
-                ) : (
-                  <div className="p-6 text-center text-sm text-gray-400">Nessuna email in questa categoria</div>
-                )}
-              </div>
-            )
-          })()}
+                  {filtered.length > 0 ? (
+                    <div className="divide-y divide-gray-100">
+                      {filtered.map(e => (
+                        <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-red-50/50' : e.rilevanza === 'rilevante' ? 'bg-amber-50/50' : ''}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">{e.mittente}</p>
+                              {e.is_bloccante && <span className="text-xs font-semibold bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">Bloccante</span>}
+                              {e.rilevanza === 'rilevante' && <span className="text-xs font-semibold bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">Rilevante</span>}
+                              {e.rilevanza === 'di_contesto' && <span className="text-xs font-semibold bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">Contesto</span>}
+                            </div>
+                            <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
+                          </div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">{e.oggetto}</p>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-sm text-gray-400">Nessuna email in questa categoria</div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
 
           {/* Notes */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
