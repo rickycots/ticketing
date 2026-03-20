@@ -71,7 +71,17 @@ $router->get('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'r
 });
 
 // POST /api/emails
-$router->post('/emails', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+$router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
+    // Tecnico can only send emails on tickets assigned to them
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $tkId = !empty($req->body['ticket_id']) ? (int)$req->body['ticket_id'] : null;
+        if (!$tkId) Response::error('Tecnico può inviare email solo sui ticket assegnati', 403);
+        $tk = Database::fetchOne('SELECT assegnato_a FROM ticket WHERE id = ?', [$tkId]);
+        if (!$tk || $tk['assegnato_a'] != $req->user['id']) {
+            Response::error('Non sei assegnato a questo ticket', 403);
+        }
+    }
+
     $tipo = $req->body['tipo'] ?? 'altro';
     $destinatario = $req->body['destinatario'] ?? '';
     $oggetto = $req->body['oggetto'] ?? '';

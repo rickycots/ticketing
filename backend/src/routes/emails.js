@@ -129,8 +129,17 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json({ ...email, thread });
 });
 
-// POST /api/emails — create email (admin only, with optional attachments)
-router.post('/', authenticateToken, requireAdmin, emailUpload, validateUploadedFiles, async (req, res) => {
+// POST /api/emails — create email (admin + tecnico on assigned tickets)
+router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (req, res) => {
+  // Tecnico can only send emails on tickets assigned to them
+  if (req.user.ruolo === 'tecnico') {
+    const ticketId = req.body.ticket_id ? parseInt(req.body.ticket_id) : null;
+    if (!ticketId) return res.status(403).json({ error: 'Tecnico può inviare email solo sui ticket assegnati' });
+    const ticket = db.prepare('SELECT assegnato_a FROM ticket WHERE id = ?').get(ticketId);
+    if (!ticket || ticket.assegnato_a !== req.user.id) {
+      return res.status(403).json({ error: 'Non sei assegnato a questo ticket' });
+    }
+  }
   const { tipo, destinatario, oggetto, corpo, is_bloccante, thread_id } = req.body;
   // FormData sends everything as strings — parse numeric IDs
   const cliente_id = req.body.cliente_id ? parseInt(req.body.cliente_id) : null;

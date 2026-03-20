@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V3.8.00-0320 — 20 Marzo 2026
+- Fix email tecnico: tecnico può inviare risposte sui ticket assegnati (rimosso requireAdmin)
+- Pulizia dist/assets: cancellati 130 file JS/CSS vecchi dal server (da 130 a 2)
+- Filtri veloci ticket: bottoni "Aperti", "Chiusi", "Tutti" nella pagina ticket admin
+- Filtro cliente visibile anche per tecnico (estrae clienti dai ticket)
+- Partecipanti ticket: sezione espandibile con elenco email partecipanti (admin + tecnico)
+- Grid filtri ticket adattato per tecnico (4 colonne con cliente)
+
 ## V3.7.01-0320 — 20 Marzo 2026
 - Titolo tab browser: "STM-Portal" (login), "STM-Portal : admin/tecnico/client/user" (dopo login)
 - Ticket dettaglio tecnico: nascosto "Assegna a" (solo admin), nascosto "Assistente AI" se tecnico non abilitato AI

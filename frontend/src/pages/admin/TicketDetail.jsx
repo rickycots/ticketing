@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown } from 'lucide-react'
+import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users } from 'lucide-react'
 import { tickets, emails, users, schede as schedeApi, ai } from '../../api/client'
 
 const prioritaColors = {
@@ -30,6 +30,7 @@ export default function TicketDetail() {
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
+  const [showPartecipanti, setShowPartecipanti] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -81,7 +82,7 @@ export default function TicketDetail() {
       setTicket(await tickets.get(id))
       setReplyText('')
       setReplyFiles([])
-    } catch (err) { console.error(err) }
+    } catch (err) { console.error(err); alert(err.message || 'Errore invio email') }
     finally { setSending(false) }
   }
 
@@ -155,6 +156,44 @@ export default function TicketDetail() {
                 return <span className={color}>Evasione: {ev.toLocaleDateString('it-IT')}</span>
               })() : null}
             </div>
+            {/* Partecipanti */}
+            {(() => {
+              const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+              const partecipanti = [...new Set((ticket.emails || []).flatMap(e => [e.mittente, ...(e.destinatario ? e.destinatario.split(',').map(d => d.trim()) : [])]).filter(addr => addr && !systemAddrs.includes(addr.toLowerCase())))]
+              if (ticket.creatore_email && !partecipanti.includes(ticket.creatore_email)) partecipanti.unshift(ticket.creatore_email)
+              return (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => setShowPartecipanti(prev => !prev)}
+                    className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showPartecipanti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    <ChevronRight size={14} className={`transition-transform ${showPartecipanti ? 'rotate-90' : ''}`} />
+                    <Users size={14} className={showPartecipanti ? 'text-teal-500' : ''} />
+                    <span className="font-medium">Partecipanti</span>
+                    <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{partecipanti.length}</span>
+                    <span className="text-gray-400 italic ml-1">Elenco utenti che partecipano al ticket e riceveranno la risposta</span>
+                  </button>
+                  {showPartecipanti && (
+                    <div className="mt-2 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
+                      {partecipanti.length === 0 ? (
+                        <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun partecipante</p>
+                      ) : (
+                        <div className="divide-y divide-teal-100">
+                          {partecipanti.map((addr, i) => (
+                            <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                              <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                                <Mail size={12} className="text-teal-600" />
+                              </div>
+                              <span className="text-sm text-gray-700">{addr}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Email Thread */}

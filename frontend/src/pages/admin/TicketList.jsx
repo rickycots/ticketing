@@ -33,6 +33,7 @@ export default function TicketList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ stato: '', priorita: '', cliente_id: '', assegnato_a: '', search: '' })
+  const [quickFilter, setQuickFilter] = useState('aperti')
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 25 })
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -40,7 +41,7 @@ export default function TicketList() {
 
   useEffect(() => {
     if (isAdmin) {
-      clientsApi.list({ limit: 1000 }).then(res => setClientList(res.data || [])).catch(console.error)
+      clientsApi.list({ limit: 1000 }).then(res => setClientList(res.data || [])).catch(() => {})
       users.list().then(setUserList).catch(console.error)
     }
   }, [])
@@ -62,10 +63,33 @@ export default function TicketList() {
 
   const tecnici = userList.filter(u => (u.ruolo === 'tecnico' || u.ruolo === 'admin') && u.attivo)
 
+  // For tecnico: extract unique clients from their ticket list
+  const ticketClients = !isAdmin ? [...new Map(ticketList.filter(t => t.cliente_nome).map(t => [t.cliente_id, { id: t.cliente_id, nome_azienda: t.cliente_nome }])).values()] : []
+  const displayClients = isAdmin ? clientList : ticketClients
+
+  const filteredTickets = quickFilter === 'tutti' ? ticketList
+    : quickFilter === 'aperti' ? ticketList.filter(t => ['aperto', 'in_lavorazione', 'in_attesa'].includes(t.stato))
+    : ticketList.filter(t => ['risolto', 'chiuso'].includes(t.stato))
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Tickets</h1>
+        <div className="flex items-center gap-2">
+          {[{ label: 'Aperti', value: 'aperti' }, { label: 'Chiusi', value: 'chiusi' }, { label: 'Tutti', value: 'tutti' }].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { setQuickFilter(opt.value); setPage(1) }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                quickFilter === opt.value
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
@@ -74,7 +98,7 @@ export default function TicketList() {
           <Filter size={16} className="text-gray-400" />
           <span className="text-sm font-medium text-gray-600">Filtri</span>
         </div>
-        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-3'} gap-3`}>
+        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3`}>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -106,14 +130,14 @@ export default function TicketList() {
             <option value="media">Media</option>
             <option value="bassa">Bassa</option>
           </select>
-          {isAdmin && (
+          {displayClients.length > 0 && (
             <select
               value={filters.cliente_id}
               onChange={(e) => handleFilterChange('cliente_id', e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="">Tutti i clienti</option>
-              {clientList.map(c => (
+              {displayClients.map(c => (
                 <option key={c.id} value={c.id}>{c.nome_azienda}</option>
               ))}
             </select>
@@ -150,7 +174,7 @@ export default function TicketList() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400">Caricamento...</div>
-        ) : ticketList.length === 0 ? (
+        ) : filteredTickets.length === 0 ? (
           <div className="p-8 text-center text-gray-400">Nessun ticket trovato</div>
         ) : (
           <>
@@ -168,7 +192,7 @@ export default function TicketList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {ticketList.map(t => (
+                {filteredTickets.map(t => (
                   <tr key={t.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <Link to={`/admin/tickets/${t.id}`} className="text-sm font-mono text-blue-600 hover:underline">
