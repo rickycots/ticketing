@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft } from 'lucide-react'
-import { activities, users } from '../../api/client'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X } from 'lucide-react'
+import { activities, users, clients as clientsApi } from '../../api/client'
 
 const actStatoColors = {
   da_fare: 'bg-gray-100 text-gray-700',
@@ -37,6 +37,15 @@ export default function ActivityDetail() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [userList, setUserList] = useState([])
   const [showTecniciDropdown, setShowTecniciDropdown] = useState(false)
+  const [showDipendenze, setShowDipendenze] = useState(true)
+  const [scheduled, setScheduled] = useState([])
+  const [showScheduledForm, setShowScheduledForm] = useState(false)
+  const [schedForm, setSchedForm] = useState({ nota: '', data_pianificata: '', referenti_ids: '' })
+  const [projectReferenti, setProjectReferenti] = useState([])
+  const [calMonth, setCalMonth] = useState(new Date().getMonth())
+  const [calYear, setCalYear] = useState(new Date().getFullYear())
+  const [selectedDay, setSelectedDay] = useState(null)
+  const [showCalendar, setShowCalendar] = useState(true)
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
@@ -45,10 +54,36 @@ export default function ActivityDetail() {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
+  async function handleCreateScheduled(e) {
+    e.preventDefault()
+    if (!schedForm.nota.trim() || !schedForm.data_pianificata) return
+    try {
+      await activities.createScheduled(projectId, activityId, schedForm)
+      setSchedForm({ nota: '', data_pianificata: '', referenti_ids: '' })
+      setShowScheduledForm(false)
+      loadScheduled()
+    } catch (err) { alert(err.message) }
+  }
+
+  async function handleDeleteScheduled(schedId) {
+    if (!confirm('Eliminare questa attività programmata?')) return
+    try {
+      await activities.deleteScheduled(projectId, activityId, schedId)
+      loadScheduled()
+    } catch (err) { alert(err.message) }
+  }
+
+  function loadScheduled() {
+    activities.getScheduled(projectId, activityId).then(setScheduled).catch(() => {})
+  }
+
   async function loadActivity() {
     try {
       const data = await activities.get(projectId, activityId)
       setActivity(data)
+      if (data.progetto?.cliente_id) {
+        clientsApi.getReferenti(data.progetto.cliente_id).then(r => setProjectReferenti(Array.isArray(r) ? r : [])).catch(() => {})
+      }
     } catch (err) {
       if (err.message && (err.message.includes('abilitato') || err.message.includes('403') || err.message.includes('consentito'))) {
         setAccessDenied(true)
@@ -60,6 +95,7 @@ export default function ActivityDetail() {
 
   useEffect(() => {
     loadActivity()
+    loadScheduled()
     if (isAdmin) users.list().then(setUserList).catch(() => {})
   }, [projectId, activityId])
 
@@ -209,42 +245,6 @@ export default function ActivityDetail() {
               </div>
             )}
           </div>
-
-          {/* Dependencies info */}
-          {(activity.dipendenza || (activity.dipendenti && activity.dipendenti.length > 0)) && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <ArrowRightLeft size={18} className="text-orange-500" />
-                <h2 className="text-lg font-semibold">Dipendenze</h2>
-              </div>
-              <div className="p-4 space-y-3">
-                {activity.dipendenza && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Dipende da</p>
-                    <Link to={`/admin/projects/${projectId}/activities/${activity.dipendenza.id}`}
-                      className="inline-flex items-center gap-2 text-sm text-orange-700 bg-orange-50 rounded-lg px-3 py-1.5 hover:bg-orange-100">
-                      {activity.dipendenza.nome}
-                      <span className={`${badgeCls} ${actStatoColors[activity.dipendenza.stato]} text-xs`}>{actStatoLabels[activity.dipendenza.stato]}</span>
-                    </Link>
-                  </div>
-                )}
-                {activity.dipendenti && activity.dipendenti.length > 0 && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Attività dipendenti</p>
-                    <div className="space-y-1">
-                      {activity.dipendenti.map(d => (
-                        <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
-                          className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-1.5 hover:bg-blue-100">
-                          {d.nome}
-                          <span className={`${badgeCls} ${actStatoColors[d.stato]} text-xs`}>{actStatoLabels[d.stato]}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Associated Emails with tabs */}
           {activity.emails && activity.emails.length > 0 && (() => {
@@ -443,6 +443,185 @@ export default function ActivityDetail() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Dependencies */}
+          {(activity.dipendenza || (activity.dipendenti && activity.dipendenti.length > 0)) && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <button
+                onClick={() => setShowDipendenze(prev => !prev)}
+                className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl"
+              >
+                <div className="flex items-center gap-2">
+                  <ArrowRightLeft size={16} className="text-orange-500" />
+                  <h3 className="text-sm font-semibold">Dipendenze</h3>
+                </div>
+                {showDipendenze ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+              </button>
+              {showDipendenze && (
+                <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+                  {activity.dipendenza && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Dipende da</p>
+                      <Link to={`/admin/projects/${projectId}/activities/${activity.dipendenza.id}`}
+                        className="inline-flex items-center gap-2 text-xs text-orange-700 bg-orange-50 rounded-lg px-2.5 py-1.5 hover:bg-orange-100">
+                        {activity.dipendenza.nome}
+                        <span className={`${badgeCls} ${actStatoColors[activity.dipendenza.stato]} text-[10px]`}>{actStatoLabels[activity.dipendenza.stato]}</span>
+                      </Link>
+                    </div>
+                  )}
+                  {activity.dipendenti && activity.dipendenti.length > 0 && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Attività dipendenti</p>
+                      <div className="space-y-1">
+                        {activity.dipendenti.map(d => (
+                          <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
+                            className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1.5 hover:bg-blue-100">
+                            {d.nome}
+                            <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Attività Programmate + Calendar */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <button onClick={() => setShowCalendar(prev => !prev)} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-red-500" />
+                <h3 className="text-sm font-semibold">Attività Programmate</h3>
+                {scheduled.length > 0 && <span className="bg-red-100 text-red-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{scheduled.length}</span>}
+              </div>
+              {showCalendar ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+            </button>
+            {showCalendar && (
+              <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+                {/* Mini Calendar */}
+                {(() => {
+                  const DAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D']
+                  const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+                  const firstDay = new Date(calYear, calMonth, 1)
+                  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+                  let startDow = firstDay.getDay() - 1
+                  if (startDow < 0) startDow = 6
+                  const today = new Date()
+                  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                  const scheduledDates = new Set(scheduled.map(s => s.data_pianificata))
+                  const cells = []
+                  for (let i = 0; i < startDow; i++) cells.push(null)
+                  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) } else setCalMonth(m => m - 1) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer"><ChevronRight size={14} className="rotate-180 text-gray-500" /></button>
+                        <span className="text-xs font-semibold text-gray-700">{MONTHS[calMonth]} {calYear}</span>
+                        <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) } else setCalMonth(m => m + 1) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer"><ChevronRight size={14} className="text-gray-500" /></button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px]">
+                        {DAYS.map((d, i) => <div key={i} className="font-semibold text-gray-400 py-1">{d}</div>)}
+                        {cells.map((day, i) => {
+                          if (!day) return <div key={i} />
+                          const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                          const hasEvent = scheduledDates.has(dateStr)
+                          const isToday = dateStr === todayStr
+                          const isSelected = selectedDay === dateStr
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => hasEvent ? setSelectedDay(isSelected ? null : dateStr) : null}
+                              className={`relative py-1 rounded text-xs transition-colors ${
+                                isSelected ? 'bg-red-500 text-white' :
+                                isToday ? 'bg-blue-100 text-blue-800 font-bold' :
+                                hasEvent ? 'hover:bg-red-50 cursor-pointer font-medium' :
+                                'text-gray-600'
+                              } ${hasEvent ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              {day}
+                              {hasEvent && !isSelected && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )
+                })()}
+
+                {/* Selected day popup */}
+                {selectedDay && (
+                  <div className="mt-3 bg-red-50 rounded-lg border border-red-200 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-red-700">{new Date(selectedDay + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                      <button onClick={() => setSelectedDay(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X size={14} /></button>
+                    </div>
+                    <div className="space-y-2">
+                      {scheduled.filter(s => s.data_pianificata === selectedDay).map(s => {
+                        const refIds = (s.referenti_ids || '').split(',').filter(Boolean).map(Number)
+                        const refNames = refIds.map(rid => projectReferenti.find(r => r.id === rid)).filter(Boolean).map(r => `${r.nome} ${r.cognome}`)
+                        return (
+                          <div key={s.id} className="bg-white rounded-lg p-2.5 border border-red-100">
+                            <p className="text-sm text-gray-700">{s.nota}</p>
+                            {refNames.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {refNames.map((n, i) => <span key={i} className="bg-teal-50 text-teal-700 text-[10px] rounded-full px-2 py-0.5">{n}</span>)}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-[10px] text-gray-400">{s.creato_da_nome}</span>
+                              {isAdmin && <button onClick={() => handleDeleteScheduled(s.id)} className="text-gray-400 hover:text-red-600 cursor-pointer"><Trash2 size={12} /></button>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add button + form */}
+                {isAdmin && (
+                  <div className="mt-3">
+                    {!showScheduledForm ? (
+                      <button onClick={() => setShowScheduledForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 cursor-pointer">
+                        <Plus size={14} /> Aggiungi attività programmata
+                      </button>
+                    ) : (
+                      <form onSubmit={handleCreateScheduled} className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-2">
+                        <textarea value={schedForm.nota} onChange={e => setSchedForm(f => ({ ...f, nota: e.target.value }))} placeholder="Descrizione attività..." rows={2} className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 resize-none" required />
+                        <input type="date" value={schedForm.data_pianificata} onChange={e => setSchedForm(f => ({ ...f, data_pianificata: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500" required />
+                        {projectReferenti.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-medium text-gray-500 mb-1">Referenti interessati:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {projectReferenti.map(r => {
+                                const selected = (schedForm.referenti_ids || '').split(',').filter(Boolean).includes(String(r.id))
+                                return (
+                                  <button key={r.id} type="button" onClick={() => {
+                                    const ids = (schedForm.referenti_ids || '').split(',').filter(Boolean)
+                                    const updated = selected ? ids.filter(x => x !== String(r.id)) : [...ids, String(r.id)]
+                                    setSchedForm(f => ({ ...f, referenti_ids: updated.join(',') }))
+                                  }} className={`px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${selected ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                    {r.nome} {r.cognome}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <button type="submit" className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 cursor-pointer">Salva</button>
+                          <button type="button" onClick={() => setShowScheduledForm(false)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

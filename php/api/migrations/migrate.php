@@ -126,6 +126,7 @@ try {
         "ALTER TABLE utenti ADD COLUMN abilitato_ai TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE attivita ADD COLUMN tecnici_ids TEXT DEFAULT NULL",
         "UPDATE utenti SET abilitato_ai = 0 WHERE ruolo = 'tecnico'",
+        "CREATE TABLE IF NOT EXISTS attivita_programmate (id INT AUTO_INCREMENT PRIMARY KEY, attivita_id INT NOT NULL, progetto_id INT NOT NULL, nota TEXT NOT NULL, data_pianificata DATE NOT NULL, referenti_ids TEXT DEFAULT NULL, creato_da INT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (attivita_id) REFERENCES attivita(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ];
     foreach ($alterations as $alt) {
         try {

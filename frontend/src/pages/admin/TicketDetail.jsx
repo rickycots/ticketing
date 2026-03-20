@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users } from 'lucide-react'
+import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users, LayoutList, List } from 'lucide-react'
 import { tickets, emails, users, schede as schedeApi, ai } from '../../api/client'
 
 const prioritaColors = {
@@ -31,6 +31,8 @@ export default function TicketDetail() {
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
   const [showPartecipanti, setShowPartecipanti] = useState(false)
+  const [emailViewMode, setEmailViewMode] = useState('esteso')
+  const [expandedEmailId, setExpandedEmailId] = useState(null)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -199,41 +201,95 @@ export default function TicketDetail() {
           {/* Email Thread */}
           {ticket.emails?.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <Mail size={18} className="text-blue-500" />
-                <h2 className="text-lg font-semibold">Thread Email</h2>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail size={18} className="text-blue-500" />
+                  <h2 className="text-lg font-semibold">Thread Email</h2>
+                </div>
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <LayoutList size={13} /> Estesa
+                  </button>
+                  <button onClick={() => { setEmailViewMode('compatto'); setExpandedEmailId(null) }} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'compatto' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <List size={13} /> Compatta
+                  </button>
+                </div>
               </div>
-              <div className="space-y-3 p-3">
-                {ticket.emails.map(e => {
-                  const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
-                  const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
-                  let allegati = []
-                  try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
-                  return (
-                    <div key={e.id} className={`p-4 rounded-lg ${isOurs ? 'bg-blue-50' : 'bg-amber-50'}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className={`text-sm font-medium ${isOurs ? 'text-blue-700' : 'text-amber-700'}`}>
-                          {isOurs ? 'Noi (Assistenza)' : e.mittente}
-                        </p>
-                        <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                      </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
-                      {allegati.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
-                          {allegati.map((a, i) => (
-                            <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
-                              className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
-                              <FileDown size={12} className="text-gray-400" />
-                              <span>{a.nome}</span>
-                              <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
-                            </a>
-                          ))}
+              {emailViewMode === 'esteso' ? (
+                <div className="space-y-3 p-3">
+                  {ticket.emails.map(e => {
+                    const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+                    const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
+                    let allegati = []
+                    try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+                    return (
+                      <div key={e.id} className={`p-4 rounded-lg ${isOurs ? 'bg-blue-50' : 'bg-amber-50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className={`text-sm font-medium ${isOurs ? 'text-blue-700' : 'text-amber-700'}`}>
+                            {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                          </p>
+                          <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
+                        {allegati.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                            {allegati.map((a, i) => (
+                              <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                                className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                                <FileDown size={12} className="text-gray-400" />
+                                <span>{a.nome}</span>
+                                <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {ticket.emails.map(e => {
+                    const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+                    const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
+                    const isExpanded = expandedEmailId === e.id
+                    let allegati = []
+                    try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+                    return (
+                      <div key={e.id}>
+                        <button
+                          onClick={() => setExpandedEmailId(isExpanded ? null : e.id)}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-left"
+                        >
+                          <ChevronRight size={14} className={`text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${isOurs ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                          <span className={`text-sm font-medium truncate ${isOurs ? 'text-blue-700' : 'text-gray-700'}`}>
+                            {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                          </span>
+                          <span className="text-xs text-gray-400 ml-auto shrink-0">{new Date(e.data_ricezione).toLocaleString('it-IT')}</span>
+                        </button>
+                        {isExpanded && (
+                          <div className={`px-10 pb-3 ${isOurs ? 'bg-blue-50/50' : 'bg-amber-50/50'}`}>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
+                            {allegati.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                                {allegati.map((a, i) => (
+                                  <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                                    className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                                    <FileDown size={12} className="text-gray-400" />
+                                    <span>{a.nome}</span>
+                                    <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 

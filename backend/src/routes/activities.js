@@ -375,4 +375,39 @@ router.delete('/:activityId', authenticateToken, requireAdmin, (req, res) => {
   res.json({ message: 'Attività eliminata' });
 });
 
+// === Scheduled Activities (Attivita Programmate) ===
+
+// GET /api/projects/:id/activities/:activityId/scheduled
+router.get('/:activityId/scheduled', authenticateToken, checkProjectAccess, (req, res) => {
+  const items = db.prepare(`
+    SELECT ap.*, u.nome as creato_da_nome
+    FROM attivita_programmate ap
+    LEFT JOIN utenti u ON ap.creato_da = u.id
+    WHERE ap.attivita_id = ? AND ap.progetto_id = ?
+    ORDER BY ap.data_pianificata ASC
+  `).all(req.params.activityId, req.params.id);
+  res.json(items);
+});
+
+// POST /api/projects/:id/activities/:activityId/scheduled
+router.post('/:activityId/scheduled', authenticateToken, checkProjectAccess, (req, res) => {
+  if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin' });
+  const { nota, data_pianificata, referenti_ids } = req.body;
+  if (!nota || !data_pianificata) return res.status(400).json({ error: 'Nota e data sono obbligatori' });
+
+  const result = db.prepare(
+    'INSERT INTO attivita_programmate (attivita_id, progetto_id, nota, data_pianificata, referenti_ids, creato_da) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(req.params.activityId, req.params.id, nota, data_pianificata, referenti_ids || null, req.user.id);
+
+  const item = db.prepare('SELECT ap.*, u.nome as creato_da_nome FROM attivita_programmate ap LEFT JOIN utenti u ON ap.creato_da = u.id WHERE ap.id = ?').get(result.lastInsertRowid);
+  res.status(201).json(item);
+});
+
+// DELETE /api/projects/:id/activities/:activityId/scheduled/:scheduledId
+router.delete('/:activityId/scheduled/:scheduledId', authenticateToken, checkProjectAccess, (req, res) => {
+  if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin' });
+  db.prepare('DELETE FROM attivita_programmate WHERE id = ? AND attivita_id = ?').run(req.params.scheduledId, req.params.activityId);
+  res.json({ success: true });
+});
+
 module.exports = router;

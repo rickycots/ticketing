@@ -1,5 +1,15 @@
 # Storico Versioni
 
+## V3.9.00-0321 — 21 Marzo 2026
+- Attività programmate: nuova tabella `attivita_programmate` con nota, data, referenti
+- Calendario mini nella sidebar attività con pallini rossi sui giorni con eventi
+- Popup giorno: mostra attività programmate con nota, referenti, autore
+- Form creazione: testo, data, selezione referenti progetto (solo admin)
+- Eliminazione attività programmate con conferma
+- Thread Email ticket: vista Estesa/Compatta con toggle, vista compatta con righe e triangolino
+- Dipendenze attività: spostato nella sidebar destra con triangolino collapsabile
+- Endpoint CRUD scheduled: GET/POST/DELETE su Node.js + PHP
+
 ## V3.8.00-0320 — 20 Marzo 2026
 - Fix email tecnico: tecnico può inviare risposte sui ticket assegnati (rimosso requireAdmin)
 - Pulizia dist/assets: cancellati 130 file JS/CSS vecchi dal server (da 130 a 2)

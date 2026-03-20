@@ -80,6 +80,20 @@ function runMigrations() {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_notifiche_utente ON notifiche(utente_id)');
 
+  // Create attivita_programmate table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS attivita_programmate (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      attivita_id INTEGER NOT NULL REFERENCES attivita(id) ON DELETE CASCADE,
+      progetto_id INTEGER NOT NULL,
+      nota TEXT NOT NULL,
+      data_pianificata TEXT NOT NULL,
+      referenti_ids TEXT DEFAULT NULL,
+      creato_da INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
   // Create utenti_cliente table if not exists
   db.exec(`
     CREATE TABLE IF NOT EXISTS utenti_cliente (

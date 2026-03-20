@@ -468,3 +468,35 @@ $router->delete('/projects/:id/activities/:activityId', [Auth::class, 'authentic
 
     Response::success('Attività eliminata');
 });
+
+// === Scheduled Activities (Attivita Programmate) ===
+
+// GET /projects/:id/activities/:activityId/scheduled
+$router->get('/projects/:id/activities/:activityId/scheduled', [Auth::class, 'authenticateToken'], function($req) {
+    checkProjectAccess($req);
+    $items = Database::fetchAll(
+        'SELECT ap.*, u.nome as creato_da_nome FROM attivita_programmate ap LEFT JOIN utenti u ON ap.creato_da = u.id WHERE ap.attivita_id = ? AND ap.progetto_id = ? ORDER BY ap.data_pianificata ASC',
+        [$req->params['activityId'], $req->params['id']]
+    );
+    Response::json($items);
+});
+
+// POST /projects/:id/activities/:activityId/scheduled
+$router->post('/projects/:id/activities/:activityId/scheduled', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $nota = $req->body['nota'] ?? '';
+    $data = $req->body['data_pianificata'] ?? '';
+    if (!$nota || !$data) Response::error('Nota e data sono obbligatori', 400);
+
+    Database::execute(
+        'INSERT INTO attivita_programmate (attivita_id, progetto_id, nota, data_pianificata, referenti_ids, creato_da) VALUES (?, ?, ?, ?, ?, ?)',
+        [$req->params['activityId'], $req->params['id'], $nota, $data, $req->body['referenti_ids'] ?? null, $req->user['id']]
+    );
+    $item = Database::fetchOne('SELECT ap.*, u.nome as creato_da_nome FROM attivita_programmate ap LEFT JOIN utenti u ON ap.creato_da = u.id WHERE ap.id = ?', [Database::lastInsertId()]);
+    Response::created($item);
+});
+
+// DELETE /projects/:id/activities/:activityId/scheduled/:scheduledId
+$router->delete('/projects/:id/activities/:activityId/scheduled/:scheduledId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    Database::execute('DELETE FROM attivita_programmate WHERE id = ? AND attivita_id = ?', [$req->params['scheduledId'], $req->params['activityId']]);
+    Response::success();
+});

@@ -149,6 +149,12 @@ export const activities = {
     request(`/projects/${projectId}/activities/${activityId}`, { method: 'DELETE' }),
   addNote: (projectId, activityId, testo, salva_in_kb = false) =>
     request(`/projects/${projectId}/activities/${activityId}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb }) }),
+  getScheduled: (projectId, activityId) =>
+    request(`/projects/${projectId}/activities/${activityId}/scheduled`),
+  createScheduled: (projectId, activityId, data) =>
+    request(`/projects/${projectId}/activities/${activityId}/scheduled`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteScheduled: (projectId, activityId, scheduledId) =>
+    request(`/projects/${projectId}/activities/${activityId}/scheduled/${scheduledId}`, { method: 'DELETE' }),
 };
 
 // Clients
