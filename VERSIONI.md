@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V4.0.01-0321 — 21 Marzo 2026
+- Attività: tutti i box partono compatti di default
+- Email Associate si apre automaticamente solo se esiste email bloccante
+- Gantt: pallini rossi sulle barre per attività programmate
+- Backend: attivita_programmate incluse nella response GET progetto (Node.js + PHP)
+
 ## V4.0.00-0321 — 21 Marzo 2026
 - Email associate attività: blocco sempre visibile anche senza email, con triangolino collapsabile
 - Messaggio "Nessuna email associata" quando vuoto

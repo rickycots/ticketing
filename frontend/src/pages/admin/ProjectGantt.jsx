@@ -503,6 +503,7 @@ export default function ProjectGantt() {
         projectStart={project.data_inizio}
         projectEnd={project.data_scadenza}
         projectId={id}
+        scheduledActivities={project.attivita_programmate || []}
       />
 
       {/* Email Associate al Progetto */}

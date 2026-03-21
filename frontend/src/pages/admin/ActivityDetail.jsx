@@ -37,7 +37,7 @@ export default function ActivityDetail() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [userList, setUserList] = useState([])
   const [showTecniciDropdown, setShowTecniciDropdown] = useState(false)
-  const [showDipendenze, setShowDipendenze] = useState(true)
+  const [showDipendenze, setShowDipendenze] = useState(false)
   const [scheduled, setScheduled] = useState([])
   const [showScheduledForm, setShowScheduledForm] = useState(false)
   const [schedForm, setSchedForm] = useState({ nota: '', data_pianificata: '', referenti_ids: '' })
@@ -45,13 +45,13 @@ export default function ActivityDetail() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [selectedDay, setSelectedDay] = useState(null)
-  const [showCalendar, setShowCalendar] = useState(true)
+  const [showCalendar, setShowCalendar] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
-  const [notesOpen, setNotesOpen] = useState(true)
+  const [notesOpen, setNotesOpen] = useState(false)
   const [emailTab, setEmailTab] = useState('tutte')
-  const [showEmails, setShowEmails] = useState(true)
+  const [showEmails, setShowEmails] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -82,6 +82,7 @@ export default function ActivityDetail() {
     try {
       const data = await activities.get(projectId, activityId)
       setActivity(data)
+      if (data.emails?.some(e => e.is_bloccante)) setShowEmails(true)
       if (data.progetto?.cliente_id) {
         clientsApi.getReferenti(data.progetto.cliente_id).then(r => setProjectReferenti(Array.isArray(r) ? r : [])).catch(() => {})
       }

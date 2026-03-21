@@ -55,7 +55,7 @@ const RANGE_OPTIONS = [
   { label: '1 anno', months: 12 },
 ]
 
-export default function GanttChart({ attivita, projectStart, projectEnd, projectId }) {
+export default function GanttChart({ attivita, projectStart, projectEnd, projectId, scheduledActivities = [] }) {
   const [tooltip, setTooltip] = useState(null)
   const [rangeMonths, setRangeMonths] = useState(6)
   const containerRef = useRef(null)
@@ -309,6 +309,17 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                         {bar.avanzamento}%
                       </text>
                     )}
+                    {/* Scheduled activity dots */}
+                    {scheduledActivities.filter(s => s.attivita_id === bar.id).map((s, si) => {
+                      const sDate = parseDate(s.data_pianificata)
+                      if (!sDate) return null
+                      const dotX = daysBetween(timelineStart, sDate) * DAY_WIDTH
+                      return (
+                        <g key={`sched-${s.id || si}`}>
+                          <circle cx={dotX} cy={y + h / 2} r={4} fill="#ef4444" stroke="#fff" strokeWidth={1.5} />
+                        </g>
+                      )
+                    })}
                   </g>
                 )
               })}

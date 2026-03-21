@@ -440,6 +440,9 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
     $project['tecnici'] = $tecnici;
     $project['referenti'] = $referenti;
 
+    // Scheduled activities
+    try { $project['attivita_programmate'] = Database::fetchAll('SELECT * FROM attivita_programmate WHERE progetto_id = ? ORDER BY data_pianificata ASC', [$project['id']]); } catch (\Exception $e) { $project['attivita_programmate'] = []; }
+
     Response::json($project);
 });
 

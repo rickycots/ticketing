@@ -342,7 +342,11 @@ router.get('/:id', authenticateToken, (req, res) => {
     DO UPDATE SET ultimo_letto_at = datetime('now')
   `).run(req.user.id, project.id);
 
-  res.json({ ...project, avanzamento, attivita, emails, note, chat, tecnici });
+  // Scheduled activities for all activities in this project
+  let scheduledAll = [];
+  try { scheduledAll = db.prepare('SELECT * FROM attivita_programmate WHERE progetto_id = ? ORDER BY data_pianificata ASC').all(project.id); } catch(e) {}
+
+  res.json({ ...project, avanzamento, attivita, emails, note, chat, tecnici, attivita_programmate: scheduledAll });
 });
 
 // POST /api/projects/:id/chat — send chat message
