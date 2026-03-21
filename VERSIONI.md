@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V4.1.02-0321 — 21 Marzo 2026
+- Gantt: numerazione attività indipendenti per ordine data inizio, quadratino colorato per dipendenti
+- Azioni attività: box collassabile con triangolino
+
 ## V4.1.01-0321 — 21 Marzo 2026
 - Dettaglio attività: cestino per eliminare attività (solo admin) con redirect al progetto
 

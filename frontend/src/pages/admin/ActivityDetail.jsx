@@ -39,6 +39,7 @@ export default function ActivityDetail() {
   const [userList, setUserList] = useState([])
   const [showTecniciDropdown, setShowTecniciDropdown] = useState(false)
   const [showDipendenze, setShowDipendenze] = useState(false)
+  const [showAzioni, setShowAzioni] = useState(true)
   const [scheduled, setScheduled] = useState([])
   const [showScheduledForm, setShowScheduledForm] = useState(false)
   const [schedForm, setSchedForm] = useState({ nota: '', data_pianificata: '', referenti_ids: '' })
@@ -407,9 +408,12 @@ export default function ActivityDetail() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Actions */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h3 className="text-sm font-semibold mb-3">Azioni</h3>
-            <div className="space-y-3">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <button onClick={() => setShowAzioni(!showAzioni)} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
+              <h3 className="text-sm font-semibold">Azioni</h3>
+              {showAzioni ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+            </button>
+            {showAzioni && <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Stato</label>
                 {activity.email_bloccante ? (
@@ -491,7 +495,7 @@ export default function ActivityDetail() {
                   })()}
                 </div>
               )}
-            </div>
+            </div>}
           </div>
 
           {/* Dependencies */}
