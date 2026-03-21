@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V4.1.03-0321 — 21 Marzo 2026
+- Gantt: numerazione tutte le attività in ordine cronologico per data inizio
+
 ## V4.1.02-0321 — 21 Marzo 2026
 - Gantt: numerazione attività indipendenti per ordine data inizio, quadratino colorato per dipendenti
 - Azioni attività: box collassabile con triangolino

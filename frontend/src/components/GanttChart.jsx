@@ -172,12 +172,8 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                 style={{ height: ROW_HEIGHT }}
               >
                 {(() => {
-                  if (bar.dipende_da) {
-                    return <span className="w-5 h-5 rounded shrink-0" style={{ backgroundColor: colors.fill }} />
-                  }
-                  // Count order among independent activities sorted by start date
-                  const independents = bars.filter(b => !b.dipende_da).sort((a, b) => a.barStart - b.barStart)
-                  const idx = independents.findIndex(b => b.id === bar.id)
+                  const sorted = [...bars].sort((a, b) => a.barStart - b.barStart)
+                  const idx = sorted.findIndex(b => b.id === bar.id)
                   return (
                     <span className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: colors.fill }}>
                       {idx + 1}
