@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
 
 const actStatoColors = {
@@ -46,6 +46,8 @@ export default function ActivityDetail() {
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [selectedDay, setSelectedDay] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editFormData, setEditFormData] = useState({})
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
@@ -54,6 +56,26 @@ export default function ActivityDetail() {
   const [showEmails, setShowEmails] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
+
+  function openEditModal() {
+    setEditFormData({
+      nome: activity.nome || '',
+      descrizione: activity.descrizione || '',
+      priorita: activity.priorita || 'media',
+      data_inizio: activity.data_inizio || '',
+      data_scadenza: activity.data_scadenza || '',
+    })
+    setShowEditModal(true)
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault()
+    try {
+      const updated = await activities.update(projectId, activityId, editFormData)
+      setActivity(prev => ({ ...prev, ...updated }))
+      setShowEditModal(false)
+    } catch (err) { alert(err.message) }
+  }
 
   async function handleCreateScheduled(e) {
     e.preventDefault()
@@ -184,7 +206,14 @@ export default function ActivityDetail() {
           <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-6 ${statoBorder[activity.stato] || ''}`}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-lg font-bold">{activity.nome}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold">{activity.nome}</h2>
+                  {isAdmin && (
+                    <button onClick={openEditModal} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                </div>
                 {activity.descrizione && (
                   <p className="text-gray-600 mt-2 whitespace-pre-wrap">{activity.descrizione}</p>
                 )}
@@ -634,6 +663,50 @@ export default function ActivityDetail() {
 
         </div>
       </div>
+
+      {/* Edit Activity Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowEditModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <h2 className="text-lg font-bold">Modifica Attività</h2>
+              <button onClick={() => setShowEditModal(false)} className="p-1 rounded-lg hover:bg-gray-100 cursor-pointer"><X size={20} className="text-gray-400" /></button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <input type="text" value={editFormData.nome} onChange={e => setEditFormData(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <textarea value={editFormData.descrizione} onChange={e => setEditFormData(f => ({ ...f, descrizione: e.target.value }))} rows={4} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priorità</label>
+                <select value={editFormData.priorita} onChange={e => setEditFormData(f => ({ ...f, priorita: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="alta">Alta</option>
+                  <option value="media">Media</option>
+                  <option value="bassa">Bassa</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
+                  <input type="date" value={editFormData.data_inizio} onChange={e => setEditFormData(f => ({ ...f, data_inizio: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Scadenza</label>
+                  <input type="date" value={editFormData.data_scadenza} onChange={e => setEditFormData(f => ({ ...f, data_scadenza: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">Salva</button>
+                <button type="button" onClick={() => setShowEditModal(false)} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">Annulla</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

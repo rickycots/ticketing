@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V4.1.00-0321 — 21 Marzo 2026
+- Dashboard admin: rimossi ticket urgenti, ticket recenti, scadenze imminenti
+- Dashboard admin: calendario con pallini rossi per attività programmate di tutti i progetti
+- Dashboard admin: click su giorno mostra dettaglio con link a progetto/attività
+- Dashboard admin: box calendario e carico tecnico collassabili con triangolino
+- Dettaglio attività: matita per modifica nome, descrizione, priorità, date (solo admin)
+- Modale modifica attività con tutti i campi
+
 ## V4.0.01-0321 — 21 Marzo 2026
 - Attività: tutti i box partono compatti di default
 - Email Associate si apre automaticamente solo se esiste email bloccante

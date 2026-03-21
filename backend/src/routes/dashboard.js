@@ -78,6 +78,10 @@ router.get('/', authenticateToken, (req, res) => {
     LIMIT 5
   `).all(...ticketParams);
 
+  // All scheduled activities
+  let attivitaProgrammate = [];
+  try { attivitaProgrammate = db.prepare('SELECT ap.*, a.nome as attivita_nome, p.nome as progetto_nome FROM attivita_programmate ap LEFT JOIN attivita a ON ap.attivita_id = a.id LEFT JOIN progetti p ON ap.progetto_id = p.id ORDER BY ap.data_pianificata ASC').all(); } catch(e) {}
+
   res.json({
     ticket_aperti: ticketAperti.count,
     ticket_urgenti: ticketUrgenti,
@@ -87,7 +91,8 @@ router.get('/', authenticateToken, (req, res) => {
     scadenze_imminenti: scadenze,
     carico_tecnici: caricoTecnici,
     ticket_per_stato: ticketPerStato,
-    ticket_recenti: ticketRecenti
+    ticket_recenti: ticketRecenti,
+    attivita_programmate: attivitaProgrammate,
   });
 });
 
