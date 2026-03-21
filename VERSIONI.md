@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V4.1.04-0321 — 21 Marzo 2026
+- Gantt drag&drop: trascinare bordi per cambiare date inizio/fine, centro per spostare barra
+- Gantt drag su altra barra: crea dipendenza automatica
+- Feedback visuale: bordo blu durante drag, highlight giallo su barra target per dipendenza
+- Solo admin può trascinare le barre
+
 ## V4.1.03-0321 — 21 Marzo 2026
 - Gantt: numerazione tutte le attività in ordine cronologico per data inizio
 

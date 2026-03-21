@@ -55,11 +55,20 @@ const RANGE_OPTIONS = [
   { label: '1 anno', months: 12 },
 ]
 
-export default function GanttChart({ attivita, projectStart, projectEnd, projectId, scheduledActivities = [] }) {
+function formatDateISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export default function GanttChart({ attivita, projectStart, projectEnd, projectId, scheduledActivities = [], onActivityUpdate }) {
   const [tooltip, setTooltip] = useState(null)
   const [rangeMonths, setRangeMonths] = useState(6)
   const containerRef = useRef(null)
+  const svgRef = useRef(null)
   const navigate = useNavigate()
+  const dragRef = useRef(null) // { barId, type: 'move'|'left'|'right', startX, origStart, origEnd, origBarIdx }
+  const [dragState, setDragState] = useState(null) // { barId, newStart, newEnd, overBarId }
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+  const isAdmin = user.ruolo === 'admin'
 
   const { timelineStart, timelineEnd, months, bars, totalDays } = useMemo(() => {
     if (!attivita || attivita.length === 0) {
@@ -129,7 +138,84 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
   }
 
   function handleMouseLeave() {
+    if (!dragRef.current) setTooltip(null)
+  }
+
+  function getSvgX(e) {
+    const svg = svgRef.current
+    if (!svg) return 0
+    const rect = svg.getBoundingClientRect()
+    return e.clientX - rect.left
+  }
+
+  function handleDragStart(e, bar, type) {
+    if (!isAdmin || !onActivityUpdate) return
+    e.stopPropagation()
+    e.preventDefault()
+    const svgX = getSvgX(e)
+    dragRef.current = { barId: bar.id, type, startX: svgX, origStart: new Date(bar.barStart), origEnd: new Date(bar.barEnd), barIdx: bars.findIndex(b => b.id === bar.id) }
+    setDragState({ barId: bar.id, newStart: bar.barStart, newEnd: bar.barEnd, overBarId: null })
     setTooltip(null)
+
+    function onMove(ev) {
+      const dr = dragRef.current
+      if (!dr) return
+      const curX = getSvgX(ev)
+      const diffDays = Math.round((curX - dr.startX) / DAY_WIDTH)
+      let newStart = dr.origStart, newEnd = dr.origEnd
+
+      if (dr.type === 'move') {
+        newStart = addDays(dr.origStart, diffDays)
+        newEnd = addDays(dr.origEnd, diffDays)
+      } else if (dr.type === 'left') {
+        newStart = addDays(dr.origStart, diffDays)
+        if (newStart >= dr.origEnd) newStart = addDays(dr.origEnd, -1)
+      } else if (dr.type === 'right') {
+        newEnd = addDays(dr.origEnd, diffDays)
+        if (newEnd <= dr.origStart) newEnd = addDays(dr.origStart, 1)
+      }
+
+      // Check if hovering over another bar (for dependency)
+      let overBarId = null
+      if (dr.type === 'move') {
+        const myRow = dr.barIdx
+        const rowAtY = Math.floor((ev.clientY - svgRef.current.getBoundingClientRect().top) / ROW_HEIGHT)
+        if (rowAtY !== myRow && rowAtY >= 0 && rowAtY < bars.length) {
+          overBarId = bars[rowAtY].id
+        }
+      }
+
+      setDragState({ barId: dr.barId, newStart, newEnd, overBarId })
+    }
+
+    function onUp() {
+      const dr = dragRef.current
+      if (dr) {
+        const ds = { barId: dr.barId, newStart: null, newEnd: null, overBarId: null }
+        // Read latest dragState
+        setDragState(prev => {
+          if (prev && onActivityUpdate) {
+            const updates = {}
+            if (dr.type === 'move' && prev.overBarId) {
+              updates.dipende_da = prev.overBarId
+              updates.data_inizio = formatDateISO(prev.newStart)
+              updates.data_scadenza = formatDateISO(prev.newEnd)
+            } else {
+              updates.data_inizio = formatDateISO(prev.newStart)
+              updates.data_scadenza = formatDateISO(prev.newEnd)
+            }
+            onActivityUpdate(dr.barId, updates)
+          }
+          return null
+        })
+      }
+      dragRef.current = null
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
   }
 
   if (!attivita || attivita.length === 0) {
@@ -224,7 +310,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
             </div>
 
             {/* Bars area as SVG */}
-            <svg width={chartWidth} height={chartHeight} className="block">
+            <svg ref={svgRef} width={chartWidth} height={chartHeight} className="block">
               {/* Month gridlines */}
               {months.map((m, i) => (
                 <line
@@ -285,22 +371,32 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
 
               {/* Activity bars */}
               {bars.map((bar, i) => {
-                const x = daysBetween(timelineStart, bar.barStart) * DAY_WIDTH
-                const w = Math.max(daysBetween(bar.barStart, bar.barEnd) * DAY_WIDTH, DAY_WIDTH)
+                const isDragging = dragState && dragState.barId === bar.id
+                const barStart = isDragging ? dragState.newStart : bar.barStart
+                const barEnd = isDragging ? dragState.newEnd : bar.barEnd
+                const x = daysBetween(timelineStart, barStart) * DAY_WIDTH
+                const w = Math.max(daysBetween(barStart, barEnd) * DAY_WIDTH, DAY_WIDTH)
                 const y = i * ROW_HEIGHT + 8
                 const h = ROW_HEIGHT - 16
                 const colors = statoBarColors[bar.stato] || statoBarColors.da_fare
                 const fillW = w * (bar.avanzamento / 100)
+                const isDropTarget = dragState && dragState.overBarId === bar.id
+                const HANDLE_W = 6
 
                 return (
                   <g
                     key={`bar-${bar.id}`}
-                    onMouseEnter={(e) => handleMouseEnter(e, bar)}
-                    onMouseMove={(e) => handleMouseEnter(e, bar)}
+                    onMouseEnter={(e) => !dragRef.current && handleMouseEnter(e, bar)}
+                    onMouseMove={(e) => !dragRef.current && handleMouseEnter(e, bar)}
                     onMouseLeave={handleMouseLeave}
-                    onClick={() => projectId && navigate(`/admin/projects/${projectId}/activities/${bar.id}`)}
-                    className="cursor-pointer"
+                    onClick={() => !dragRef.current && projectId && navigate(`/admin/projects/${projectId}/activities/${bar.id}`)}
+                    className={isDragging ? '' : 'cursor-pointer'}
+                    opacity={isDragging ? 0.7 : 1}
                   >
+                    {/* Drop target highlight */}
+                    {isDropTarget && (
+                      <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} rx={6} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4,2" />
+                    )}
                     {/* Background */}
                     <rect x={x} y={y} width={w} height={h} rx={4} fill={colors.bg} />
                     {/* Progress fill */}
@@ -308,12 +404,23 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                       <rect x={x} y={y} width={fillW} height={h} rx={4} fill={colors.fill} opacity={0.8} />
                     )}
                     {/* Border */}
-                    <rect x={x} y={y} width={w} height={h} rx={4} fill="none" stroke={colors.fill} strokeWidth={1} opacity={0.5} />
+                    <rect x={x} y={y} width={w} height={h} rx={4} fill="none" stroke={isDragging ? '#2563eb' : colors.fill} strokeWidth={isDragging ? 2 : 1} opacity={isDragging ? 1 : 0.5} />
                     {/* Percentage label */}
                     {w > 40 && (
                       <text x={x + 6} y={y + h / 2 + 4} fontSize="10" fill={fillW > 30 ? '#fff' : colors.fill} fontWeight="600">
                         {bar.avanzamento}%
                       </text>
+                    )}
+                    {/* Drag handles (admin only) */}
+                    {isAdmin && onActivityUpdate && !isDragging && (
+                      <>
+                        {/* Left handle - resize start */}
+                        <rect x={x} y={y} width={HANDLE_W} height={h} rx={2} fill="transparent" className="cursor-ew-resize" onMouseDown={(e) => handleDragStart(e, bar, 'left')} />
+                        {/* Center handle - move */}
+                        <rect x={x + HANDLE_W} y={y} width={Math.max(w - HANDLE_W * 2, 1)} height={h} fill="transparent" className="cursor-grab" onMouseDown={(e) => handleDragStart(e, bar, 'move')} />
+                        {/* Right handle - resize end */}
+                        <rect x={x + w - HANDLE_W} y={y} width={HANDLE_W} height={h} rx={2} fill="transparent" className="cursor-ew-resize" onMouseDown={(e) => handleDragStart(e, bar, 'right')} />
+                      </>
                     )}
                     {/* Scheduled activity dots */}
                     {scheduledActivities.filter(s => s.attivita_id === bar.id).map((s, si) => {

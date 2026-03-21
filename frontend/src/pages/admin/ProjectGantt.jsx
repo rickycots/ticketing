@@ -504,6 +504,12 @@ export default function ProjectGantt() {
         projectEnd={project.data_scadenza}
         projectId={id}
         scheduledActivities={project.attivita_programmate || []}
+        onActivityUpdate={isAdmin ? async (activityId, updates) => {
+          try {
+            await activities.update(id, activityId, updates)
+            loadProject()
+          } catch (err) { alert(err.message) }
+        } : null}
       />
 
       {/* Email Associate al Progetto */}
