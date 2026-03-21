@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
 
@@ -32,6 +32,7 @@ const badgeCls = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs fo
 
 export default function ActivityDetail() {
   const { id: projectId, activityId } = useParams()
+  const navigate = useNavigate()
   const [activity, setActivity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -209,9 +210,20 @@ export default function ActivityDetail() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold">{activity.nome}</h2>
                   {isAdmin && (
+                    <>
                     <button onClick={openEditModal} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
                       <Pencil size={15} />
                     </button>
+                    <button onClick={async () => {
+                      if (!confirm('Eliminare questa attività? Questa azione è irreversibile.')) return
+                      try {
+                        await activities.delete(projectId, activityId)
+                        navigate(`/admin/projects/${projectId}/gantt`)
+                      } catch (err) { alert(err.message) }
+                    }} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors" title="Elimina attività">
+                      <Trash2 size={15} />
+                    </button>
+                    </>
                   )}
                 </div>
                 {activity.descrizione && (

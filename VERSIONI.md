@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V4.1.01-0321 — 21 Marzo 2026
+- Dettaglio attività: cestino per eliminare attività (solo admin) con redirect al progetto
+
 ## V4.1.00-0321 — 21 Marzo 2026
 - Dashboard admin: rimossi ticket urgenti, ticket recenti, scadenze imminenti
 - Dashboard admin: calendario con pallini rossi per attività programmate di tutti i progetti
