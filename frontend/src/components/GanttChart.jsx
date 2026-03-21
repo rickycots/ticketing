@@ -75,13 +75,13 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
       return { timelineStart: new Date(), timelineEnd: new Date(), months: [], bars: [], totalDays: 30 }
     }
 
-    // Compute bar dates for each activity
+    // Compute bar dates for each activity, sorted by start date
     const barsRaw = attivita.map(a => {
       const start = parseDate(a.data_inizio) || parseDate(a.created_at) || new Date()
       const end = parseDate(a.data_scadenza) || addDays(start, 1)
       const actualEnd = end > start ? end : addDays(start, 1)
       return { ...a, barStart: start, barEnd: actualEnd }
-    })
+    }).sort((a, b) => a.barStart - b.barStart)
 
     // Timeline range: use rangeMonths filter
     const allStarts = barsRaw.map(b => b.barStart.getTime())
@@ -257,15 +257,9 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                 className="flex items-center px-3 gap-2 border-b border-gray-100"
                 style={{ height: ROW_HEIGHT }}
               >
-                {(() => {
-                  const sorted = [...bars].sort((a, b) => a.barStart - b.barStart)
-                  const idx = sorted.findIndex(b => b.id === bar.id)
-                  return (
-                    <span className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: colors.fill }}>
-                      {idx + 1}
-                    </span>
-                  )
-                })()}
+                <span className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: colors.fill }}>
+                  {i + 1}
+                </span>
                 <div className="min-w-0 flex-1">
                   {projectId ? (
                     <a

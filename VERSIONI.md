@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V4.1.05-0321 — 21 Marzo 2026
+- Gantt: attività ordinate per data inizio, numerazione dinamica aggiornata dopo drag
+
 ## V4.1.04-0321 — 21 Marzo 2026
 - Gantt drag&drop: trascinare bordi per cambiare date inizio/fine, centro per spostare barra
 - Gantt drag su altra barra: crea dipendenza automatica
