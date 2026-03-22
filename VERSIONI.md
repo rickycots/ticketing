@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V4.1.06-0322 — 22 Marzo 2026
+- Email Inbox: cestino per eliminare email (admin)
+- Endpoint DELETE /api/emails/:id (Node.js + PHP)
+- Fix cancellazione progetti: aggiunto delete di attivita_programmate, email attività, email progetto, note_interne
+
 ## V4.1.05-0321 — 21 Marzo 2026
 - Gantt: attività ordinate per data inizio, numerazione dinamica aggiornata dopo drag
 

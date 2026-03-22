@@ -345,4 +345,12 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json(updated);
 });
 
+// DELETE /api/emails/:id — delete email (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+  const email = db.prepare('SELECT id FROM email WHERE id = ?').get(req.params.id);
+  if (!email) return res.status(404).json({ error: 'Email non trovata' });
+  db.prepare('DELETE FROM email WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

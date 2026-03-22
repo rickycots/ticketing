@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2 } from 'lucide-react'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2 } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 
@@ -432,9 +432,26 @@ export default function EmailInbox() {
                       </p>
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-gray-400 truncate">{e.mittente}</p>
-                        <p className="text-xs text-gray-400 shrink-0">
-                          {new Date(e.data_ricezione).toLocaleDateString('it-IT')}
-                        </p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <p className="text-xs text-gray-400">
+                            {new Date(e.data_ricezione).toLocaleDateString('it-IT')}
+                          </p>
+                          <span
+                            role="button"
+                            onClick={(ev) => {
+                              ev.stopPropagation()
+                              if (!confirm('Eliminare questa email?')) return
+                              emails.delete(e.id).then(() => {
+                                if (selected?.id === e.id) handleSelect(null)
+                                loadEmails()
+                              }).catch(err => alert(err.message))
+                            }}
+                            className="p-0.5 rounded text-gray-300 hover:text-red-500 transition-colors"
+                            title="Elimina email"
+                          >
+                            <Trash2 size={12} />
+                          </span>
+                        </div>
                       </div>
                       {e.cliente_nome && (
                         <p className="text-xs text-gray-400 mt-0.5">{e.cliente_nome}</p>

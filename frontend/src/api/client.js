@@ -217,6 +217,7 @@ export const emails = {
     });
   },
   update: (id, data) => request(`/emails/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/emails/${id}`, { method: 'DELETE' }),
 };
 
 // Users

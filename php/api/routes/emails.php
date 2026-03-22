@@ -209,3 +209,11 @@ $router->put('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'r
     $updated = Database::fetchOne("SELECT e.*, c.nome_azienda as cliente_nome FROM email e LEFT JOIN clienti c ON e.cliente_id = c.id WHERE e.id = ?", [$id]);
     Response::json($updated);
 });
+
+// DELETE /api/emails/:id — delete email (admin only)
+$router->delete('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $email = Database::fetchOne('SELECT id FROM email WHERE id = ?', [$req->params['id']]);
+    if (!$email) Response::error('Email non trovata', 404);
+    Database::execute('DELETE FROM email WHERE id = ?', [$req->params['id']]);
+    Response::success();
+});
