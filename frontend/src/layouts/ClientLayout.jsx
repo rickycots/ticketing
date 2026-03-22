@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-route
 import { Ticket, FolderKanban, List, LogOut, Users, MessageCircle, X, Sparkles, Megaphone, ChevronDown, ChevronUp, Check, CircleCheck, ShieldAlert, BarChart3 } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
+import { APP_VERSION } from '../version'
 
 const TEAMS_EMAIL = 'riccardocoates@stmdomoticacorporationsrl.onmicrosoft.com'
 const TEAMS_CHAT_URL = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(TEAMS_EMAIL)}`
@@ -41,6 +42,19 @@ export default function ClientLayout() {
   const isClientAdmin = clientUser.ruolo === 'admin'
   const isImpersonated = !!clientUser.impersonated
   document.title = `STM-Portal : ${isClientAdmin ? 'client' : 'user'}`
+  const [newVersionAvailable, setNewVersionAvailable] = useState(false)
+
+  useEffect(() => {
+    function checkVersion() {
+      fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`)
+        .then(r => r.json())
+        .then(d => { if (d.version && d.version !== APP_VERSION) setNewVersionAvailable(true) })
+        .catch(() => {})
+    }
+    checkVersion()
+    const iv = setInterval(checkVersion, 60000)
+    return () => clearInterval(iv)
+  }, [])
   const location = useLocation()
 
   // Block access to disabled services via direct URL
@@ -65,6 +79,12 @@ export default function ClientLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {newVersionAvailable && (
+        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-center gap-3 text-sm">
+          <span>Nuova versione disponibile</span>
+          <button onClick={() => window.location.reload()} className="bg-white text-blue-600 px-3 py-0.5 rounded-full text-xs font-bold cursor-pointer hover:bg-blue-50">Aggiorna</button>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">

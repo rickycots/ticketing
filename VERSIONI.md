@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V4.1.07-0322 — 22 Marzo 2026
+- Version check: banner "Nuova versione disponibile" con bottone Aggiorna (admin + client)
+- Controllo automatico ogni 60 secondi tramite version.json
+- Plugin Vite per generare version.json durante il build
+
 ## V4.1.06-0322 — 22 Marzo 2026
 - Email Inbox: cestino per eliminare email (admin)
 - Endpoint DELETE /api/emails/:id (Node.js + PHP)

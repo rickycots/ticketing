@@ -38,6 +38,20 @@ export default function AdminLayout() {
 
   const [chatNotifs, setChatNotifs] = useState([])
   const [sidebarCounts, setSidebarCounts] = useState({ tickets_nuovi: 0, email_nuove: 0 })
+  const [newVersionAvailable, setNewVersionAvailable] = useState(false)
+
+  // Version check every 60s
+  useEffect(() => {
+    function checkVersion() {
+      fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`)
+        .then(r => r.json())
+        .then(d => { if (d.version && d.version !== APP_VERSION) setNewVersionAvailable(true) })
+        .catch(() => {})
+    }
+    checkVersion()
+    const iv = setInterval(checkVersion, 60000)
+    return () => clearInterval(iv)
+  }, [])
 
   // Notification state
   const [unreadCount, setUnreadCount] = useState(0)
@@ -132,7 +146,14 @@ export default function AdminLayout() {
   const totalUnread = chatNotifs.reduce((sum, p) => sum + p.non_lette, 0)
 
   return (
-    <div className="flex h-screen">
+    <div className="flex flex-col h-screen">
+      {newVersionAvailable && (
+        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-center gap-3 text-sm shrink-0">
+          <span>Nuova versione disponibile</span>
+          <button onClick={() => window.location.reload()} className="bg-white text-blue-600 px-3 py-0.5 rounded-full text-xs font-bold cursor-pointer hover:bg-blue-50">Aggiorna</button>
+        </div>
+      )}
+      <div className="flex flex-1 overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
         <div className="p-4 border-b border-gray-700">
@@ -334,6 +355,7 @@ export default function AdminLayout() {
           <Outlet context={{ loadSidebarCounts }} />
         </div>
       </main>
+    </div>
     </div>
   )
 }
