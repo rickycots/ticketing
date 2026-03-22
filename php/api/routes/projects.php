@@ -676,6 +676,7 @@ $router->delete('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::clas
     Database::execute('DELETE FROM attivita_programmate WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM email WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?)', [$projectId]);
     Database::execute('DELETE FROM note_attivita WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?)', [$projectId]);
+    Database::execute('UPDATE attivita SET dipende_da = NULL WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM attivita WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM progetto_tecnici WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$projectId]);
@@ -683,6 +684,7 @@ $router->delete('/projects/:id', [Auth::class, 'authenticateToken'], [Auth::clas
     Database::execute('DELETE FROM chat_lettura WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM email WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM note_interne WHERE progetto_id = ?', [$projectId]);
+    Database::execute('UPDATE ticket SET progetto_id = NULL WHERE progetto_id = ?', [$projectId]);
     Database::execute('DELETE FROM progetti WHERE id = ?', [$projectId]);
 
     Response::success();

@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V4.1.08-0322 — 22 Marzo 2026
+- Fix cancellazione progetti: reset dipende_da prima di delete attività (FK constraint)
+- Fix cancellazione progetti: aggiunto UPDATE ticket SET progetto_id = NULL
+
 ## V4.1.07-0322 — 22 Marzo 2026
 - Version check: banner "Nuova versione disponibile" con bottone Aggiorna (admin + client)
 - Controllo automatico ogni 60 secondi tramite version.json
