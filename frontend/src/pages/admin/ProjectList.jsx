@@ -175,6 +175,12 @@ export default function ProjectList() {
                   ))}
                 </select>
               </div>
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!form.singola_attivita} onChange={e => setForm(f => ({ ...f, singola_attivita: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <span className="text-sm text-gray-700">Progetto singola attività</span>
+                </label>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data Fine Prevista</label>
                 <input

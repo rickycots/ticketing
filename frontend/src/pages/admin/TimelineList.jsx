@@ -494,6 +494,10 @@ export default function TimelineList() {
                   placeholder="Descrizione opzionale..."
                 />
               </div>
+              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                <input type="checkbox" checked={!!newProject.singola_attivita} onChange={e => setNewProject(p => ({ ...p, singola_attivita: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-sm text-gray-700">Progetto singola attività</span>
+              </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>

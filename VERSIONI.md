@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V4.1.09-0322 — 22 Marzo 2026
+- Creazione progetto: checkbox "Progetto singola attività" sopra le date (Timeline + ProjectList)
+
 ## V4.1.08-0322 — 22 Marzo 2026
 - Fix cancellazione progetti: reset dipende_da prima di delete attività (FK constraint)
 - Fix cancellazione progetti: aggiunto UPDATE ticket SET progetto_id = NULL
