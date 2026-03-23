@@ -197,7 +197,13 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
           if (prev && onActivityUpdate) {
             const updates = {}
             if (dr.type === 'move' && prev.overBarId) {
-              updates.dipende_da = prev.overBarId
+              // Prevent circular dependency
+              const targetBar = bars.find(b => b.id === prev.overBarId)
+              if (!targetBar || targetBar.dipende_da === dr.barId) {
+                // Skip: would create circular dependency
+              } else {
+                updates.dipende_da = prev.overBarId
+              }
               updates.data_inizio = formatDateISO(prev.newStart)
               updates.data_scadenza = formatDateISO(prev.newEnd)
             } else {
@@ -240,6 +246,14 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
             {opt.label}
           </button>
         ))}
+        <div className="ml-auto flex items-center gap-3">
+          {[['in_corso', 'In corso'], ['da_fare', 'Da fare'], ['completata', 'Terminata'], ['bloccata', 'Bloccata']].map(([key, label]) => (
+            <span key={key} className="flex items-center gap-1 text-[10px] text-gray-500">
+              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: statoBarColors[key].fill }} />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
       <div className="flex">
         {/* Left panel — activity names */}

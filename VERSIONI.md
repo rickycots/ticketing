@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V4.3.01-0323 — 23 Marzo 2026
+- Gantt: legenda colori (In corso, Da fare, Terminata, Bloccata) allineata a destra nella riga filtri
+- Fix dipendenze circolari: protezione nel drag&drop che impedisce di creare dipendenze circolari
+
 ## V4.3.00-0323 — 23 Marzo 2026
 - Flag "Gestione avanzata progetti" su tabella utenti (default 0)
 - Checkbox in creazione e modifica tecnico (estesa + compatta)
