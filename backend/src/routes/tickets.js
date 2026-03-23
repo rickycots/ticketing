@@ -92,11 +92,12 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
   if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
     return res.status(403).json({ error: 'Accesso non consentito' });
   }
+  const userEmail = req.user.email;
   res.json(db.prepare(`
     SELECT t.*, c.nome_azienda as cliente_nome FROM ticket t
-    LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ?
+    LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
     ORDER BY CASE t.stato WHEN 'in_attesa' THEN 0 WHEN 'aperto' THEN 1 WHEN 'in_lavorazione' THEN 2 WHEN 'risolto' THEN 3 ELSE 4 END, t.updated_at DESC
-  `).all(req.params.clienteId));
+  `).all(req.params.clienteId, userEmail));
 });
 
 // GET /api/tickets/client/:clienteId/:ticketId — detail (client auth, no notes)
@@ -107,8 +108,8 @@ router.get('/client/:clienteId/:ticketId', authenticateClientToken, (req, res) =
   const ticket = db.prepare(`
     SELECT t.*, c.nome_azienda as cliente_nome, c.email as cliente_email
     FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id
-    WHERE t.id = ? AND t.cliente_id = ?
-  `).get(req.params.ticketId, req.params.clienteId);
+    WHERE t.id = ? AND t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
+  `).get(req.params.ticketId, req.params.clienteId, req.user.email);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
   ticket.emails = db.prepare('SELECT * FROM email WHERE ticket_id = ? ORDER BY data_ricezione ASC').all(ticket.id);
   res.json(ticket);
@@ -229,8 +230,9 @@ router.post('/', authenticateClientToken, ticketUpload, validateUploadedFiles, a
     data_evasione = now.toISOString().slice(0, 10);
   }
 
-  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a, creatore_email, data_evasione);
+  const privato = req.body.privato ? 1 : 0;
+  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a, creatore_email, data_evasione, privato);
 
   // Build allegati JSON from uploaded files
   const allegati = (req.files || []).map(f => ({

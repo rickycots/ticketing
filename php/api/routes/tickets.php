@@ -47,11 +47,12 @@ $router->get('/tickets/client/:clienteId', [Auth::class, 'authenticateClientToke
     if ($req->user['cliente_id'] != $req->params['clienteId']) {
         Response::error('Accesso non consentito', 403);
     }
+    $userEmail = $req->user['email'] ?? '';
     $tickets = Database::fetchAll(
         "SELECT t.*, c.nome_azienda as cliente_nome FROM ticket t
-         LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ?
+         LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
          ORDER BY FIELD(t.stato, 'in_attesa', 'aperto', 'in_lavorazione', 'risolto', 'chiuso'), t.updated_at DESC",
-        [$req->params['clienteId']]
+        [$req->params['clienteId'], $userEmail]
     );
     Response::json($tickets);
 });
@@ -61,11 +62,12 @@ $router->get('/tickets/client/:clienteId/:ticketId', [Auth::class, 'authenticate
     if ($req->user['cliente_id'] != $req->params['clienteId']) {
         Response::error('Accesso non consentito', 403);
     }
+    $userEmail = $req->user['email'] ?? '';
     $ticket = Database::fetchOne(
         "SELECT t.*, c.nome_azienda as cliente_nome, c.email as cliente_email
          FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id
-         WHERE t.id = ? AND t.cliente_id = ?",
-        [$req->params['ticketId'], $req->params['clienteId']]
+         WHERE t.id = ? AND t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)",
+        [$req->params['ticketId'], $req->params['clienteId'], $userEmail]
     );
     if (!$ticket) Response::error('Ticket non trovato', 404);
     $ticket['emails'] = Database::fetchAll(
@@ -251,9 +253,11 @@ $router->post('/tickets', [Auth::class, 'authenticateClientToken'], function($re
         $dataEvasione = date('Y-m-d', strtotime("+{$days} days"));
     }
 
+    $privato = !empty($req->body['privato']) ? 1 : 0;
+
     Database::execute(
-        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione]
+        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione, $privato]
     );
     $ticketId = Database::lastInsertId();
 

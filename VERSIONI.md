@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V4.2.00-0323 — 23 Marzo 2026
+- Ticket privato: campo `privato` su tabella ticket, checkbox nella creazione ticket client
+- Backend: ticket privati filtrati nella lista e dettaglio client (visibili solo al creatore)
+- Protezione URL diretto: utente non può aprire ticket privato di un altro
+- Traduzioni i18n per ticket privato (IT/EN/FR)
+- Migrazione DB: colonna `privato` su tabella ticket
+
 ## V4.1.09-0322 — 22 Marzo 2026
 - Creazione progetto: checkbox "Progetto singola attività" sopra le date (Timeline + ProjectList)
 

@@ -16,6 +16,7 @@ export default function TicketForm() {
     categoria: '',
     priorita: 'media',
     descrizione: '',
+    privato: false,
   })
   const [files, setFiles] = useState([])
   const fileInputRef = useRef(null)
@@ -42,9 +43,9 @@ export default function TicketForm() {
     setSubmitting(true)
 
     try {
-      const result = await clientTickets.create(form, files.length > 0 ? files : null)
+      const result = await clientTickets.create({ ...form, privato: form.privato ? 1 : 0 }, files.length > 0 ? files : null)
       setSuccess(result)
-      setForm({ oggetto: '', categoria: '', priorita: 'media', descrizione: '' })
+      setForm({ oggetto: '', categoria: '', priorita: 'media', descrizione: '', privato: false })
       setFiles([])
     } catch (err) {
       setError(err.message || t('submitError'))
@@ -188,6 +189,12 @@ export default function TicketForm() {
               </div>
             )}
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.privato} onChange={e => setForm(f => ({ ...f, privato: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+            <span className="text-sm text-gray-700">{t('privateTicket') || 'Ticket privato'}</span>
+            <span className="text-xs text-gray-400">({t('privateTicketDesc') || 'visibile solo a te'})</span>
+          </label>
 
           <div className="pt-2">
             <button
