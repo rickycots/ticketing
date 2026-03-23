@@ -247,8 +247,12 @@ $router->delete('/clients/:id/users/:userId', [Auth::class, 'authenticateToken']
 
 // --- Referenti Progetto (anagrafica referenti del cliente) ---
 
-// GET /api/clients/:id/referenti (admin only)
-$router->get('/clients/:id/referenti', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+// GET /api/clients/:id/referenti (admin + tecnico assegnato a progetto del cliente)
+$router->get('/clients/:id/referenti', [Auth::class, 'authenticateToken'], function($req) {
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assigned = Database::fetchOne('SELECT 1 FROM progetto_tecnici pt JOIN progetti p ON pt.progetto_id = p.id WHERE p.cliente_id = ? AND pt.utente_id = ?', [$req->params['id'], $req->user['id']]);
+        if (!$assigned) Response::error('Accesso non consentito', 403);
+    }
     $referenti = Database::fetchAll(
         'SELECT * FROM referenti_progetto WHERE cliente_id = ? ORDER BY cognome, nome',
         [$req->params['id']]

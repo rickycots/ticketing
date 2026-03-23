@@ -6,10 +6,10 @@ export default function UserList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false })
+  const [form, setForm] = useState({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false, gestione_avanzata: false })
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({ nome: '', email: '', password: '', abilitato_ai: true })
+  const [editForm, setEditForm] = useState({ nome: '', email: '', password: '', abilitato_ai: false, gestione_avanzata: false })
   const [viewMode, setViewMode] = useState('esteso')
 
   function loadUsers() {
@@ -23,8 +23,8 @@ export default function UserList() {
     e.preventDefault()
     setError('')
     try {
-      await users.create({ ...form, cambio_password: form.cambio_password ? 1 : 0, abilitato_ai: form.abilitato_ai ? 1 : 0 })
-      setForm({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false })
+      await users.create({ ...form, cambio_password: form.cambio_password ? 1 : 0, abilitato_ai: form.abilitato_ai ? 1 : 0, gestione_avanzata: form.gestione_avanzata ? 1 : 0 })
+      setForm({ nome: '', email: '', password: '', cambio_password: true, abilitato_ai: false, gestione_avanzata: false })
       setShowForm(false)
       loadUsers()
     } catch (err) {
@@ -34,13 +34,13 @@ export default function UserList() {
 
   function startEdit(user) {
     setEditingId(user.id)
-    setEditForm({ nome: user.nome, email: user.email, password: '', abilitato_ai: !!user.abilitato_ai })
+    setEditForm({ nome: user.nome, email: user.email, password: '', abilitato_ai: !!user.abilitato_ai, gestione_avanzata: !!user.gestione_avanzata })
   }
 
   async function handleSaveEdit(e) {
     e.preventDefault()
     try {
-      const data = { nome: editForm.nome, email: editForm.email, abilitato_ai: editForm.abilitato_ai ? 1 : 0 }
+      const data = { nome: editForm.nome, email: editForm.email, abilitato_ai: editForm.abilitato_ai ? 1 : 0, gestione_avanzata: editForm.gestione_avanzata ? 1 : 0 }
       if (editForm.password) data.password = editForm.password
       await users.update(editingId, data)
       setEditingId(null)
@@ -117,6 +117,10 @@ export default function UserList() {
                 <input type="checkbox" checked={form.abilitato_ai} onChange={e => setForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                 <span className="text-sm text-gray-700">Abilita AI Assistant</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.gestione_avanzata} onChange={e => setForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-sm text-gray-700">Gestione avanzata progetti</span>
+              </label>
             </div>
             <p className="text-xs text-gray-500">Il ruolo sarà automaticamente impostato a "Tecnico"</p>
             <div className="flex gap-2">
@@ -153,10 +157,16 @@ export default function UserList() {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Nuova password <span className="text-gray-400">(lascia vuoto per non cambiare)</span></label>
                     <input type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} minLength={6} className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="••••••••" />
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={editForm.abilitato_ai} onChange={e => setEditForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                    <span className="text-xs text-gray-700">Abilita AI Assistant</span>
-                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={editForm.abilitato_ai} onChange={e => setEditForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <span className="text-xs text-gray-700">Abilita AI</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={editForm.gestione_avanzata} onChange={e => setEditForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <span className="text-xs text-gray-700">Gestione avanzata progetti</span>
+                    </label>
+                  </div>
                   <div className="flex gap-2">
                     <button type="submit" className="bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-700 cursor-pointer">Salva</button>
                     <button type="button" onClick={() => setEditingId(null)} className="bg-gray-100 text-gray-600 rounded-lg px-3 py-1.5 text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
@@ -262,10 +272,14 @@ export default function UserList() {
                               <input type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} minLength={6} className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="••••••••" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 mt-3">
+                          <div className="flex items-center gap-4 mt-3 flex-wrap">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input type="checkbox" checked={editForm.abilitato_ai} onChange={e => setEditForm(f => ({ ...f, abilitato_ai: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                              <span className="text-xs text-gray-700">Abilita AI Assistant</span>
+                              <span className="text-xs text-gray-700">Abilita AI</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={editForm.gestione_avanzata} onChange={e => setEditForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-xs text-gray-700">Gestione avanzata progetti</span>
                             </label>
                             <div className="flex gap-2 ml-auto">
                               <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-medium hover:bg-blue-700 cursor-pointer">Salva</button>

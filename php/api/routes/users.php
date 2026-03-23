@@ -6,7 +6,7 @@
 // GET /api/users
 $router->get('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $users = Database::fetchAll(
-        'SELECT id, nome, email, ruolo, attivo, abilitato_ai, created_at FROM utenti ORDER BY ruolo, nome'
+        'SELECT id, nome, email, ruolo, attivo, abilitato_ai, gestione_avanzata, created_at FROM utenti ORDER BY ruolo, nome'
     );
     Response::json($users);
 });
@@ -27,13 +27,14 @@ $router->post('/users', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
     $cambioPwd = isset($req->body['cambio_password']) ? (int)$req->body['cambio_password'] : 0;
     $abilitatoAi = !empty($req->body['abilitato_ai']) ? 1 : 0;
+    $gestioneAvanzata = !empty($req->body['gestione_avanzata']) ? 1 : 0;
     Database::execute(
-        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password, abilitato_ai) VALUES (?, ?, ?, ?, 1, ?, ?)',
-        [$nome, $email, $passwordHash, 'tecnico', $cambioPwd, $abilitatoAi]
+        'INSERT INTO utenti (nome, email, password_hash, ruolo, attivo, cambio_password, abilitato_ai, gestione_avanzata) VALUES (?, ?, ?, ?, 1, ?, ?, ?)',
+        [$nome, $email, $passwordHash, 'tecnico', $cambioPwd, $abilitatoAi, $gestioneAvanzata]
     );
 
     $user = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, gestione_avanzata, created_at FROM utenti WHERE id = ?',
         [Database::lastInsertId()]
     );
     Response::created($user);
@@ -50,6 +51,7 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $password = $req->body['password'] ?? null;
     $attivo = $req->body['attivo'] ?? null;
     $abilitatoAi = isset($req->body['abilitato_ai']) ? (int)$req->body['abilitato_ai'] : null;
+    $gestioneAvanzata = isset($req->body['gestione_avanzata']) ? (int)$req->body['gestione_avanzata'] : null;
 
     if ($email && $email !== $user['email']) {
         $existing = Database::fetchOne('SELECT id FROM utenti WHERE email = ? AND id != ?', [$email, $id]);
@@ -59,12 +61,12 @@ $router->put('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 're
     $newHash = $password ? password_hash($password, PASSWORD_BCRYPT) : $user['password_hash'];
 
     Database::execute(
-        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo), abilitato_ai = COALESCE(?, abilitato_ai) WHERE id = ?',
-        [$nome, $email, $newHash, $attivo, $abilitatoAi, $id]
+        'UPDATE utenti SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, attivo = COALESCE(?, attivo), abilitato_ai = COALESCE(?, abilitato_ai), gestione_avanzata = COALESCE(?, gestione_avanzata) WHERE id = ?',
+        [$nome, $email, $newHash, $attivo, $abilitatoAi, $gestioneAvanzata, $id]
     );
 
     $updated = Database::fetchOne(
-        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, created_at FROM utenti WHERE id = ?',
+        'SELECT id, nome, email, ruolo, attivo, cambio_password, abilitato_ai, gestione_avanzata, created_at FROM utenti WHERE id = ?',
         [$id]
     );
     Response::json($updated);

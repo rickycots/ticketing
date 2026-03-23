@@ -177,7 +177,7 @@ export default function ProjectGantt() {
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
   const isTecnicoProgetto = !isAdmin && (project.tecnici || []).includes(currentUser.id)
-  const canEdit = isAdmin || isTecnicoProgetto
+  const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
   const computedStatus = computeProjectStatus(project.attivita)
   const statusCfg = projectStatusConfig[computedStatus]
 

@@ -61,6 +61,7 @@ function runMigrations() {
     "ALTER TABLE attivita ADD COLUMN tecnici_ids TEXT DEFAULT NULL",
     "UPDATE utenti SET abilitato_ai = 0 WHERE ruolo = 'tecnico'",
     "ALTER TABLE ticket ADD COLUMN privato INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE utenti ADD COLUMN gestione_avanzata INTEGER NOT NULL DEFAULT 0",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }

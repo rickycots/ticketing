@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V4.3.00-0323 — 23 Marzo 2026
+- Flag "Gestione avanzata progetti" su tabella utenti (default 0)
+- Checkbox in creazione e modifica tecnico (estesa + compatta)
+- Upload allegati e gestione referenti condizionati dal flag gestione_avanzata
+- Tecnico senza flag: vede allegati e referenti in sola lettura
+- Tecnico con flag: può caricare allegati, aggiungere/rimuovere referenti
+- GET referenti cliente accessibile ai tecnici assegnati a progetti del cliente
+
 ## V4.2.01-0323 — 23 Marzo 2026
 - Tecnico abilitato al progetto: può caricare allegati, aggiungere/rimuovere referenti
 - Nuovo endpoint `PUT /api/projects/:id/referenti` per admin + tecnico assegnato
