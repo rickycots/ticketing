@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V4.2.01-0323 — 23 Marzo 2026
+- Tecnico abilitato al progetto: può caricare allegati, aggiungere/rimuovere referenti
+- Nuovo endpoint `PUT /api/projects/:id/referenti` per admin + tecnico assegnato
+- Upload allegati: rimosso requireAdmin, check assegnazione progetto per tecnico
+- Fix date attività programmate: validazione anno 00xx → 20xx (Node.js + PHP)
+
 ## V4.2.00-0323 — 23 Marzo 2026
 - Ticket privato: campo `privato` su tabella ticket, checkbox nella creazione ticket client
 - Backend: ticket privati filtrati nella lista e dettaglio client (visibili solo al creatore)

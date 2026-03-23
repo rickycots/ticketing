@@ -135,6 +135,7 @@ export const projects = {
   },
   deleteAllegato: (id, allegatoId) => request(`/projects/${id}/allegati/${allegatoId}`, { method: 'DELETE' }),
   downloadAllegatoUrl: (id, allegatoId) => `${API_BASE}/projects/${id}/allegati/${allegatoId}/download`,
+  updateReferenti: (id, data) => request(`/projects/${id}/referenti`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // Activities

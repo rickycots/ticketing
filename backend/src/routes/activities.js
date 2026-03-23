@@ -392,8 +392,11 @@ router.get('/:activityId/scheduled', authenticateToken, checkProjectAccess, (req
 // POST /api/projects/:id/activities/:activityId/scheduled
 router.post('/:activityId/scheduled', authenticateToken, checkProjectAccess, (req, res) => {
   if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin' });
-  const { nota, data_pianificata, referenti_ids } = req.body;
+  const { nota, referenti_ids } = req.body;
+  let data_pianificata = req.body.data_pianificata;
   if (!nota || !data_pianificata) return res.status(400).json({ error: 'Nota e data sono obbligatori' });
+  // Fix 2-digit year from some browsers (0026 -> 2026)
+  if (data_pianificata.match(/^00\d{2}-/)) data_pianificata = '2' + data_pianificata.substring(1);
 
   const result = db.prepare(
     'INSERT INTO attivita_programmate (attivita_id, progetto_id, nota, data_pianificata, referenti_ids, creato_da) VALUES (?, ?, ?, ?, ?, ?)'

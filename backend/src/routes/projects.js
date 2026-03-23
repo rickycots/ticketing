@@ -471,8 +471,36 @@ router.get('/:id/allegati', authenticateToken, (req, res) => {
   res.json(allegati);
 });
 
-// POST /api/projects/:id/allegati — upload attachments (admin only)
-router.post('/:id/allegati', authenticateToken, requireAdmin, uploadAllegati.array('files', 10), validateUploadedFiles, (req, res) => {
+// PUT /api/projects/:id/referenti — update referenti (admin + assigned tecnico)
+router.put('/:id/referenti', authenticateToken, (req, res) => {
+  if (req.user.ruolo === 'tecnico') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(req.params.id, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Non assegnato a questo progetto' });
+  }
+  const { referenti, nuovi_referenti } = req.body;
+  const project = db.prepare('SELECT * FROM progetti WHERE id = ?').get(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
+
+  let allReferenteIds = Array.isArray(referenti) ? referenti.map(Number) : [];
+  if (Array.isArray(nuovi_referenti)) {
+    for (const nr of nuovi_referenti) {
+      if (!nr.nome || !nr.email) continue;
+      const result = db.prepare('INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)').run(project.cliente_id, nr.nome, nr.cognome || '', nr.email, nr.telefono || null);
+      allReferenteIds.push(result.lastInsertRowid);
+    }
+  }
+  setProjectReferenti(req.params.id, allReferenteIds);
+  const updated = db.prepare('SELECT * FROM progetti WHERE id = ?').get(req.params.id);
+  updated.referenti = getProjectReferenti(req.params.id);
+  res.json(updated);
+});
+
+// POST /api/projects/:id/allegati — upload attachments
+router.post('/:id/allegati', authenticateToken, uploadAllegati.array('files', 10), validateUploadedFiles, (req, res) => {
+  if (req.user.ruolo === 'tecnico') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(req.params.id, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Non assegnato a questo progetto' });
+  }
   const project = db.prepare('SELECT id FROM progetti WHERE id = ?').get(req.params.id);
   if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
 

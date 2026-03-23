@@ -486,6 +486,8 @@ $router->post('/projects/:id/activities/:activityId/scheduled', [Auth::class, 'a
     $nota = $req->body['nota'] ?? '';
     $data = $req->body['data_pianificata'] ?? '';
     if (!$nota || !$data) Response::error('Nota e data sono obbligatori', 400);
+    // Fix 2-digit year from some browsers (0026 -> 2026)
+    if (preg_match('/^00\d{2}-/', $data)) $data = '2' . substr($data, 1);
 
     Database::execute(
         'INSERT INTO attivita_programmate (attivita_id, progetto_id, nota, data_pianificata, referenti_ids, creato_da) VALUES (?, ?, ?, ?, ?, ?)',

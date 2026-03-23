@@ -111,7 +111,7 @@ export default function ProjectGantt() {
     const currentIds = (project.referenti || []).map(r => r.id)
     if (currentIds.includes(refId)) return
     try {
-      await projects.update(id, { referenti: [...currentIds, refId] })
+      await projects.updateReferenti(id, { referenti: [...currentIds, refId] })
       loadProject()
       setShowAddRef(false)
     } catch (err) { alert(err.message) }
@@ -121,9 +121,8 @@ export default function ProjectGantt() {
     e.preventDefault()
     if (!newRefForm.nome.trim() || !newRefForm.email.trim()) return
     try {
-      const created = await clientsApi.createReferente(project.cliente_id, newRefForm)
       const currentIds = (project.referenti || []).map(r => r.id)
-      await projects.update(id, { referenti: [...currentIds, created.id] })
+      await projects.updateReferenti(id, { referenti: currentIds, nuovi_referenti: [newRefForm] })
       setNewRefForm({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
       setShowNewRefForm(false)
       setShowAddRef(false)
@@ -135,7 +134,7 @@ export default function ProjectGantt() {
     if (!confirm('Rimuovere questo referente dal progetto?')) return
     const currentIds = (project.referenti || []).map(r => r.id).filter(rid => rid !== refId)
     try {
-      await projects.update(id, { referenti: currentIds })
+      await projects.updateReferenti(id, { referenti: currentIds })
       loadProject()
     } catch (err) { alert(err.message) }
   }
@@ -177,6 +176,8 @@ export default function ProjectGantt() {
   if (!project) return <div className="text-center text-gray-400 py-12">Progetto non trovato</div>
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
+  const isTecnicoProgetto = !isAdmin && (project.tecnici || []).includes(currentUser.id)
+  const canEdit = isAdmin || isTecnicoProgetto
   const computedStatus = computeProjectStatus(project.attivita)
   const statusCfg = projectStatusConfig[computedStatus]
 
@@ -312,7 +313,7 @@ export default function ProjectGantt() {
 
         {showAllegati && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-            {isAdmin && (
+            {canEdit && (
               <div className="p-3 border-b border-gray-200">
                 <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
                   <Upload size={16} className="text-gray-400" />
@@ -398,7 +399,7 @@ export default function ProjectGantt() {
                     {r.ruolo && (
                       <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
                     )}
-                    {isAdmin && (
+                    {canEdit && (
                       <button onClick={() => handleRemoveRef(r.id)} className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0" title="Rimuovi dal progetto">
                         <X size={14} />
                       </button>
@@ -407,7 +408,7 @@ export default function ProjectGantt() {
                 ))}
               </div>
             )}
-            {isAdmin && (
+            {canEdit && (
               <div className="border-t border-teal-200 p-3">
                 {!showAddRef ? (
                   <button onClick={handleOpenAddRef} className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer">

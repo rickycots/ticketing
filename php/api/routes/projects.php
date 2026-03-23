@@ -620,7 +620,40 @@ $router->get('/projects/:id/allegati', [Auth::class, 'authenticateToken'], funct
 });
 
 // POST /api/projects/:id/allegati — upload attachments (admin only, multiple files)
-$router->post('/projects/:id/allegati', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+// PUT /api/projects/:id/referenti — update referenti (admin + assigned tecnico)
+$router->put('/projects/:id/referenti', [Auth::class, 'authenticateToken'], function($req) {
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assigned = Database::fetchOne('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?', [$req->params['id'], $req->user['id']]);
+        if (!$assigned) Response::error('Non assegnato a questo progetto', 403);
+    }
+    $project = Database::fetchOne('SELECT * FROM progetti WHERE id = ?', [$req->params['id']]);
+    if (!$project) Response::error('Progetto non trovato', 404);
+
+    $referenti = $req->body['referenti'] ?? [];
+    $nuoviReferenti = $req->body['nuovi_referenti'] ?? [];
+    $allReferenteIds = is_array($referenti) ? array_map('intval', $referenti) : [];
+    if (is_array($nuoviReferenti)) {
+        foreach ($nuoviReferenti as $nr) {
+            $nrNome = trim($nr['nome'] ?? '');
+            $nrEmail = trim($nr['email'] ?? '');
+            if (!$nrNome || !$nrEmail) continue;
+            Database::execute('INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)',
+                [$project['cliente_id'], $nrNome, trim($nr['cognome'] ?? ''), $nrEmail, $nr['telefono'] ?? null]);
+            $allReferenteIds[] = (int)Database::lastInsertId();
+        }
+    }
+    if (count($allReferenteIds) > 0) setProjectReferenti($req->params['id'], $allReferenteIds);
+
+    $updated = Database::fetchOne('SELECT * FROM progetti WHERE id = ?', [$req->params['id']]);
+    $updated['referenti'] = getProjectReferenti($req->params['id']);
+    Response::json($updated);
+});
+
+$router->post('/projects/:id/allegati', [Auth::class, 'authenticateToken'], function($req) {
+    if (($req->user['ruolo'] ?? '') === 'tecnico') {
+        $assigned = Database::fetchOne('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?', [$req->params['id'], $req->user['id']]);
+        if (!$assigned) Response::error('Non assegnato a questo progetto', 403);
+    }
     $project = Database::fetchOne('SELECT id FROM progetti WHERE id = ?', [$req->params['id']]);
     if (!$project) Response::error('Progetto non trovato', 404);
 
