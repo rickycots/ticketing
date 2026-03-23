@@ -352,26 +352,39 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                 const fromBar = bars[fromIdx]
                 const toIdx = idToIndex[bar.id]
 
+                // Arrow: from END of source bar → to START of dependent bar
                 const fromX = daysBetween(timelineStart, fromBar.barEnd) * DAY_WIDTH
                 const fromY = fromIdx * ROW_HEIGHT + ROW_HEIGHT / 2
                 const toX = daysBetween(timelineStart, bar.barStart) * DAY_WIDTH
                 const toY = toIdx * ROW_HEIGHT + ROW_HEIGHT / 2
 
-                const midX = Math.max(fromX + 8, toX - 12)
+                // Build path: right from source end, down/up to target row, right to target start
+                const gap = 10
+                let path
+                if (toX > fromX + gap) {
+                  // Normal case: target starts after source ends
+                  const midX = fromX + gap
+                  path = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`
+                } else {
+                  // Overlap case: target starts before source ends, route around
+                  const midX1 = fromX + gap
+                  const detourY = Math.max(fromY, toY) + ROW_HEIGHT * 0.6
+                  const midX2 = toX - gap
+                  path = `M ${fromX} ${fromY} L ${midX1} ${fromY} L ${midX1} ${detourY} L ${midX2} ${detourY} L ${midX2} ${toY} L ${toX} ${toY}`
+                }
 
                 return (
                   <g key={`dep-${bar.id}`}>
                     <path
-                      d={`M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`}
+                      d={path}
                       fill="none"
-                      stroke="#94a3b8"
+                      stroke="#64748b"
                       strokeWidth="1.5"
-                      strokeDasharray="4 2"
                     />
                     {/* Arrowhead */}
                     <polygon
-                      points={`${toX},${toY} ${toX - 6},${toY - 4} ${toX - 6},${toY + 4}`}
-                      fill="#94a3b8"
+                      points={`${toX},${toY} ${toX - 7},${toY - 4} ${toX - 7},${toY + 4}`}
+                      fill="#64748b"
                     />
                   </g>
                 )
