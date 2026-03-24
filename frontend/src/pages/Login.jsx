@@ -20,6 +20,10 @@ export default function Login() {
     setError('')
     setLoading(true)
 
+    // Clear any stale session before login
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
+
     try {
       const data = await auth.login(email, password)
       sessionStorage.setItem('token', data.token)

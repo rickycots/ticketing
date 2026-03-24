@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V4.3.03-0324 — 24 Marzo 2026
+- Fix login primo tentativo: pulizia sessionStorage prima del login (admin + client)
+
 ## V4.3.02-0323 — 23 Marzo 2026
 - Gantt: frecce dipendenze linea continua con freccia più visibile
 - Gantt: fix routing frecce per barre sovrapposte (detour path)

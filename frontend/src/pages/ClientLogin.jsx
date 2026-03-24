@@ -34,6 +34,10 @@ export default function ClientLogin() {
     setError('')
     setLoading(true)
 
+    // Clear any stale session before login
+    sessionStorage.removeItem('clientToken')
+    sessionStorage.removeItem('clientUser')
+
     try {
       const data = await clientAuth.login(email, password)
 
