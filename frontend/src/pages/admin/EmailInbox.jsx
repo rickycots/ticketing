@@ -3,15 +3,13 @@ import { useSearchParams, useOutletContext } from 'react-router-dom'
 import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2 } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
+import HelpTip from '../../components/HelpTip'
 
-const tipoLabels = {
-  email_cliente: 'Email Cliente',
-  altro: 'Altro',
+function getDirLabel(e) {
+  return e.direzione === 'inviata' ? 'Inviata' : 'Ricevuta'
 }
-
-const tipoColors = {
-  email_cliente: 'bg-purple-100 text-purple-800',
-  altro: 'bg-gray-100 text-gray-600',
+function getDirColor(e) {
+  return e.direzione === 'inviata' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
 }
 
 const selectCls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -68,7 +66,7 @@ export default function EmailInbox() {
 
   function loadEmails() {
     const params = { page }
-    if (filterTipo) params.tipo = filterTipo
+    if (filterTipo) params.direzione = filterTipo
     if (filterCliente) params.cliente_id = filterCliente
     if (filterProgetto) params.progetto_id = filterProgetto
     if (filterAttivita) params.attivita_id = filterAttivita
@@ -233,7 +231,7 @@ export default function EmailInbox() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Email</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">Email <HelpTip text="Inbox centralizzato di tutte le email ricevute e inviate. Filtra per direzione (Ricevute/Inviate), cliente, progetto e attività. Assegna le email ai progetti dal pannello di destra. Le email bloccanti fermano l'avanzamento del progetto." /></h1>
         <button
           onClick={() => { setShowCompose(!showCompose); setSelected(null) }}
           className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
@@ -250,9 +248,9 @@ export default function EmailInbox() {
           onChange={(e) => { setFilterTipo(e.target.value); setPage(1) }}
           className={filterSelectCls}
         >
-          <option value="">Tipo: Tutte</option>
-          <option value="email_cliente">Email Cliente</option>
-          <option value="altro">Altro</option>
+          <option value="">Direzione: Tutte</option>
+          <option value="ricevuta">Ricevute</option>
+          <option value="inviata">Inviate</option>
         </select>
 
         <select
@@ -414,8 +412,8 @@ export default function EmailInbox() {
                         ) : (
                           <Mail size={14} className="text-blue-500 shrink-0" />
                         )}
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tipoColors[e.tipo] || 'bg-gray-100 text-gray-600'}`}>
-                          {tipoLabels[e.tipo] || e.tipo}
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getDirColor(e)}`}>
+                          {getDirLabel(e)}
                         </span>
                         {e.is_bloccante ? (
                           <AlertTriangle size={14} className="text-orange-500 shrink-0" />
@@ -431,7 +429,7 @@ export default function EmailInbox() {
                         {e.oggetto}
                       </p>
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-gray-400 truncate">{e.mittente}</p>
+                        <p className="text-xs text-gray-400 truncate">Da: {e.inviata_da_nome ? `${e.inviata_da_nome} (${e.mittente})` : e.mittente}</p>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <p className="text-xs text-gray-400">
                             {new Date(e.data_ricezione).toLocaleDateString('it-IT')}
@@ -454,7 +452,7 @@ export default function EmailInbox() {
                         </div>
                       </div>
                       {e.cliente_nome && (
-                        <p className="text-xs text-gray-400 mt-0.5">{e.cliente_nome}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{e.direzione === 'inviata' ? 'Dest.Cliente:' : 'Cliente:'} {e.cliente_nome}</p>
                       )}
                     </button>
                   ))}
@@ -480,8 +478,8 @@ export default function EmailInbox() {
                   <div>
                     <h2 className="text-lg font-semibold">{selected.oggetto}</h2>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tipoColors[selected.tipo] || 'bg-gray-100 text-gray-600'}`}>
-                        {tipoLabels[selected.tipo] || selected.tipo}
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
+                        {getDirLabel(selected)}
                       </span>
                       {selected.is_bloccante && (
                         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
@@ -544,7 +542,7 @@ export default function EmailInbox() {
                   <dl className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <dt className="text-gray-500">Da</dt>
-                      <dd className="font-medium">{selected.mittente}</dd>
+                      <dd className="font-medium">{selected.inviata_da_nome ? `${selected.inviata_da_nome} (${selected.mittente})` : selected.mittente}</dd>
                     </div>
                     <div>
                       <dt className="text-gray-500">A</dt>

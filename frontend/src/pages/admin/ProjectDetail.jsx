@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X } from 'lucide-react'
 import { projects, activities, users } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -229,22 +230,11 @@ export default function ProjectDetail() {
       </div>
 
       {/* Client Banner */}
-      <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-            <Building2 size={20} className="text-teal-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-teal-900">{project.cliente_nome}</h2>
-            {(project.cliente_email || project.cliente_telefono || project.cliente_referente) && (
-              <div className="flex items-center gap-4 text-sm text-teal-700 mt-0.5">
-                {project.cliente_email && <span className="flex items-center gap-1"><Mail size={13} /> {project.cliente_email}</span>}
-                {project.cliente_telefono && <span className="flex items-center gap-1"><Phone size={13} /> {project.cliente_telefono}</span>}
-                {project.cliente_referente && <span className="flex items-center gap-1"><User size={13} /> {project.cliente_referente}</span>}
-              </div>
-            )}
-          </div>
+      <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+          <Building2 size={16} className="text-teal-600" />
         </div>
+        <span className="text-sm font-bold text-teal-900">Cliente: {project.cliente_nome}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -254,7 +244,7 @@ export default function ProjectDetail() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold">{project.nome}</h1>
+                <h1 className="text-2xl font-bold flex items-center gap-2">{project.nome} <HelpTip text="Dettaglio progetto con attività, email associate, note interne e chat team. Le tab Email mostrano le email ricevute e inviate, filtrabili per rilevanza. Usa il pulsante 'Invia Mail' per scrivere ai referenti del progetto." /></h1>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>

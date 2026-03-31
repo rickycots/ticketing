@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { BookOpen, Upload, Trash2, Download, Pencil, X, Save, FileText, Filter, ChevronRight } from 'lucide-react'
 import { repository } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const badgeCls = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
 const inputCls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -101,7 +102,7 @@ export default function Repository() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpen size={24} /> Repository Documenti
+          <BookOpen size={24} /> Repository Documenti <HelpTip text="Archivio documenti tecnici dei fornitori. I file PDF/TXT vengono analizzati automaticamente e il testo estratto viene utilizzato dall'AI per rispondere alle domande. La colonna 'AI' mostra ✓ se il documento è indicizzato." />
         </h1>
       </div>
 

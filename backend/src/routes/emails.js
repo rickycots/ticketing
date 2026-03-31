@@ -29,7 +29,7 @@ const emailUpload = multer({
 
 // GET /api/emails — list emails with filters (admin only)
 router.get('/', authenticateToken, requireAdmin, (req, res) => {
-  const { tipo, letta, cliente_id, progetto_id, attivita_id, rilevanza, quick_filter } = req.query;
+  const { tipo, letta, cliente_id, progetto_id, attivita_id, rilevanza, quick_filter, direzione } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 25;
   const offset = (page - 1) * limit;
@@ -62,6 +62,10 @@ router.get('/', authenticateToken, requireAdmin, (req, res) => {
     baseWhere += ' AND e.rilevanza = ?';
     baseParams.push(rilevanza);
   }
+  if (direzione) {
+    baseWhere += ' AND e.direzione = ?';
+    baseParams.push(direzione);
+  }
 
   // Compute quick-filter counts (scoped to base filters)
   const counts = {
@@ -89,9 +93,10 @@ router.get('/', authenticateToken, requireAdmin, (req, res) => {
   const total = db.prepare(countQuery).get(...params).total;
 
   const dataQuery = `
-    SELECT e.*, c.nome_azienda as cliente_nome
+    SELECT e.*, c.nome_azienda as cliente_nome, u.nome as inviata_da_nome
     FROM email e
     LEFT JOIN clienti c ON e.cliente_id = c.id
+    LEFT JOIN utenti u ON e.inviata_da = u.id
   ` + where + ' ORDER BY e.data_ricezione DESC LIMIT ? OFFSET ?';
 
   const data = db.prepare(dataQuery).all(...params, limit, offset);
@@ -101,10 +106,11 @@ router.get('/', authenticateToken, requireAdmin, (req, res) => {
 // GET /api/emails/:id — email detail (admin only)
 router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
   const email = db.prepare(`
-    SELECT e.*, c.nome_azienda as cliente_nome, a.nome as attivita_nome
+    SELECT e.*, c.nome_azienda as cliente_nome, a.nome as attivita_nome, u.nome as inviata_da_nome
     FROM email e
     LEFT JOIN clienti c ON e.cliente_id = c.id
     LEFT JOIN attivita a ON e.attivita_id = a.id
+    LEFT JOIN utenti u ON e.inviata_da = u.id
     WHERE e.id = ?
   `).get(req.params.id);
 
@@ -249,6 +255,14 @@ router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (r
     JSON.stringify(allegati),
     req.user.id
   );
+
+  // Auto "in_lavorazione" when replying to a ticket that is "aperto"
+  if (ticket_id) {
+    const tk = db.prepare('SELECT stato FROM ticket WHERE id = ?').get(ticket_id);
+    if (tk && tk.stato === 'aperto') {
+      db.prepare("UPDATE ticket SET stato = 'in_lavorazione', updated_at = datetime('now') WHERE id = ?").run(ticket_id);
+    }
+  }
 
   // If marked as blocking and associated with a project, update the project
   if (is_bloccante && progetto_id) {

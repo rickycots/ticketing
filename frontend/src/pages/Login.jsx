@@ -1,10 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { auth } from '../api/client'
 import { APP_VERSION } from '../version'
 
 export default function Login() {
   const navigate = useNavigate()
+
+  // Clear stale session on mount — prevents 401 race condition
+  useEffect(() => {
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
+  }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

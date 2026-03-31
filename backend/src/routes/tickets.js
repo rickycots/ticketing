@@ -59,7 +59,7 @@ function getTicketWithEmails(ticketId) {
 
 // GET /api/tickets — list (admin, auth) — tecnico sees only assigned tickets
 router.get('/', authenticateToken, (req, res) => {
-  const { stato, priorita, cliente_id, assegnato_a, search } = req.query;
+  const { stato, priorita, cliente_id, assegnato_a, search, anno } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 25;
   const offset = (page - 1) * limit;
@@ -67,24 +67,42 @@ router.get('/', authenticateToken, (req, res) => {
   let where = ' WHERE 1=1';
   const params = [];
   if (req.user.ruolo === 'tecnico') { where += ' AND t.assegnato_a = ?'; params.push(req.user.id); }
+  if (anno) { where += " AND strftime('%Y', t.created_at) = ?"; params.push(String(anno)); }
   if (stato) { where += ' AND t.stato = ?'; params.push(stato); }
   if (priorita) { where += ' AND t.priorita = ?'; params.push(priorita); }
   if (cliente_id) { where += ' AND t.cliente_id = ?'; params.push(cliente_id); }
   if (assegnato_a) { where += ' AND t.assegnato_a = ?'; params.push(assegnato_a); }
-  if (search) { where += ' AND (t.oggetto LIKE ? OR t.codice LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+  if (search) { where += ' AND (t.oggetto LIKE ? OR t.codice LIKE ? OR t.descrizione LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
 
   const countQuery = `SELECT COUNT(*) as total FROM ticket t` + where;
   const total = db.prepare(countQuery).get(...params).total;
 
+  // Counts per stato (for the year/filters, ignoring stato filter)
+  let statoCounts = {};
+  const baseWhere = where.replace(/ AND t\.stato = \?/, '');
+  const baseParams = stato ? params.filter((_, i) => i !== params.indexOf(stato)) : [...params];
+  // Simpler: recompute without stato
+  let whereNoStato = ' WHERE 1=1';
+  const paramsNoStato = [];
+  if (req.user.ruolo === 'tecnico') { whereNoStato += ' AND t.assegnato_a = ?'; paramsNoStato.push(req.user.id); }
+  if (anno) { whereNoStato += " AND strftime('%Y', t.created_at) = ?"; paramsNoStato.push(String(anno)); }
+  if (priorita) { whereNoStato += ' AND t.priorita = ?'; paramsNoStato.push(priorita); }
+  if (cliente_id) { whereNoStato += ' AND t.cliente_id = ?'; paramsNoStato.push(cliente_id); }
+  if (assegnato_a) { whereNoStato += ' AND t.assegnato_a = ?'; paramsNoStato.push(assegnato_a); }
+  if (search) { whereNoStato += ' AND (t.oggetto LIKE ? OR t.codice LIKE ? OR t.descrizione LIKE ?)'; paramsNoStato.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+  const statoRows = db.prepare(`SELECT t.stato, COUNT(*) as cnt FROM ticket t${whereNoStato} GROUP BY t.stato`).all(...paramsNoStato);
+  for (const r of statoRows) statoCounts[r.stato] = r.cnt;
+  const totalAll = statoRows.reduce((s, r) => s + r.cnt, 0);
+
   const dataQuery = `
-    SELECT t.*, c.nome_azienda as cliente_nome, u.nome as assegnato_nome
+    SELECT t.*, c.nome_azienda as cliente_nome, c.sla_reazione, u.nome as assegnato_nome
     FROM ticket t
     LEFT JOIN clienti c ON t.cliente_id = c.id
     LEFT JOIN utenti u ON t.assegnato_a = u.id
   ` + where + ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
 
   const data = db.prepare(dataQuery).all(...params, limit, offset);
-  res.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
+  res.json({ data, total, page, limit, totalPages: Math.ceil(total / limit), statoCounts, totalAll });
 });
 
 // GET /api/tickets/client/:clienteId — list (client auth)
@@ -319,8 +337,25 @@ router.put('/:id', authenticateToken, (req, res) => {
   const ticket = db.prepare('SELECT * FROM ticket WHERE id = ?').get(req.params.id);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
 
+  // Only client can close tickets — admin/tecnico cannot set "chiuso"
+  if (stato === 'chiuso') {
+    return res.status(403).json({ error: 'Solo il cliente può chiudere un ticket' });
+  }
+
+  // Auto "in_lavorazione" when assigning a technician (if ticket is still "aperto")
+  let effectiveStato = stato || null;
+  if (!stato && assegnato_a !== undefined && assegnato_a !== null && ticket.stato === 'aperto') {
+    effectiveStato = 'in_lavorazione';
+  }
+
   db.prepare(`UPDATE ticket SET stato = COALESCE(?, stato), priorita = COALESCE(?, priorita), assegnato_a = COALESCE(?, assegnato_a), progetto_id = COALESCE(?, progetto_id), updated_at = datetime('now') WHERE id = ?`)
-    .run(stato || null, priorita || null, assegnato_a !== undefined ? assegnato_a : null, progetto_id !== undefined ? progetto_id : null, req.params.id);
+    .run(effectiveStato, priorita || null, assegnato_a !== undefined ? assegnato_a : null, progetto_id !== undefined ? progetto_id : null, req.params.id);
+
+  // Set data_evasione when resolved (if not already set)
+  if (stato === 'risolto' && !ticket.data_evasione) {
+    const today = new Date().toISOString().split('T')[0];
+    db.prepare('UPDATE ticket SET data_evasione = ? WHERE id = ?').run(today, req.params.id);
+  }
 
   // Notification: assignment changed
   if (assegnato_a !== undefined && assegnato_a !== null && assegnato_a !== ticket.assegnato_a) {
@@ -370,6 +405,12 @@ router.post('/:id/notes', authenticateToken, (req, res) => {
   const result = db.prepare(
     'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)'
   ).run(req.params.id, req.user.id, testo.trim());
+
+  // Auto "in_lavorazione" when adding a note to an "aperto" ticket
+  const ticketFull = db.prepare('SELECT stato FROM ticket WHERE id = ?').get(req.params.id);
+  if (ticketFull && ticketFull.stato === 'aperto') {
+    db.prepare("UPDATE ticket SET stato = 'in_lavorazione', updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+  }
 
   // Save to KB if flag is set
   if (salva_in_kb && ticket.cliente_id) {

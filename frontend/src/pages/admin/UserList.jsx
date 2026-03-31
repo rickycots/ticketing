@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, UserCog, Trash2, Pencil, X, LayoutList, List } from 'lucide-react'
 import { users } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 export default function UserList() {
   const [userList, setUserList] = useState([])
@@ -222,6 +223,8 @@ export default function UserList() {
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Ruolo</th>
+                <th className="px-4 py-3 text-center"><span className="inline-flex items-center gap-1">AI <HelpTip size={11} text="Abilita l'accesso all'Assistente AI per questo tecnico. Se disattivato, il tecnico non vedrà la sezione AI nel portale e non potrà usare l'assistente nei ticket." /></span></th>
+                <th className="px-4 py-3 text-center"><span className="inline-flex items-center gap-1">AP <HelpTip size={11} text="Gestione Avanzata Progetti. Se attivato, il tecnico può caricare allegati, gestire referenti e modificare dettagli avanzati nei progetti a lui assegnati. Se disattivato, vede questi dati in sola lettura." /></span></th>
                 <th className="px-4 py-3">Stato</th>
                 <th className="px-4 py-3">Azioni</th>
               </tr>
@@ -236,6 +239,16 @@ export default function UserList() {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${u.ruolo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                         {u.ruolo}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      {u.ruolo !== 'admin' ? (
+                        <input type="checkbox" checked={!!u.abilitato_ai} disabled className="rounded border-gray-300 text-blue-600" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      {u.ruolo !== 'admin' ? (
+                        <input type="checkbox" checked={!!u.gestione_avanzata} disabled className="rounded border-gray-300 text-blue-600" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-2.5">
                       <span className={`text-xs font-medium ${u.attivo ? 'text-green-600' : 'text-gray-400'}`}>
@@ -256,7 +269,7 @@ export default function UserList() {
                   </tr>
                   {editingId === u.id && (
                     <tr key={`${u.id}-edit`} className="bg-blue-50">
-                      <td colSpan={5} className="px-4 py-3">
+                      <td colSpan={7} className="px-4 py-3">
                         <form onSubmit={handleSaveEdit}>
                           <div className="flex items-end gap-3">
                             <div className="flex-1">

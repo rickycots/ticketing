@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Ticket, FolderKanban, Mail, Clock, Users, Calendar, ChevronDown, ChevronRight, ChevronLeft, X } from 'lucide-react'
 import { dashboard } from '../../api/client'
 import { APP_VERSION } from '../../version'
+import HelpTip from '../../components/HelpTip'
 
 function StatCard({ icon: Icon, label, value, sub, color, to }) {
   const content = (
@@ -61,7 +62,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">Dashboard <HelpTip text="Panoramica generale: ticket aperti, progetti attivi, email da leggere e clienti. Il calendario mostra le attività programmate (pallini rossi). Clicca sulle card per navigare alla sezione corrispondente." /></h1>
 
       {/* Stats Grid */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-4 mb-8`}>

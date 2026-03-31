@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Send, Paperclip, X, CheckCircle } from 'lucide-react'
 import { emails, projects as projectsApi, clients } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 export default function SendMail() {
   const [searchParams] = useSearchParams()
@@ -21,7 +22,7 @@ export default function SendMail() {
   const [sent, setSent] = useState(false)
 
   useEffect(() => {
-    projectsApi.list().then(setProjectList).catch(console.error)
+    projectsApi.list({ limit: 999 }).then(res => setProjectList(res.data || [])).catch(console.error)
   }, [])
 
   // When project changes, load project detail (referenti + attività + client info)
@@ -56,9 +57,10 @@ export default function SendMail() {
     if (!searchParams.get('attivita_id')) setForm(f => ({ ...f, attivita_id: '' }))
   }, [form.progetto_id])
 
-  // Also load utenti_cliente for the client
+  // Also load utenti_cliente for the client (admin only)
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   useEffect(() => {
-    if (projectDetail && projectDetail.cliente_id) {
+    if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin') {
       clients.getUsers(projectDetail.cliente_id).then(users => {
         const clientContacts = (users || []).filter(u => u.attivo && u.email).map(u => ({
           email: u.email, label: u.nome, tipo: 'Utente portale'
@@ -84,19 +86,21 @@ export default function SendMail() {
     setSending(true)
     try {
       const data = {
-        tipo: 'email_cliente',
+        tipo: 'inviata',
         destinatario: selectedEmails.join(', '),
         oggetto: form.oggetto,
         corpo: form.corpo,
+        cliente_id: projectDetail?.cliente_id || null,
         progetto_id: form.progetto_id || null,
         attivita_id: form.attivita_id || null,
         is_bloccante: form.is_bloccante ? '1' : '0',
       }
       await emails.create(data, files)
       setSent(true)
-      setForm(f => ({ ...f, oggetto: '', corpo: '', is_bloccante: false }))
+      setForm({ oggetto: '', corpo: '', progetto_id: '', attivita_id: '', is_bloccante: false })
       setFiles([])
       setSelectedEmails([])
+      setContacts([])
       setTimeout(() => setSent(false), 3000)
     } catch (err) { alert(err.message) }
     finally { setSending(false) }
@@ -114,6 +118,7 @@ export default function SendMail() {
       <div className="flex items-center gap-2 mb-6">
         <Send size={22} className="text-blue-600" />
         <h1 className="text-xl font-bold">Invia Mail</h1>
+        <HelpTip text="Invia email tramite assistenzatecnica@stmdomotica.it. Seleziona prima il progetto per vedere i destinatari disponibili (referenti progetto, email cliente, utenti portale). L'email verrà associata al progetto e all'attività selezionata." />
       </div>
 
       {sent && (

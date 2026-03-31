@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Megaphone, Plus, Trash2, X, AlertTriangle, Eye, Clock } from 'lucide-react'
+import { Megaphone, Plus, Trash2, X, AlertTriangle, Eye, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { comunicazioni, clients } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 export default function ComunicazioniList() {
   const [list, setList] = useState([])
@@ -10,6 +11,9 @@ export default function ComunicazioniList() {
   const [form, setForm] = useState({ cliente_id: '', oggetto: '', corpo: '', importante: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [anno, setAnno] = useState(new Date().getFullYear())
+  const [page, setPage] = useState(1)
+  const LIMIT = 10
 
   useEffect(() => {
     loadData()
@@ -35,8 +39,15 @@ export default function ComunicazioniList() {
     setSaving(true)
     setError('')
     try {
-      const created = await comunicazioni.create(form)
-      setList(prev => [created, ...prev])
+      if (form.cliente_id === 'tutti') {
+        for (const c of clientList) {
+          const created = await comunicazioni.create({ ...form, cliente_id: c.id })
+          setList(prev => [created, ...prev])
+        }
+      } else {
+        const created = await comunicazioni.create(form)
+        setList(prev => [created, ...prev])
+      }
       setForm({ cliente_id: '', oggetto: '', corpo: '', importante: false })
       setShowForm(false)
     } catch (err) {
@@ -54,12 +65,20 @@ export default function ComunicazioniList() {
     } catch {}
   }
 
+  const filtered = list.filter(c => {
+    const d = c.data_ricezione || c.created_at || ''
+    const year = parseInt(d.substring(0, 4))
+    return year === anno
+  })
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LIMIT))
+  const paged = filtered.slice((page - 1) * LIMIT, page * LIMIT)
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Megaphone size={24} className="text-blue-600" />
-          <h1 className="page-title">Comunicazioni</h1>
+          <h1 className="page-title flex items-center gap-2">Comunicazioni <HelpTip text="Bacheca comunicazioni verso i clienti. Ogni comunicazione viene mostrata nel portale cliente come avviso. Puoi scegliere a quale cliente inviarla o a tutti. Le comunicazioni marcate 'importante' restano visibili anche dopo la lettura. Scadenza automatica dopo 15 giorni." /></h1>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -90,6 +109,7 @@ export default function ComunicazioniList() {
                   className="form-input"
                 >
                   <option value="">— Seleziona cliente —</option>
+                  <option value="tutti">TUTTI</option>
                   {clientList.map(c => (
                     <option key={c.id} value={c.id}>{c.nome_azienda}</option>
                   ))}
@@ -141,16 +161,12 @@ export default function ComunicazioniList() {
       )}
 
       {/* Lista */}
-      {loading ? (
-        <div className="text-center py-12 text-gray-400">Caricamento...</div>
-      ) : list.length === 0 ? (
-        <div className="text-center py-12">
-          <Megaphone size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">Nessuna comunicazione</p>
-          <p className="text-sm text-gray-400 mt-1">Clicca "Nuova Comunicazione" per inviarne una ai clienti</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="text-center py-12 text-gray-400">Caricamento...</div>
+        ) : paged.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">Nessuna comunicazione per il {anno}</div>
+        ) : (
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -165,7 +181,7 @@ export default function ComunicazioniList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {list.map(c => {
+              {paged.map(c => {
                 const dataRic = new Date(c.data_ricezione)
                 const scadenza = new Date(dataRic.getTime() + 15 * 24 * 60 * 60 * 1000)
                 const now = new Date()
@@ -220,8 +236,43 @@ export default function ComunicazioniList() {
               )})}
             </tbody>
           </table>
+        )}
+
+        {/* Footer: Pagination + Year navigator */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+          <p className="text-sm text-gray-500">
+            {filtered.length > 0 ? <>Mostra <span className="font-medium">{Math.min((page - 1) * LIMIT + 1, filtered.length)}</span>-<span className="font-medium">{Math.min(page * LIMIT, filtered.length)}</span> di <span className="font-medium">{filtered.length}</span></> : <span>0 comunicazioni</span>}
+          </p>
+
+          {/* Year navigator */}
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setAnno(a => a - 1); setPage(1) }} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 cursor-pointer">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-center">{anno}</span>
+            <button onClick={() => { setAnno(a => a + 1); setPage(1) }} disabled={anno >= new Date().getFullYear()} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Page navigator */}
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+              Math.max(0, page - 3), Math.min(totalPages, page + 2)
+            ).map(p => (
+              <button key={p} onClick={() => setPage(p)} className={`px-2.5 py-1 rounded-lg text-sm font-medium cursor-pointer ${p === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                {p}
+              </button>
+            ))}
+            <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

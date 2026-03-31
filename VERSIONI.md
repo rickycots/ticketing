@@ -1,5 +1,30 @@
 # Storico Versioni
 
+## V4.5.00-0331 — 31 Marzo 2026
+- Ticket: colonna Stato rimossa, pallini colorati cliccabili per filtrare per stato con percentuali
+- Ticket: colonna Updated (tempo relativo dall'ultimo aggiornamento)
+- Ticket: SLA cliente in rosso bold tra parentesi, evasione verde/rosso in base a SLA
+- Ticket: paginazione 10 righe + navigazione anno al centro del footer
+- Ticket: sfondo verde per risolti, grigio per chiusi
+- Ticket: ricerca estesa anche nel testo/descrizione del ticket
+- Ticket: stato "Chiuso" rimosso dal dropdown — solo il cliente può chiudere
+- Ticket: stati automatici (Aperto→In lavorazione su assegnazione/nota/risposta)
+- Ticket: data evasione impostata automaticamente alla risoluzione
+- Ticket: titolo "Gestione Ticket" + banner "Cliente: NomeAzienda" uniformato
+- Email Inbox: filtro per direzione (Ricevute/Inviate) basato su campo `direzione`
+- Email Inbox: badge verde "Inviata" / viola "Ricevuta", nome tecnico per email inviate
+- Email Inbox: prefisso "Da:" e "Cliente:"/"Dest.Cliente:" nella lista
+- SendMail: fix crash (projectsApi.list ritorna oggetto non array), reset completo campi dopo invio
+- Comunicazioni: voce "TUTTI" nella tendina destinatario per invio a tutti i clienti
+- Comunicazioni: paginazione 10 righe + navigazione anno (come Ticket)
+- HelpTip: componente tooltip "?" viola su hover per tutte le pagine principali
+- HelpTip posizionati su: Dashboard, Ticket, TicketDetail (thread, risposta, note, AI, partecipanti, stato, in attesa, KB), Email, SendMail, ProjectDetail, ActivityDetail, Repository, Comunicazioni, UserList (AI, AP)
+- UserList compatta: colonne AI e AP (read-only) con HelpTip esplicativi
+- Banner cliente uniformato (p-3, w-8 h-8) su TicketDetail, ProjectDetail, ProjectGantt, ActivityDetail
+- Login: pulizia sessionStorage su mount (useEffect) per fix primo tentativo
+- Pagination: sempre visibile anche con 1 sola pagina
+- Fix .htaccess: rimosso blocco generico .json per version.json
+
 ## V4.4.00-0331 — 31 Marzo 2026
 - Nuova pagina "Invia Mail" nel menu sidebar (admin + tecnico)
 - Selezione progetto/attività obbligatoria prima dell'invio, con filtro progressivo

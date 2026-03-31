@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const actStatoColors = {
   da_fare: 'bg-gray-100 text-gray-700',
@@ -179,26 +180,11 @@ export default function ActivityDetail() {
 
       {/* Client Banner */}
       {prog.cliente_nome && (
-        <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-              <Building2 size={20} className="text-teal-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-teal-900">{prog.cliente_nome}</h2>
-              <div className="flex items-center gap-4 text-sm text-teal-700 mt-0.5">
-                {prog.cliente_email && (
-                  <span className="flex items-center gap-1"><Mail size={13} /> {prog.cliente_email}</span>
-                )}
-                {prog.cliente_telefono && (
-                  <span className="flex items-center gap-1"><Phone size={13} /> {prog.cliente_telefono}</span>
-                )}
-                {prog.cliente_referente && (
-                  <span className="flex items-center gap-1"><User size={13} /> {prog.cliente_referente}</span>
-                )}
-              </div>
-            </div>
+        <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+          <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+            <Building2 size={16} className="text-teal-600" />
           </div>
+          <span className="text-sm font-bold text-teal-900">Cliente: {prog.cliente_nome}</span>
         </div>
       )}
 
@@ -210,7 +196,7 @@ export default function ActivityDetail() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold">{activity.nome}</h2>
+                  <h2 className="text-lg font-bold flex items-center gap-2">{activity.nome} <HelpTip text="Dettaglio attività con stato avanzamento, email associate, note e attività programmate. Lo slider percentuale indica l'avanzamento. Le email bloccanti mettono l'attività in stato 'bloccata'." /></h2>
                   {isAdmin && (
                     <>
                     <button onClick={openEditModal} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
@@ -300,7 +286,7 @@ export default function ActivityDetail() {
                 <span className="text-xs text-gray-400">({(activity.emails || []).length})</span>
                 {showEmails ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
               </button>
-              <Link to={`/admin/send-mail?progetto_id=${id}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+              <Link to={`/admin/send-mail?progetto_id=${projectId}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
                 <Send size={14} /> Invia Mail
               </Link>
             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
 import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users, LayoutList, List } from 'lucide-react'
 import { tickets, emails, users, schede as schedeApi, ai } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const prioritaColors = {
   urgente: 'bg-red-100 text-red-800', alta: 'bg-orange-100 text-orange-800',
@@ -125,12 +126,14 @@ export default function TicketDetail() {
         <ArrowLeft size={16} /> Torna alla lista
       </Link>
 
+      <h1 className="text-2xl font-bold mb-4">Gestione Ticket</h1>
+
       {/* Client banner */}
       <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
         <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
           <Building2 size={16} className="text-teal-600" />
         </div>
-        <span className="text-sm font-bold text-teal-900">{ticket.cliente_nome}</span>
+        <span className="text-sm font-bold text-teal-900">Cliente: {ticket.cliente_nome}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -174,6 +177,7 @@ export default function TicketDetail() {
                     <span className="font-medium">Partecipanti</span>
                     <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{partecipanti.length}</span>
                     <span className="text-gray-400 italic ml-1">Elenco utenti che partecipano al ticket e riceveranno la risposta</span>
+                    <HelpTip size={12} text="I ticket aperti da un utente, se non taggati privato, sono visibili da tutti gli utenti di quella azienda. Chiunque può aggiornarlo e diventare un partecipante." />
                   </button>
                   {showPartecipanti && (
                     <div className="mt-2 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
@@ -204,7 +208,9 @@ export default function TicketDetail() {
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Mail size={18} className="text-blue-500" />
-                  <h2 className="text-lg font-semibold">Thread Email</h2>
+                  <h2 className="text-lg font-semibold">Thread Messaggi</h2>
+                  <HelpTip text="Storico completo delle comunicazioni sul ticket. Include messaggi dal portale e risposte via email. I messaggi in azzurro sono le risposte inviate dal nostro team." />
+                  <span className="text-xs text-gray-400 italic">Ciclo messaggi ticket dal portale o mail</span>
                 </div>
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -298,7 +304,8 @@ export default function TicketDetail() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <Send size={18} className="text-green-500" />
-                <h2 className="text-lg font-semibold">Rispondi al Cliente</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2">Rispondi al Cliente <HelpTip text="Scrivi qui la risposta al cliente. Verrà salvata nel thread e inviata via email a tutti i partecipanti del ticket (creatore + chi ha risposto via mail)." /></h2>
+                <p className="text-xs text-gray-400 italic">La risposta inoltrerà anche una mail a tutti i partecipanti</p>
               </div>
               <form onSubmit={handleReply} className="p-4 space-y-3">
                 <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)}
@@ -339,7 +346,7 @@ export default function TicketDetail() {
                   <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" checked={setInAttesa} onChange={(e) => setSetInAttesa(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                    Imposta stato "In attesa" del cliente
+                    Imposta stato "In attesa" del cliente <HelpTip size={12} text="Attivando questa opzione, dopo l'invio della risposta il ticket passerà automaticamente allo stato 'In attesa'. Indica che il team ha risposto e si attende un riscontro dal cliente prima di procedere." />
                   </label>
                   <button type="submit" disabled={sending || !replyText.trim()}
                     className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
@@ -355,6 +362,7 @@ export default function TicketDetail() {
             <div className="p-4 border-b border-gray-100 flex items-center gap-2">
               <StickyNote size={18} className="text-yellow-500" />
               <h2 className="text-lg font-semibold">Note Interne</h2>
+              <HelpTip text="Note visibili solo al team interno (admin e tecnici). Il cliente non vede queste note. Utili per appunti, promemoria e comunicazioni interne sul ticket." />
             </div>
             {ticket.note?.length > 0 && (
               <div className="divide-y divide-gray-100">
@@ -389,7 +397,7 @@ export default function TicketDetail() {
                   <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
                     <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                    Salva in Knowledge Base (disponibile per AI cliente)
+                    Salva in Knowledge Base (disponibile per AI cliente) <HelpTip size={12} text="La nota verrà salvata anche nella Knowledge Base del cliente. L'AI del portale cliente potrà utilizzarla per rispondere alle domande degli utenti di questa azienda." />
                   </label>
                 ) : <span />}
                 <button type="submit" disabled={sendingNote || !noteText.trim()}
@@ -408,9 +416,9 @@ export default function TicketDetail() {
             <h3 className="text-sm font-semibold mb-3">Azioni</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Stato</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">Stato <HelpTip size={12} text="Lo stato si aggiorna automaticamente: 'Aperto' alla creazione, 'In lavorazione' quando si assegna un tecnico, si scrive una nota o si risponde, 'In attesa' con la checkbox dopo una risposta. Solo 'Risolto' è selezionabile manualmente." /></label>
                 <select value={ticket.stato} onChange={(e) => handleFieldChange('stato', e.target.value)} className={selectCls}>
-                  {Object.entries(statoLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {Object.entries(statoLabels).filter(([v]) => v !== 'chiuso').map(([v, l]) => <option key={v} value={v} disabled={v !== 'risolto' && v !== ticket.stato}>{l}</option>)}
                 </select>
               </div>
               {isAdmin && (
@@ -497,7 +505,7 @@ export default function TicketDetail() {
               className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <Bot size={18} className="text-purple-500" />
-                <h3 className="text-sm font-semibold">Assistente AI</h3>
+                <h3 className="text-sm font-semibold flex items-center gap-1">Assistente AI <HelpTip size={12} text="L'AI analizza il repository documenti, le FAQ dei fornitori, la Knowledge Base del cliente e lo storico ticket per suggerirti risposte. Attiva 'Usa KB' per includere la Knowledge Base specifica del cliente." /></h3>
               </div>
               {aiOpen ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
             </button>

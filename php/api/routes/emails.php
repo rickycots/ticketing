@@ -18,6 +18,7 @@ $router->get('/emails', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
     if (!empty($req->query['progetto_id'])) { $baseWhere .= ' AND e.progetto_id = ?'; $baseParams[] = $req->query['progetto_id']; }
     if (!empty($req->query['attivita_id'])) { $baseWhere .= ' AND e.attivita_id = ?'; $baseParams[] = $req->query['attivita_id']; }
     if (!empty($req->query['rilevanza']) && empty($req->query['quick_filter'])) { $baseWhere .= ' AND e.rilevanza = ?'; $baseParams[] = $req->query['rilevanza']; }
+    if (!empty($req->query['direzione'])) { $baseWhere .= ' AND e.direzione = ?'; $baseParams[] = $req->query['direzione']; }
 
     // Quick filter counts
     $counts = [
@@ -39,7 +40,7 @@ $router->get('/emails', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
     $total = (int)Database::fetchOne("SELECT COUNT(*) as total FROM email e{$where}", $params)['total'];
 
     $data = Database::fetchAll(
-        "SELECT e.*, c.nome_azienda as cliente_nome FROM email e LEFT JOIN clienti c ON e.cliente_id = c.id {$where} ORDER BY e.data_ricezione DESC LIMIT ? OFFSET ?",
+        "SELECT e.*, c.nome_azienda as cliente_nome, u.nome as inviata_da_nome FROM email e LEFT JOIN clienti c ON e.cliente_id = c.id LEFT JOIN utenti u ON e.inviata_da = u.id {$where} ORDER BY e.data_ricezione DESC LIMIT ? OFFSET ?",
         array_merge($params, [$limit, $offset])
     );
 
@@ -49,8 +50,8 @@ $router->get('/emails', [Auth::class, 'authenticateToken'], [Auth::class, 'requi
 // GET /api/emails/:id
 $router->get('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $email = Database::fetchOne(
-        "SELECT e.*, c.nome_azienda as cliente_nome, a.nome as attivita_nome
-         FROM email e LEFT JOIN clienti c ON e.cliente_id = c.id LEFT JOIN attivita a ON e.attivita_id = a.id
+        "SELECT e.*, c.nome_azienda as cliente_nome, a.nome as attivita_nome, u.nome as inviata_da_nome
+         FROM email e LEFT JOIN clienti c ON e.cliente_id = c.id LEFT JOIN attivita a ON e.attivita_id = a.id LEFT JOIN utenti u ON e.inviata_da = u.id
          WHERE e.id = ?",
         [$req->params['id']]
     );
@@ -165,6 +166,14 @@ $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
         [$tipo, $mittente, $allDestinatari ?: $destinatario, $oggetto, $corpo, $clienteId, $ticketId, $progettoId, $attivitaId, $isBloccante ? 1 : 0, $threadId, $sentMessageId, json_encode($allegati), $req->user['id']]
     );
     $emailId = Database::lastInsertId();
+
+    // Auto "in_lavorazione" when replying to a ticket that is "aperto"
+    if ($ticketId) {
+        $tk = Database::fetchOne('SELECT stato FROM ticket WHERE id = ?', [$ticketId]);
+        if ($tk && $tk['stato'] === 'aperto') {
+            Database::execute("UPDATE ticket SET stato = 'in_lavorazione', updated_at = NOW() WHERE id = ?", [$ticketId]);
+        }
+    }
 
     // Blocking logic
     if ($isBloccante && $progettoId) {

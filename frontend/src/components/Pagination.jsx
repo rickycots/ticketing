@@ -1,8 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function Pagination({ page, totalPages, total, limit, onPageChange }) {
-  if (totalPages <= 1) return null
-
   const start = (page - 1) * limit + 1
   const end = Math.min(page * limit, total)
 

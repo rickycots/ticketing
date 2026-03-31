@@ -201,22 +201,11 @@ export default function ProjectGantt() {
       <h1 className="text-2xl font-bold mb-5">Dettaglio Progetto</h1>
 
       {/* Client Banner */}
-      <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-            <Building2 size={20} className="text-teal-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-teal-900">{project.cliente_nome}</h2>
-            {(project.cliente_email || project.cliente_telefono || project.cliente_referente) && (
-              <div className="flex items-center gap-4 text-sm text-teal-700 mt-0.5">
-                {project.cliente_email && <span className="flex items-center gap-1"><Mail size={13} /> {project.cliente_email}</span>}
-                {project.cliente_telefono && <span className="flex items-center gap-1"><Phone size={13} /> {project.cliente_telefono}</span>}
-                {project.cliente_referente && <span className="flex items-center gap-1"><User size={13} /> {project.cliente_referente}</span>}
-              </div>
-            )}
-          </div>
+      <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+          <Building2 size={16} className="text-teal-600" />
         </div>
+        <span className="text-sm font-bold text-teal-900">Cliente: {project.cliente_nome}</span>
       </div>
 
       {/* Header */}

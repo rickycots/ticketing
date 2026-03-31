@@ -154,22 +154,42 @@ $router->get('/tickets', [Auth::class, 'authenticateToken'], function($req) {
     $params = [];
 
     if ($isTecnico) { $where .= ' AND t.assegnato_a = ?'; $params[] = $userId; }
+    if (!empty($req->query['anno'])) { $where .= " AND YEAR(t.created_at) = ?"; $params[] = $req->query['anno']; }
     if (!empty($req->query['stato'])) { $where .= ' AND t.stato = ?'; $params[] = $req->query['stato']; }
     if (!empty($req->query['priorita'])) { $where .= ' AND t.priorita = ?'; $params[] = $req->query['priorita']; }
     if (!empty($req->query['cliente_id'])) { $where .= ' AND t.cliente_id = ?'; $params[] = $req->query['cliente_id']; }
     if (!empty($req->query['assegnato_a'])) { $where .= ' AND t.assegnato_a = ?'; $params[] = $req->query['assegnato_a']; }
     if (!empty($req->query['search'])) {
-        $where .= ' AND (t.oggetto LIKE ? OR t.codice LIKE ?)';
+        $where .= ' AND (t.oggetto LIKE ? OR t.codice LIKE ? OR t.descrizione LIKE ?)';
         $s = '%' . $req->query['search'] . '%';
+        $params[] = $s;
         $params[] = $s;
         $params[] = $s;
     }
 
     $total = Database::fetchOne("SELECT COUNT(*) as total FROM ticket t{$where}", $params)['total'];
 
+    // Counts per stato (without stato filter)
+    $whereNoStato = ' WHERE 1=1';
+    $paramsNoStato = [];
+    if ($isTecnico) { $whereNoStato .= ' AND t.assegnato_a = ?'; $paramsNoStato[] = $userId; }
+    if (!empty($req->query['anno'])) { $whereNoStato .= " AND YEAR(t.created_at) = ?"; $paramsNoStato[] = $req->query['anno']; }
+    if (!empty($req->query['priorita'])) { $whereNoStato .= ' AND t.priorita = ?'; $paramsNoStato[] = $req->query['priorita']; }
+    if (!empty($req->query['cliente_id'])) { $whereNoStato .= ' AND t.cliente_id = ?'; $paramsNoStato[] = $req->query['cliente_id']; }
+    if (!empty($req->query['assegnato_a'])) { $whereNoStato .= ' AND t.assegnato_a = ?'; $paramsNoStato[] = $req->query['assegnato_a']; }
+    if (!empty($req->query['search'])) {
+        $whereNoStato .= ' AND (t.oggetto LIKE ? OR t.codice LIKE ? OR t.descrizione LIKE ?)';
+        $s = '%' . $req->query['search'] . '%';
+        $paramsNoStato[] = $s; $paramsNoStato[] = $s; $paramsNoStato[] = $s;
+    }
+    $statoRows = Database::fetchAll("SELECT t.stato, COUNT(*) as cnt FROM ticket t{$whereNoStato} GROUP BY t.stato", $paramsNoStato);
+    $statoCounts = [];
+    $totalAll = 0;
+    foreach ($statoRows as $r) { $statoCounts[$r['stato']] = (int)$r['cnt']; $totalAll += (int)$r['cnt']; }
+
     $dataParams = array_merge($params, [$limit, $offset]);
     $data = Database::fetchAll(
-        "SELECT t.*, c.nome_azienda as cliente_nome, u.nome as assegnato_nome
+        "SELECT t.*, c.nome_azienda as cliente_nome, c.sla_reazione, u.nome as assegnato_nome
          FROM ticket t
          LEFT JOIN clienti c ON t.cliente_id = c.id
          LEFT JOIN utenti u ON t.assegnato_a = u.id
@@ -183,6 +203,8 @@ $router->get('/tickets', [Auth::class, 'authenticateToken'], function($req) {
         'page' => $page,
         'limit' => $limit,
         'totalPages' => (int)ceil($total / $limit),
+        'statoCounts' => $statoCounts,
+        'totalAll' => $totalAll,
     ]);
 });
 
@@ -393,10 +415,26 @@ $router->put('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) 
     $assegnatoA = array_key_exists('assegnato_a', $req->body) ? $req->body['assegnato_a'] : null;
     $progettoId = array_key_exists('progetto_id', $req->body) ? $req->body['progetto_id'] : null;
 
+    // Only client can close tickets — admin/tecnico cannot set "chiuso"
+    if ($stato === 'chiuso') {
+        Response::error('Solo il cliente può chiudere un ticket', 403);
+    }
+
+    // Auto "in_lavorazione" when assigning a technician (if ticket is still "aperto")
+    $effectiveStato = $stato;
+    if (!$stato && $assegnatoA !== null && $ticket['stato'] === 'aperto') {
+        $effectiveStato = 'in_lavorazione';
+    }
+
     Database::execute(
         'UPDATE ticket SET stato = COALESCE(?, stato), priorita = COALESCE(?, priorita), assegnato_a = COALESCE(?, assegnato_a), progetto_id = COALESCE(?, progetto_id), updated_at = NOW() WHERE id = ?',
-        [$stato, $priorita, $assegnatoA, $progettoId, $id]
+        [$effectiveStato, $priorita, $assegnatoA, $progettoId, $id]
     );
+
+    // Set data_evasione when resolved (if not already set)
+    if ($stato === 'risolto' && empty($ticket['data_evasione'])) {
+        Database::execute('UPDATE ticket SET data_evasione = CURDATE() WHERE id = ?', [$id]);
+    }
 
     // Notification: assignment changed
     if ($assegnatoA !== null && $assegnatoA != $ticket['assegnato_a']) {
@@ -424,7 +462,7 @@ $router->put('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) 
     }
 
     $updated = Database::fetchOne(
-        "SELECT t.*, c.nome_azienda as cliente_nome, u.nome as assegnato_nome
+        "SELECT t.*, c.nome_azienda as cliente_nome, c.sla_reazione, u.nome as assegnato_nome
          FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id LEFT JOIN utenti u ON t.assegnato_a = u.id WHERE t.id = ?",
         [$id]
     );
@@ -449,6 +487,12 @@ $router->post('/tickets/:id/notes', [Auth::class, 'authenticateToken'], function
         'INSERT INTO note_interne (ticket_id, utente_id, testo) VALUES (?, ?, ?)',
         [$req->params['id'], $req->user['id'], $testo]
     );
+
+    // Auto "in_lavorazione" when adding a note to an "aperto" ticket
+    $ticketState = Database::fetchOne('SELECT stato FROM ticket WHERE id = ?', [$req->params['id']]);
+    if ($ticketState && $ticketState['stato'] === 'aperto') {
+        Database::execute("UPDATE ticket SET stato = 'in_lavorazione', updated_at = NOW() WHERE id = ?", [$req->params['id']]);
+    }
 
     // Save to KB if flag is set
     if ($salvaInKb && $ticket['cliente_id']) {

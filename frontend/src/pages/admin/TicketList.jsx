@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Building2 } from 'lucide-react'
+import { Search, Building2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { tickets, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
+import HelpTip from '../../components/HelpTip'
 
 const prioritaColors = {
   urgente: 'bg-red-100 text-red-800',
@@ -11,12 +12,12 @@ const prioritaColors = {
   bassa: 'bg-gray-100 text-gray-600',
 }
 
-const statoColors = {
-  aperto: 'bg-blue-100 text-blue-800',
-  in_lavorazione: 'bg-yellow-100 text-yellow-800',
-  in_attesa: 'bg-orange-100 text-orange-800',
-  risolto: 'bg-green-100 text-green-800',
-  chiuso: 'bg-gray-100 text-gray-600',
+const statoDotColors = {
+  aperto: 'bg-blue-500',
+  in_lavorazione: 'bg-yellow-500',
+  in_attesa: 'bg-orange-500',
+  risolto: 'bg-green-500',
+  chiuso: 'bg-gray-400',
 }
 
 const statoLabels = {
@@ -33,9 +34,11 @@ export default function TicketList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ stato: '', priorita: '', cliente_id: '', assegnato_a: '', search: '' })
-  const [quickFilter, setQuickFilter] = useState('aperti')
+  const [anno, setAnno] = useState(new Date().getFullYear())
   const [page, setPage] = useState(1)
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 25 })
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 10 })
+  const [statoCounts, setStatoCounts] = useState({})
+  const [totalAll, setTotalAll] = useState(0)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -48,45 +51,83 @@ export default function TicketList() {
 
   useEffect(() => {
     setLoading(true)
-    const params = { page }
+    const params = { page, limit: 10, anno }
     Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v })
     tickets.list(params).then(res => {
       setTicketList(res.data)
       setPagination({ total: res.total, totalPages: res.totalPages, limit: res.limit })
+      if (res.statoCounts) setStatoCounts(res.statoCounts)
+      if (res.totalAll !== undefined) setTotalAll(res.totalAll)
     }).catch(console.error).finally(() => setLoading(false))
-  }, [filters, page])
+  }, [filters, page, anno])
 
   function handleFilterChange(key, value) {
     setFilters(f => ({ ...f, [key]: value }))
     setPage(1)
   }
 
+  function toggleStatoFilter(stato) {
+    setFilters(f => ({ ...f, stato: f.stato === stato ? '' : stato }))
+    setPage(1)
+  }
+
   const tecnici = userList.filter(u => (u.ruolo === 'tecnico' || u.ruolo === 'admin') && u.attivo)
 
-  // For tecnico: extract unique clients from their ticket list
   const ticketClients = !isAdmin ? [...new Map(ticketList.filter(t => t.cliente_nome).map(t => [t.cliente_id, { id: t.cliente_id, nome_azienda: t.cliente_nome }])).values()] : []
   const displayClients = isAdmin ? clientList : ticketClients
 
-  const filteredTickets = quickFilter === 'tutti' ? ticketList
-    : quickFilter === 'aperti' ? ticketList.filter(t => ['aperto', 'in_lavorazione', 'in_attesa'].includes(t.stato))
-    : ticketList.filter(t => ['risolto', 'chiuso'].includes(t.stato))
+  function formatTimeAgo(dateStr) {
+    if (!dateStr) return '\u2014'
+    const d = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now - d
+    const diffMin = Math.floor(diffMs / 60000)
+    if (diffMin < 1) return 'ora'
+    if (diffMin < 60) return `${diffMin}m fa`
+    const diffH = Math.floor(diffMin / 60)
+    if (diffH < 24) return `${diffH}h fa`
+    const diffD = Math.floor(diffH / 24)
+    if (diffD < 7) return `${diffD}g fa`
+    return d.toLocaleDateString('it-IT')
+  }
+
+  function pct(stato) {
+    if (!totalAll) return '0%'
+    return Math.round(((statoCounts[stato] || 0) / totalAll) * 100) + '%'
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Tickets</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold flex items-center gap-2">Tickets <HelpTip text="Gestione ticket di assistenza. I pallini colorati indicano lo stato. Clicca su uno stato per filtrare. La SLA indica i tempi di reazione contrattualizzati col cliente. Solo il cliente può chiudere un ticket; il tecnico può impostare Risolto." /></h1>
+      </div>
+
+      {/* Quick filters + Clickable legend with percentages */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <button
+          onClick={() => { setFilters(f => ({ ...f, stato: '' })); setPage(1) }}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+            !filters.stato
+              ? 'bg-blue-100 text-blue-800'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Tutti <span className="font-bold">{totalAll}</span>
+        </button>
+        <span className="text-gray-300">|</span>
         <div className="flex items-center gap-2">
-          {[{ label: 'Aperti', value: 'aperti' }, { label: 'Chiusi', value: 'chiusi' }, { label: 'Tutti', value: 'tutti' }].map(opt => (
+          {Object.entries(statoLabels).map(([key, label]) => (
             <button
-              key={opt.value}
-              onClick={() => { setQuickFilter(opt.value); setPage(1) }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                quickFilter === opt.value
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              key={key}
+              onClick={() => toggleStatoFilter(key)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                filters.stato === key
+                  ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300'
+                  : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
-              {opt.label}
+              <span className={`w-2.5 h-2.5 rounded-full ${statoDotColors[key]}`} />
+              {label} <span className="text-gray-400">({pct(key)})</span>
             </button>
           ))}
         </div>
@@ -94,31 +135,17 @@ export default function TicketList() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter size={16} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-600">Filtri</span>
-        </div>
-        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3`}>
-          <div className="relative">
+        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-3`}>
+          <div className="relative md:col-span-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Cerca ticket..."
+              placeholder="Cerca per codice, oggetto, testo..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
-          <select
-            value={filters.stato}
-            onChange={(e) => handleFilterChange('stato', e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Tutti gli stati</option>
-            {Object.entries(statoLabels).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
           <select
             value={filters.priorita}
             onChange={(e) => handleFilterChange('priorita', e.target.value)}
@@ -174,8 +201,8 @@ export default function TicketList() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400">Caricamento...</div>
-        ) : filteredTickets.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">Nessun ticket trovato</div>
+        ) : ticketList.length === 0 ? (
+          <div className="p-8 text-center text-gray-400">Nessun ticket trovato per il {anno}</div>
         ) : (
           <>
             <table className="w-full">
@@ -183,56 +210,64 @@ export default function TicketList() {
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Codice</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Oggetto</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Cliente</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Cliente (SLA)</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Priorita</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Stato</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Assegnato</th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Data</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Evasione</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1">Updated <HelpTip size={12} text="Ultima modifica al ticket (cambio stato, risposta, assegnazione). Mostra il tempo trascorso dall'ultimo aggiornamento." /></span></th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1">Evasione <HelpTip size={12} text="Data in cui il ticket è stato risolto. Verde = risolto entro i tempi SLA del cliente. Rosso = risolto oltre i tempi SLA. Grigio = ticket chiuso dal cliente. Il trattino indica che il ticket non è ancora stato risolto." /></span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredTickets.map(t => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                {ticketList.map(t => (
+                  <tr key={t.id} className={`hover:bg-gray-100 transition-colors ${t.stato === 'chiuso' ? 'bg-gray-100/80' : t.stato === 'risolto' ? 'bg-green-100/60' : ''}`}>
                     <td className="px-4 py-3">
                       <Link to={`/admin/tickets/${t.id}`} className="text-sm font-mono text-blue-600 hover:underline">
                         {t.codice}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <Link to={`/admin/tickets/${t.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
-                        {t.oggetto}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statoDotColors[t.stato] || 'bg-gray-400'}`} title={statoLabels[t.stato]} />
+                        <Link to={`/admin/tickets/${t.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
+                          {t.oggetto}
+                        </Link>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{t.cliente_nome}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {t.cliente_nome} {(() => {
+                        const sla = t.sla_reazione === '1g' ? '1g' : t.sla_reazione === '3g' ? '3g' : null
+                        return sla
+                          ? <span className="text-red-600 font-bold">({sla})</span>
+                          : <span className="text-gray-400">(-)</span>
+                      })()}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${prioritaColors[t.priorita]}`}>
                         {t.priorita}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[t.stato]}`}>
-                          {statoLabels[t.stato]}
-                        </span>
-                        {t.assegnato_nome && (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold" title={t.assegnato_nome}>
-                            {t.assegnato_nome.split(' ').map(p => p[0]).join('').toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{t.assegnato_nome || '\u2014'}</td>
                     <td className="px-4 py-3 text-sm text-gray-400">
                       {new Date(t.created_at).toLocaleDateString('it-IT')}
                     </td>
+                    <td className="px-4 py-3 text-xs text-gray-500" title={t.updated_at ? new Date(t.updated_at).toLocaleString('it-IT') : ''}>
+                      {formatTimeAgo(t.updated_at)}
+                    </td>
                     <td className="px-4 py-3 text-sm">
                       {t.data_evasione ? (() => {
-                        const ev = new Date(t.data_evasione + 'T00:00:00');
-                        const today = new Date(); today.setHours(0,0,0,0);
-                        const diffMs = ev.getTime() - today.getTime();
-                        const diffDays = diffMs / (1000 * 60 * 60 * 24);
-                        const color = diffDays < 0 ? 'text-red-600 font-bold' : diffDays <= 1 ? 'text-orange-500 font-medium' : 'text-gray-500';
+                        const ev = new Date(t.data_evasione + 'T00:00:00')
+                        const created = new Date(t.created_at)
+                        const slaDays = t.sla_reazione === '1g' ? 1 : t.sla_reazione === '3g' ? 3 : null
+                        const isClosed = t.stato === 'chiuso'
+                        let color = 'text-gray-400'
+                        if (!isClosed && slaDays) {
+                          const diffMs = ev.getTime() - created.getTime()
+                          const diffDays = diffMs / (1000 * 60 * 60 * 24)
+                          color = diffDays > slaDays ? 'text-red-600 font-bold' : 'text-green-600'
+                        } else if (!isClosed) {
+                          color = 'text-green-600'
+                        }
                         return <span className={color}>{ev.toLocaleDateString('it-IT')}</span>
                       })() : <span className="text-gray-300">{'\u2014'}</span>}
                     </td>
@@ -240,15 +275,44 @@ export default function TicketList() {
                 ))}
               </tbody>
             </table>
-            <Pagination
-              page={page}
-              totalPages={pagination.totalPages}
-              total={pagination.total}
-              limit={pagination.limit}
-              onPageChange={setPage}
-            />
+
           </>
         )}
+
+        {/* Footer: always visible — Pagination + Year navigator */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+          <p className="text-sm text-gray-500">
+            {pagination.total > 0 ? <>Mostra <span className="font-medium">{Math.min((page - 1) * 10 + 1, pagination.total)}</span>-<span className="font-medium">{Math.min(page * 10, pagination.total)}</span> di <span className="font-medium">{pagination.total}</span></> : <span>0 ticket</span>}
+          </p>
+
+          {/* Year navigator */}
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setAnno(a => a - 1); setPage(1) }} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 cursor-pointer">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-center">{anno}</span>
+            <button onClick={() => { setAnno(a => a + 1); setPage(1) }} disabled={anno >= new Date().getFullYear()} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Page navigator */}
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => p - 1)} disabled={page <= 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: Math.max(1, pagination.totalPages) }, (_, i) => i + 1).slice(
+              Math.max(0, page - 3), Math.min(pagination.totalPages, page + 2)
+            ).map(p => (
+              <button key={p} onClick={() => setPage(p)} className={`px-2.5 py-1 rounded-lg text-sm font-medium cursor-pointer ${p === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                {p}
+              </button>
+            ))}
+            <button onClick={() => setPage(p => p + 1)} disabled={page >= pagination.totalPages} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
