@@ -462,8 +462,6 @@ router.put('/portal-users/:userId', authenticateClientToken, requireClientAdmin,
   const { nome, email, password, schede_visibili, lingua, attivo } = req.body;
   const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.user.cliente_id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
-  if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi modificare un altro admin' });
-
   if (email && email !== user.email) {
     const existing = db.prepare('SELECT id FROM utenti_cliente WHERE email = ? AND id != ?').get(email, req.params.userId);
     if (existing) return res.status(400).json({ error: 'Email già in uso' });
@@ -497,7 +495,11 @@ router.put('/portal-users/:userId', authenticateClientToken, requireClientAdmin,
 router.delete('/portal-users/:userId', authenticateClientToken, requireClientAdmin, (req, res) => {
   const user = db.prepare('SELECT * FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.user.cliente_id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
-  if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi eliminare un admin' });
+  if (Number(req.params.userId) === req.user.id) return res.status(403).json({ error: 'Non puoi eliminare te stesso' });
+  if (user.ruolo === 'admin') {
+    const adminCount = db.prepare('SELECT COUNT(*) as cnt FROM utenti_cliente WHERE cliente_id = ? AND ruolo = ?').get(req.user.cliente_id, 'admin');
+    if (adminCount.cnt <= 1) return res.status(403).json({ error: 'Deve rimanere almeno un admin' });
+  }
 
   db.prepare('DELETE FROM utenti_cliente WHERE id = ?').run(req.params.userId);
   res.json({ success: true });

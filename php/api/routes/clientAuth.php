@@ -492,7 +492,6 @@ $router->put('/client-auth/portal-users/:userId',
             [$userId, $req->user['cliente_id']]
         );
         if (!$user) Response::error('Utente non trovato', 404);
-        if ($user['ruolo'] === 'admin') Response::error('Non puoi modificare un altro admin', 403);
 
         $nome = $req->body['nome'] ?? null;
         $email = $req->body['email'] ?? null;
@@ -548,7 +547,14 @@ $router->delete('/client-auth/portal-users/:userId',
             [$userId, $req->user['cliente_id']]
         );
         if (!$user) Response::error('Utente non trovato', 404);
-        if ($user['ruolo'] === 'admin') Response::error('Non puoi eliminare un admin', 403);
+        if ((int)$userId === (int)$req->user['id']) Response::error('Non puoi eliminare te stesso', 403);
+        if ($user['ruolo'] === 'admin') {
+            $adminCount = Database::fetchOne(
+                'SELECT COUNT(*) as cnt FROM utenti_cliente WHERE cliente_id = ? AND ruolo = ?',
+                [$req->user['cliente_id'], 'admin']
+            );
+            if ((int)$adminCount['cnt'] <= 1) Response::error('Deve rimanere almeno un admin', 403);
+        }
 
         Database::execute('DELETE FROM utenti_cliente WHERE id = ?', [$userId]);
         Response::success();

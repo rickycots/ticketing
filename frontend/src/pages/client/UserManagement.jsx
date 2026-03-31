@@ -157,17 +157,15 @@ export default function UserManagement() {
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">{t('noUsers')}</div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="text-left text-gray-500 border-b border-gray-200 bg-gray-50">
-                <th className="px-4 py-3 font-medium">{t('name')}</th>
-                <th className="px-4 py-3 font-medium">{t('email')}</th>
-                <th className="px-4 py-3 font-medium">{t('role')}</th>
-                <th className="px-4 py-3 font-medium">{t('sections')}</th>
-                <th className="px-4 py-3 font-medium">{t('language')}</th>
-                <th className="px-4 py-3 font-medium">2F</th>
-                <th className="px-4 py-3 font-medium">{t('active')}</th>
-                <th className="px-4 py-3 font-medium">{t('actions')}</th>
+                <th className="px-3 py-2.5 font-medium w-[18%]">{t('name')}</th>
+                <th className="px-3 py-2.5 font-medium w-[25%]">{t('email')}</th>
+                <th className="px-3 py-2.5 font-medium w-[18%]">{t('sections')}</th>
+                <th className="px-3 py-2.5 font-medium w-[8%] text-center">2FA</th>
+                <th className="px-3 py-2.5 font-medium w-[10%] text-center">{t('active')}</th>
+                <th className="px-3 py-2.5 font-medium w-[10%]">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -176,37 +174,30 @@ export default function UserManagement() {
                 const isAdmin = u.ruolo === 'admin'
                 return (
                   <tr key={u.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                    <td className="px-3 py-2.5 font-medium text-gray-900 truncate">
                       {u.nome}
-                      {isMe && <span className="ml-1.5 text-xs text-blue-500">{t('youLabel')}</span>}
+                      {isMe && <span className="ml-1 text-xs text-blue-500">{t('youLabel')}</span>}
+                      {isAdmin && <span className="ml-1 text-xs text-purple-500">Admin</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
-                        {isAdmin ? 'Admin' : 'User'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 text-gray-600 truncate">{u.email}</td>
+                    <td className="px-3 py-2.5">
                       {isAdmin ? (
                         <span className="text-xs text-gray-400">{t('all')}</span>
                       ) : (
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           {u.schede_visibili.split(',').map(s => (
-                            <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
+                            <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-1.5 py-0.5 text-[11px] font-medium">
                               {s === 'ticket' ? 'Ticket' : s === 'progetti' ? 'Progetti' : 'AI'}
                             </span>
                           ))}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
-                      {u.lingua === 'en' ? '🇬🇧 EN' : u.lingua === 'fr' ? '🇫🇷 FR' : '🇮🇹 IT'}
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`text-xs font-medium ${!!u.two_factor ? 'text-green-600' : 'text-gray-400'}`}>{!!u.two_factor ? 'SI' : 'NO'}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs font-medium">
-                      <span className={!!u.two_factor ? 'text-green-600' : 'text-gray-400'}>{!!u.two_factor ? 'SI' : 'NO'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {!isAdmin && !isMe ? (
+                    <td className="px-3 py-2.5 text-center">
+                      {!isMe ? (
                         <button
                           onClick={() => handleToggleActive(u)}
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${u.attivo ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -217,19 +208,17 @@ export default function UserManagement() {
                         <span className="text-xs text-green-600">{t('active')}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      {!isAdmin && !isMe ? (
-                        <div className="flex gap-1">
-                          <button onClick={() => openForm(u)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
-                            <Pencil size={14} />
-                          </button>
-                          <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                    <td className="px-3 py-2.5">
+                      <div className="flex gap-1">
+                        <button onClick={() => openForm(u)} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                          <Pencil size={14} />
+                        </button>
+                        {!isMe && (
+                          <button onClick={() => handleDelete(u.id)} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
                             <Trash2 size={14} />
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-300">&mdash;</span>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )

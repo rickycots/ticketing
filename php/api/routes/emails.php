@@ -72,13 +72,20 @@ $router->get('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'r
 
 // POST /api/emails
 $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
-    // Tecnico can only send emails on tickets assigned to them
+    // Tecnico: can send on assigned tickets or assigned projects
     if (($req->user['ruolo'] ?? '') === 'tecnico') {
         $tkId = !empty($req->body['ticket_id']) ? (int)$req->body['ticket_id'] : null;
-        if (!$tkId) Response::error('Tecnico può inviare email solo sui ticket assegnati', 403);
-        $tk = Database::fetchOne('SELECT assegnato_a FROM ticket WHERE id = ?', [$tkId]);
-        if (!$tk || $tk['assegnato_a'] != $req->user['id']) {
-            Response::error('Non sei assegnato a questo ticket', 403);
+        $pjId = !empty($req->body['progetto_id']) ? (int)$req->body['progetto_id'] : null;
+        if ($tkId) {
+            $tk = Database::fetchOne('SELECT assegnato_a FROM ticket WHERE id = ?', [$tkId]);
+            if (!$tk || $tk['assegnato_a'] != $req->user['id']) {
+                Response::error('Non sei assegnato a questo ticket', 403);
+            }
+        } elseif ($pjId) {
+            $pt = Database::fetchOne('SELECT id FROM progetto_tecnici WHERE progetto_id = ? AND tecnico_id = ?', [$pjId, $req->user['id']]);
+            if (!$pt) Response::error('Non sei assegnato a questo progetto', 403);
+        } else {
+            Response::error('Tecnico deve specificare un ticket o progetto', 403);
         }
     }
 
@@ -154,8 +161,8 @@ $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
     }
 
     Database::execute(
-        "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id, message_id, allegati) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [$tipo, $mittente, $allDestinatari ?: $destinatario, $oggetto, $corpo, $clienteId, $ticketId, $progettoId, $attivitaId, $isBloccante ? 1 : 0, $threadId, $sentMessageId, json_encode($allegati)]
+        "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id, message_id, allegati, direzione, inviata_da) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inviata', ?)",
+        [$tipo, $mittente, $allDestinatari ?: $destinatario, $oggetto, $corpo, $clienteId, $ticketId, $progettoId, $attivitaId, $isBloccante ? 1 : 0, $threadId, $sentMessageId, json_encode($allegati), $req->user['id']]
     );
     $emailId = Database::lastInsertId();
 

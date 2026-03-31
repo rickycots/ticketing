@@ -44,6 +44,25 @@ function setProjectTecnici(progettoId, tecnicoIds) {
   }
 }
 
+// Helper: get referenti for a project
+function getProjectReferenti(progettoId) {
+  return db.prepare(`
+    SELECT rp.* FROM referenti_progetto rp
+    JOIN progetto_referenti pr ON rp.id = pr.referente_id
+    WHERE pr.progetto_id = ?
+    ORDER BY rp.nome
+  `).all(progettoId);
+}
+
+// Helper: set referenti for a project (replace all)
+function setProjectReferenti(progettoId, referenteIds) {
+  db.prepare('DELETE FROM progetto_referenti WHERE progetto_id = ?').run(progettoId);
+  const insert = db.prepare('INSERT INTO progetto_referenti (progetto_id, referente_id) VALUES (?, ?)');
+  for (const rid of referenteIds) {
+    insert.run(progettoId, rid);
+  }
+}
+
 // Helper: count unread chat messages for a user in a project
 function chatNonLette(progettoId, utenteId) {
   const row = db.prepare(`
@@ -346,7 +365,9 @@ router.get('/:id', authenticateToken, (req, res) => {
   let scheduledAll = [];
   try { scheduledAll = db.prepare('SELECT * FROM attivita_programmate WHERE progetto_id = ? ORDER BY data_pianificata ASC').all(project.id); } catch(e) {}
 
-  res.json({ ...project, avanzamento, attivita, emails, note, chat, tecnici, attivita_programmate: scheduledAll });
+  const referenti = getProjectReferenti(project.id);
+
+  res.json({ ...project, avanzamento, attivita, emails, note, chat, tecnici, referenti, attivita_programmate: scheduledAll });
 });
 
 // POST /api/projects/:id/chat — send chat message

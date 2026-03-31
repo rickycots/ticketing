@@ -131,13 +131,20 @@ router.get('/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // POST /api/emails — create email (admin + tecnico on assigned tickets)
 router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (req, res) => {
-  // Tecnico can only send emails on tickets assigned to them
+  // Tecnico: can send on assigned tickets or on assigned projects
   if (req.user.ruolo === 'tecnico') {
     const ticketId = req.body.ticket_id ? parseInt(req.body.ticket_id) : null;
-    if (!ticketId) return res.status(403).json({ error: 'Tecnico può inviare email solo sui ticket assegnati' });
-    const ticket = db.prepare('SELECT assegnato_a FROM ticket WHERE id = ?').get(ticketId);
-    if (!ticket || ticket.assegnato_a !== req.user.id) {
-      return res.status(403).json({ error: 'Non sei assegnato a questo ticket' });
+    const progettoId = req.body.progetto_id ? parseInt(req.body.progetto_id) : null;
+    if (ticketId) {
+      const ticket = db.prepare('SELECT assegnato_a FROM ticket WHERE id = ?').get(ticketId);
+      if (!ticket || ticket.assegnato_a !== req.user.id) {
+        return res.status(403).json({ error: 'Non sei assegnato a questo ticket' });
+      }
+    } else if (progettoId) {
+      const pt = db.prepare('SELECT id FROM progetto_tecnici WHERE progetto_id = ? AND tecnico_id = ?').get(progettoId, req.user.id);
+      if (!pt) return res.status(403).json({ error: 'Non sei assegnato a questo progetto' });
+    } else {
+      return res.status(403).json({ error: 'Tecnico deve specificare un ticket o progetto' });
     }
   }
   const { tipo, destinatario, oggetto, corpo, is_bloccante, thread_id } = req.body;
@@ -224,8 +231,8 @@ router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (r
   }
 
   const result = db.prepare(`
-    INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id, message_id, allegati)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, ticket_id, progetto_id, attivita_id, is_bloccante, thread_id, message_id, allegati, direzione, inviata_da)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inviata', ?)
   `).run(
     tipo || 'altro',
     mittente,
@@ -239,7 +246,8 @@ router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (r
     is_bloccante ? 1 : 0,
     thread_id || null,
     sentMessageId,
-    JSON.stringify(allegati)
+    JSON.stringify(allegati),
+    req.user.id
   );
 
   // If marked as blocking and associated with a project, update the project

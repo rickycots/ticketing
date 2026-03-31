@@ -54,6 +54,7 @@ export default function ProjectDetail() {
   const [mainTab, setMainTab] = useState('attivita')
   const [actFilter, setActFilter] = useState('attive')
   const [emailFilter, setEmailFilter] = useState('tutte')
+  const [emailDir, setEmailDir] = useState('ricevute')
   const chatEndRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -461,14 +462,24 @@ export default function ProjectDetail() {
                   Email Attività <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${mainTab === 'email_attivita' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{emailsAttivita.length}</span>
                 </button>
               </div>
-              {mainTab === 'attivita' && isAdmin && (
-                <button
-                  onClick={() => setShowNewActivity(!showNewActivity)}
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer mr-4"
-                >
-                  <Plus size={16} /> Aggiungi
-                </button>
-              )}
+              <div className="flex items-center gap-2 mr-4">
+                {mainTab === 'attivita' && isAdmin && (
+                  <button
+                    onClick={() => setShowNewActivity(!showNewActivity)}
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    <Plus size={16} /> Aggiungi
+                  </button>
+                )}
+                {(mainTab === 'email' || mainTab === 'email_attivita') && (
+                  <Link
+                    to={`/admin/send-mail?progetto_id=${project.id}`}
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    <Send size={14} /> Invia Mail
+                  </Link>
+                )}
+              </div>
             </div>
 
             {/* ===== TAB ATTIVITÀ ===== */}
@@ -821,15 +832,33 @@ export default function ProjectDetail() {
             )}
 
             {/* ===== TAB EMAIL PROGETTO ===== */}
-            {mainTab === 'email' && (
+            {mainTab === 'email' && (() => {
+              const ricevute = emailsProgetto.filter(e => e.direzione !== 'inviata')
+              const inviate = emailsProgetto.filter(e => e.direzione === 'inviata')
+              const dirEmails = emailDir === 'inviate' ? inviate : ricevute
+              return (
               <>
+                {/* Direction tabs */}
+                <div className="flex border-b border-gray-100">
+                  {[
+                    { key: 'ricevute', label: 'In arrivo', count: ricevute.length },
+                    { key: 'inviate', label: 'Inviate', count: inviate.length },
+                  ].map(d => (
+                    <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailFilter('tutte') }}
+                      className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
+                        emailDir === d.key ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}>
+                      {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
+                    </button>
+                  ))}
+                </div>
                 {/* Sub-filters */}
                 <div className="flex gap-1 px-4 pt-3 pb-2">
                   {[
-                    { key: 'tutte', label: 'Tutte', count: emailsProgetto.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
-                    { key: 'rilevanti', label: 'Rilevanti', count: emailsProgetto.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
-                    { key: 'di_contesto', label: 'Di contesto', count: emailsProgetto.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
-                    { key: 'bloccanti', label: 'Bloccanti', count: emailsProgetto.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
+                    { key: 'tutte', label: 'Tutte', count: dirEmails.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
+                    { key: 'rilevanti', label: 'Rilevanti', count: dirEmails.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
+                    { key: 'di_contesto', label: 'Di contesto', count: dirEmails.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
+                    { key: 'bloccanti', label: 'Bloccanti', count: dirEmails.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
                   ].map(f => (
                     <button
                       key={f.key}
@@ -843,11 +872,11 @@ export default function ProjectDetail() {
                   ))}
                 </div>
                 {(() => {
-                  const filtered = emailFilter === 'rilevanti' ? emailsProgetto.filter(e => e.rilevanza === 'rilevante')
-                    : emailFilter === 'di_contesto' ? emailsProgetto.filter(e => e.rilevanza === 'di_contesto')
-                    : emailFilter === 'bloccanti' ? emailsProgetto.filter(e => e.is_bloccante)
-                    : emailsProgetto
-                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email associata al progetto</p>
+                  const filtered = emailFilter === 'rilevanti' ? dirEmails.filter(e => e.rilevanza === 'rilevante')
+                    : emailFilter === 'di_contesto' ? dirEmails.filter(e => e.rilevanza === 'di_contesto')
+                    : emailFilter === 'bloccanti' ? dirEmails.filter(e => e.is_bloccante)
+                    : dirEmails
+                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email in questa categoria</p>
                   return (
                     <div className="divide-y divide-gray-100">
                       {filtered.map(e => (
@@ -884,18 +913,37 @@ export default function ProjectDetail() {
                   )
                 })()}
               </>
-            )}
+              )
+            })()}
 
             {/* ===== TAB EMAIL ATTIVITÀ ===== */}
-            {mainTab === 'email_attivita' && (
+            {mainTab === 'email_attivita' && (() => {
+              const ricevuteAtt = emailsAttivita.filter(e => e.direzione !== 'inviata')
+              const inviateAtt = emailsAttivita.filter(e => e.direzione === 'inviata')
+              const dirEmailsAtt = emailDir === 'inviate' ? inviateAtt : ricevuteAtt
+              return (
               <>
+                {/* Direction tabs */}
+                <div className="flex border-b border-gray-100">
+                  {[
+                    { key: 'ricevute', label: 'In arrivo', count: ricevuteAtt.length },
+                    { key: 'inviate', label: 'Inviate', count: inviateAtt.length },
+                  ].map(d => (
+                    <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailFilter('tutte') }}
+                      className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
+                        emailDir === d.key ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}>
+                      {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
+                    </button>
+                  ))}
+                </div>
                 {/* Sub-filters */}
                 <div className="flex gap-1 px-4 pt-3 pb-2">
                   {[
-                    { key: 'tutte', label: 'Tutte', count: emailsAttivita.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
-                    { key: 'rilevanti', label: 'Rilevanti', count: emailsAttivita.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
-                    { key: 'di_contesto', label: 'Di contesto', count: emailsAttivita.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
-                    { key: 'bloccanti', label: 'Bloccanti', count: emailsAttivita.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
+                    { key: 'tutte', label: 'Tutte', count: dirEmailsAtt.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
+                    { key: 'rilevanti', label: 'Rilevanti', count: dirEmailsAtt.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
+                    { key: 'di_contesto', label: 'Di contesto', count: dirEmailsAtt.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
+                    { key: 'bloccanti', label: 'Bloccanti', count: dirEmailsAtt.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
                   ].map(f => (
                     <button
                       key={f.key}
@@ -909,11 +957,11 @@ export default function ProjectDetail() {
                   ))}
                 </div>
                 {(() => {
-                  const filtered = emailFilter === 'rilevanti' ? emailsAttivita.filter(e => e.rilevanza === 'rilevante')
-                    : emailFilter === 'di_contesto' ? emailsAttivita.filter(e => e.rilevanza === 'di_contesto')
-                    : emailFilter === 'bloccanti' ? emailsAttivita.filter(e => e.is_bloccante)
-                    : emailsAttivita
-                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email associata alle attività</p>
+                  const filtered = emailFilter === 'rilevanti' ? dirEmailsAtt.filter(e => e.rilevanza === 'rilevante')
+                    : emailFilter === 'di_contesto' ? dirEmailsAtt.filter(e => e.rilevanza === 'di_contesto')
+                    : emailFilter === 'bloccanti' ? dirEmailsAtt.filter(e => e.is_bloccante)
+                    : dirEmailsAtt
+                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email in questa categoria</p>
                   return (
                     <div className="divide-y divide-gray-100">
                       {filtered.map(e => (
@@ -953,7 +1001,8 @@ export default function ProjectDetail() {
                   )
                 })()}
               </>
-            )}
+              )
+            })()}
           </div>
 
           {/* Internal Notes */}

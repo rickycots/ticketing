@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil } from 'lucide-react'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
 
 const actStatoColors = {
@@ -55,6 +55,7 @@ export default function ActivityDetail() {
   const [noteToKB, setNoteToKB] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [emailTab, setEmailTab] = useState('tutte')
+  const [emailDir, setEmailDir] = useState('ricevute')
   const [showEmails, setShowEmails] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
@@ -292,22 +293,28 @@ export default function ActivityDetail() {
 
           {/* Associated Emails with tabs */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <button onClick={() => setShowEmails(!showEmails)} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between p-4">
+              <button onClick={() => setShowEmails(!showEmails)} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 -ml-2">
                 <Mail size={18} className="text-blue-500" />
                 <h2 className="text-lg font-semibold">Email Associate</h2>
                 <span className="text-xs text-gray-400">({(activity.emails || []).length})</span>
-              </div>
-              {showEmails ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
-            </button>
+                {showEmails ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+              </button>
+              <Link to={`/admin/send-mail?progetto_id=${id}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+                <Send size={14} /> Invia Mail
+              </Link>
+            </div>
             {showEmails && (() => {
               const allEmails = activity.emails || []
               if (allEmails.length === 0) return <div className="p-6 text-center text-sm text-gray-400 border-t border-gray-100">Nessuna email associata</div>
-              const bloccanti = allEmails.filter(e => e.is_bloccante)
-              const rilevanti = allEmails.filter(e => e.rilevanza === 'rilevante')
-              const contesto = allEmails.filter(e => e.rilevanza === 'di_contesto')
+              const ricevute = allEmails.filter(e => e.direzione !== 'inviata')
+              const inviate = allEmails.filter(e => e.direzione === 'inviata')
+              const dirEmails = emailDir === 'inviate' ? inviate : ricevute
+              const bloccanti = dirEmails.filter(e => e.is_bloccante)
+              const rilevanti = dirEmails.filter(e => e.rilevanza === 'rilevante')
+              const contesto = dirEmails.filter(e => e.rilevanza === 'di_contesto')
               const tabs = [
-                { key: 'tutte', label: 'Tutte', count: allEmails.length },
+                { key: 'tutte', label: 'Tutte', count: dirEmails.length },
                 { key: 'bloccanti', label: 'Bloccanti', count: bloccanti.length },
                 { key: 'rilevanti', label: 'Rilevanti', count: rilevanti.length },
                 { key: 'contesto', label: 'Di contesto', count: contesto.length },
@@ -315,10 +322,25 @@ export default function ActivityDetail() {
               const filtered = emailTab === 'bloccanti' ? bloccanti
                 : emailTab === 'rilevanti' ? rilevanti
                 : emailTab === 'contesto' ? contesto
-                : allEmails
+                : dirEmails
               return (
                 <>
-                  <div className="flex border-b border-gray-100 border-t">
+                  <div className="flex border-t border-gray-100">
+                    {[
+                      { key: 'ricevute', label: 'In arrivo', count: ricevute.length },
+                      { key: 'inviate', label: 'Inviate', count: inviate.length },
+                    ].map(d => (
+                      <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailTab('tutte') }}
+                        className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
+                          emailDir === d.key
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}>
+                        {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex border-b border-gray-100">
                     {tabs.map(t => (
                       <button key={t.key} onClick={() => setEmailTab(t.key)}
                         className={`flex-1 px-3 py-2 text-xs font-medium text-center cursor-pointer transition-colors ${

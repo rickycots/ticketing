@@ -62,10 +62,18 @@ function runMigrations() {
     "UPDATE utenti SET abilitato_ai = 0 WHERE ruolo = 'tecnico'",
     "ALTER TABLE ticket ADD COLUMN privato INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE utenti ADD COLUMN gestione_avanzata INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE email ADD COLUMN direzione TEXT NOT NULL DEFAULT 'ricevuta'",
+    "ALTER TABLE email ADD COLUMN inviata_da INTEGER REFERENCES utenti(id)",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }
   }
+
+  // Backfill: mark existing sent emails
+  try {
+    db.exec("UPDATE email SET direzione = 'inviata' WHERE mittente LIKE '%@stmdomotica.it' AND direzione = 'ricevuta' AND destinatario NOT LIKE '%@stmdomotica.it'");
+  } catch (e) { /* ignore */ }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_email_direzione ON email(direzione)');
 
   // Create notifiche table if not exists (for existing DBs before schema update)
   db.exec(`

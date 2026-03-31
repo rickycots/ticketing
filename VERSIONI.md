@@ -1,5 +1,20 @@
 # Storico Versioni
 
+## V4.4.00-0331 — 31 Marzo 2026
+- Nuova pagina "Invia Mail" nel menu sidebar (admin + tecnico)
+- Selezione progetto/attività obbligatoria prima dell'invio, con filtro progressivo
+- Destinatari proposti da referenti progetto, email cliente e utenti portale (checkbox multi-select)
+- Email inviate salvate in DB con campo `direzione` (ricevuta/inviata) e `inviata_da`
+- Tab "In arrivo" / "Inviate" nelle sezioni email di ProjectDetail e ActivityDetail
+- Bottone "Invia Mail" nelle sezioni email di progetto e attività con link pre-compilato
+- Tecnico può inviare email su progetti assegnati (non solo ticket)
+- Fix .htaccess: rimosso blocco generico .json, protetti solo file sensibili specifici
+- Client UserManagement: cestino e modifica visibili per tutti gli utenti (non solo non-admin)
+- Backend: eliminazione utente admin portale permessa se non ultimo admin
+- Fix: aggiunte funzioni getProjectReferenti/setProjectReferenti mancanti in Node.js
+- Referenti inclusi nella risposta GET progetto dettaglio (Node.js)
+- Tabella utenti client: ridotta a 6 colonne con layout table-fixed
+
 ## V4.3.03-0324 — 24 Marzo 2026
 - Fix login primo tentativo: pulizia sessionStorage prima del login (admin + client)
 
