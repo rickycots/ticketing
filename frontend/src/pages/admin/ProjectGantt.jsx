@@ -213,7 +213,7 @@ export default function ProjectGantt() {
         <div className="flex items-start justify-between mb-3">
           <div>
             <h1 className="text-2xl font-bold">{project.nome}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{project.cliente_nome}</p>
+            {project.descrizione && <p className="text-sm text-gray-500 mt-1"><span className="italic text-gray-400">Descrizione:</span> {project.descrizione}</p>}
           </div>
           <div className="flex items-center gap-3">
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>
@@ -241,7 +241,7 @@ export default function ProjectGantt() {
         </div>
 
         {/* Progress */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mt-3">
           <div className="flex-1">
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${project.avanzamento}%` }} />
@@ -251,15 +251,15 @@ export default function ProjectGantt() {
           <span className="text-sm text-gray-400">{project.attivita.length} attività</span>
         </div>
 
+        {/* Dates */}
+        <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
+          {project.data_inizio && <span>Inizio: <b className="text-gray-700">{new Date(project.data_inizio).toLocaleDateString('it-IT')}</b></span>}
+          {project.data_scadenza && <span>Scadenza: <b className="text-gray-700">{new Date(project.data_scadenza).toLocaleDateString('it-IT')}</b></span>}
+          {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
+        </div>
+
         {/* Toggle buttons row */}
         <div className="flex items-center gap-4 mt-3">
-          <button
-            onClick={() => setShowDesc(prev => !prev)}
-            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showDesc ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            <ChevronRight size={14} className={`transition-transform ${showDesc ? 'rotate-90' : ''}`} />
-            <span className="font-medium">Descrizione Breve</span>
-          </button>
           <button
             onClick={toggleAllegati}
             className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
@@ -290,15 +290,7 @@ export default function ProjectGantt() {
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.tecnici || []).length}</span>
             </button>
           )}
-          {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
         </div>
-
-        {/* Expanded description */}
-        {showDesc && (
-          <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-            {project.descrizione || <span className="text-gray-400 italic">Nessuna descrizione disponibile</span>}
-          </div>
-        )}
 
         {showAllegati && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">

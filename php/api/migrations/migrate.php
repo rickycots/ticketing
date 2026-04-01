@@ -133,6 +133,7 @@ try {
         "ALTER TABLE email ADD COLUMN inviata_da INT DEFAULT NULL",
         "UPDATE email SET direzione = 'inviata' WHERE mittente LIKE '%@stmdomotica.it' AND direzione = 'ricevuta' AND destinatario NOT LIKE '%@stmdomotica.it'",
         "ALTER TABLE email ADD INDEX idx_email_direzione (direzione)",
+        "CREATE TABLE IF NOT EXISTS allegati_attivita (id INT AUTO_INCREMENT PRIMARY KEY, attivita_id INT NOT NULL, nome_file VARCHAR(255) NOT NULL, nome_originale VARCHAR(255) NOT NULL, dimensione INT NOT NULL DEFAULT 0, tipo_mime VARCHAR(100), caricato_da INT DEFAULT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (attivita_id) REFERENCES attivita(id) ON DELETE CASCADE, INDEX idx_allegati_attivita (attivita_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ];
     foreach ($alterations as $alt) {
         try {

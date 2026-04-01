@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V4.6.00-0401 — 1 Aprile 2026
+- Allegati attività: nuova tabella allegati_attivita con upload/download/delete
+- Backend Node.js + PHP: endpoint CRUD allegati attività con multer (25MB, 10 file)
+- Frontend ActivityDetail: sezione allegati espandibile con upload drag&drop
+- ProjectGantt header: descrizione inline con "Descrizione:" in corsivo, date progetto, rimossa "Descrizione Breve" toggle
+- ActivityDetail header: uniformato a ProjectGantt (titolo grande, descrizione, barra avanzamento, date, allegati)
+- Migrazione PHP: CREATE TABLE allegati_attivita su MySQL produzione
+
 ## V4.5.00-0331 — 31 Marzo 2026
 - Ticket: colonna Stato rimossa, pallini colorati cliccabili per filtrare per stato con percentuali
 - Ticket: colonna Updated (tempo relativo dall'ultimo aggiornamento)

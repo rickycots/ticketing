@@ -125,6 +125,14 @@ $router->get('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
     $activity['emails'] = $emails;
     $activity['tecnici_nomi'] = $tecniciNomi;
 
+    // Allegati
+    try {
+        $activity['allegati'] = Database::fetchAll(
+            'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_attivita WHERE attivita_id = ? ORDER BY created_at DESC',
+            [$req->params['activityId']]
+        );
+    } catch (\Exception $e) { $activity['allegati'] = []; }
+
     Response::json($activity);
 });
 
@@ -500,5 +508,48 @@ $router->post('/projects/:id/activities/:activityId/scheduled', [Auth::class, 'a
 // DELETE /projects/:id/activities/:activityId/scheduled/:scheduledId
 $router->delete('/projects/:id/activities/:activityId/scheduled/:scheduledId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     Database::execute('DELETE FROM attivita_programmate WHERE id = ? AND attivita_id = ?', [$req->params['scheduledId'], $req->params['activityId']]);
+    Response::success();
+});
+
+// POST /projects/:id/activities/:activityId/allegati — upload attachments
+$router->post('/projects/:id/activities/:activityId/allegati', [Auth::class, 'authenticateToken'], function($req) {
+    $activity = Database::fetchOne('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?', [$req->params['activityId'], $req->params['id']]);
+    if (!$activity) Response::error('Attività non trovata', 404);
+
+    $files = Upload::handleMultiple('files', UPLOAD_DIR . '/activities', [
+        'maxSize' => 25 * 1024 * 1024,
+        'allowedExts' => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'xlsx', 'zip', 'dwg', 'dxf'],
+    ]);
+
+    $results = [];
+    foreach ($files as $f) {
+        Database::execute(
+            'INSERT INTO allegati_attivita (attivita_id, nome_file, nome_originale, dimensione, tipo_mime, caricato_da) VALUES (?, ?, ?, ?, ?, ?)',
+            [$req->params['activityId'], $f['nome_file'], $f['nome_originale'], $f['dimensione'], $f['tipo_mime'] ?? null, $req->user['id']]
+        );
+        $results[] = ['id' => Database::lastInsertId(), 'nome_originale' => $f['nome_originale'], 'dimensione' => $f['dimensione']];
+    }
+    Response::created($results);
+});
+
+// GET /projects/:id/activities/:activityId/allegati/:allegatoId — download
+$router->get('/projects/:id/activities/:activityId/allegati/:allegatoId', [Auth::class, 'authenticateToken'], function($req) {
+    $allegato = Database::fetchOne('SELECT * FROM allegati_attivita WHERE id = ? AND attivita_id = ?', [$req->params['allegatoId'], $req->params['activityId']]);
+    if (!$allegato) Response::error('Allegato non trovato', 404);
+    $filePath = UPLOAD_DIR . '/activities/' . $allegato['nome_file'];
+    if (!file_exists($filePath)) Response::error('File non trovato', 404);
+    header('Content-Disposition: attachment; filename="' . $allegato['nome_originale'] . '"');
+    header('Content-Type: ' . ($allegato['tipo_mime'] ?: 'application/octet-stream'));
+    readfile($filePath);
+    exit;
+});
+
+// DELETE /projects/:id/activities/:activityId/allegati/:allegatoId
+$router->delete('/projects/:id/activities/:activityId/allegati/:allegatoId', [Auth::class, 'authenticateToken'], function($req) {
+    $allegato = Database::fetchOne('SELECT * FROM allegati_attivita WHERE id = ? AND attivita_id = ?', [$req->params['allegatoId'], $req->params['activityId']]);
+    if (!$allegato) Response::error('Allegato non trovato', 404);
+    $filePath = UPLOAD_DIR . '/activities/' . $allegato['nome_file'];
+    if (file_exists($filePath)) @unlink($filePath);
+    Database::execute('DELETE FROM allegati_attivita WHERE id = ?', [$req->params['allegatoId']]);
     Response::success();
 });

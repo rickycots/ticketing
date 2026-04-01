@@ -1,8 +1,30 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../db/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { createFileFilter, validateUploadedFiles } = require('../middleware/uploadSecurity');
 
 const router = express.Router({ mergeParams: true });
+
+// Multer for activity attachments
+const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'activities');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xlsx', '.zip', '.dwg', '.dxf'];
+const uploadAllegati = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, crypto.randomUUID() + ext);
+    },
+  }),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: createFileFilter(allowedExts),
+});
 
 // Middleware: check project visibility for tecnico
 function checkProjectAccess(req, res, next) {
@@ -95,6 +117,11 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     }).filter(Boolean);
   }
 
+  // Allegati
+  const allegati = db.prepare(
+    'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_attivita WHERE attivita_id = ? ORDER BY created_at DESC'
+  ).all(req.params.activityId);
+
   res.json({
     ...activity,
     progetto: project,
@@ -103,7 +130,8 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     dipendenti,
     email_bloccante: email_bloccante || null,
     emails,
-    tecnici_nomi
+    tecnici_nomi,
+    allegati
   });
 });
 
@@ -410,6 +438,41 @@ router.post('/:activityId/scheduled', authenticateToken, checkProjectAccess, (re
 router.delete('/:activityId/scheduled/:scheduledId', authenticateToken, checkProjectAccess, (req, res) => {
   if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin' });
   db.prepare('DELETE FROM attivita_programmate WHERE id = ? AND attivita_id = ?').run(req.params.scheduledId, req.params.activityId);
+  res.json({ success: true });
+});
+
+// POST /api/projects/:id/activities/:activityId/allegati — upload attachments
+router.post('/:activityId/allegati', authenticateToken, checkProjectAccess, uploadAllegati.array('files', 10), validateUploadedFiles, (req, res) => {
+  const activity = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?').get(req.params.activityId, req.params.id);
+  if (!activity) return res.status(404).json({ error: 'Attività non trovata' });
+
+  const insert = db.prepare(
+    'INSERT INTO allegati_attivita (attivita_id, nome_file, nome_originale, dimensione, tipo_mime, caricato_da) VALUES (?, ?, ?, ?, ?, ?)'
+  );
+  const results = [];
+  for (const f of (req.files || [])) {
+    const info = insert.run(req.params.activityId, f.filename, f.originalname, f.size, f.mimetype, req.user.id);
+    results.push({ id: info.lastInsertRowid, nome_originale: f.originalname, dimensione: f.size, tipo_mime: f.mimetype });
+  }
+  res.status(201).json(results);
+});
+
+// GET /api/projects/:id/activities/:activityId/allegati/:allegatoId — download
+router.get('/:activityId/allegati/:allegatoId', authenticateToken, checkProjectAccess, (req, res) => {
+  const allegato = db.prepare('SELECT * FROM allegati_attivita WHERE id = ? AND attivita_id = ?').get(req.params.allegatoId, req.params.activityId);
+  if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
+  const filePath = path.join(uploadDir, allegato.nome_file);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File non trovato' });
+  res.download(filePath, allegato.nome_originale);
+});
+
+// DELETE /api/projects/:id/activities/:activityId/allegati/:allegatoId
+router.delete('/:activityId/allegati/:allegatoId', authenticateToken, checkProjectAccess, (req, res) => {
+  const allegato = db.prepare('SELECT * FROM allegati_attivita WHERE id = ? AND attivita_id = ?').get(req.params.allegatoId, req.params.activityId);
+  if (!allegato) return res.status(404).json({ error: 'Allegato non trovato' });
+  const filePath = path.join(uploadDir, allegato.nome_file);
+  try { fs.unlinkSync(filePath); } catch (e) {}
+  db.prepare('DELETE FROM allegati_attivita WHERE id = ?').run(req.params.allegatoId);
   res.json({ success: true });
 });
 

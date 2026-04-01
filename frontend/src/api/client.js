@@ -156,6 +156,23 @@ export const activities = {
     request(`/projects/${projectId}/activities/${activityId}/scheduled`, { method: 'POST', body: JSON.stringify(data) }),
   deleteScheduled: (projectId, activityId, scheduledId) =>
     request(`/projects/${projectId}/activities/${activityId}/scheduled/${scheduledId}`, { method: 'DELETE' }),
+  uploadAllegati: (projectId, activityId, files) => {
+    const formData = new FormData();
+    for (const f of files) formData.append('files', f);
+    const token = getToken();
+    return fetch(`${API_BASE}/projects/${projectId}/activities/${activityId}/allegati`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async r => {
+      if (r.status === 401) { adminLogout(); throw new Error('Non autenticato'); }
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Errore upload');
+      return d;
+    });
+  },
+  deleteAllegato: (projectId, activityId, allegatoId) =>
+    request(`/projects/${projectId}/activities/${activityId}/allegati/${allegatoId}`, { method: 'DELETE' }),
 };
 
 // Clients

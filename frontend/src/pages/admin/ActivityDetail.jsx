@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send } from 'lucide-react'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send, Paperclip, Upload, Download } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 
@@ -58,6 +58,8 @@ export default function ActivityDetail() {
   const [emailTab, setEmailTab] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
   const [showEmails, setShowEmails] = useState(false)
+  const [showAllegati, setShowAllegati] = useState(false)
+  const [uploadingFiles, setUploadingFiles] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -162,7 +164,26 @@ export default function ActivityDetail() {
 
   const isCompleted = activity.stato === 'completata'
   const noteList = activity.note_attivita || []
+  const allegatiList = activity.allegati || []
   const prog = activity.progetto || {}
+
+  async function handleUploadFiles(fileList) {
+    if (!fileList || fileList.length === 0) return
+    setUploadingFiles(true)
+    try {
+      await activities.uploadAllegati(projectId, activityId, Array.from(fileList))
+      loadActivity()
+    } catch (err) { alert(err.message) }
+    finally { setUploadingFiles(false) }
+  }
+
+  async function handleDeleteAllegato(allegatoId) {
+    if (!confirm('Eliminare questo allegato?')) return
+    try {
+      await activities.deleteAllegato(projectId, activityId, allegatoId)
+      loadActivity()
+    } catch (err) { alert(err.message) }
+  }
 
   return (
     <div>
@@ -173,9 +194,7 @@ export default function ActivityDetail() {
       {/* Page title */}
       <h1 className="text-2xl font-bold mb-1">Dettaglio Attività</h1>
       <p className="text-sm text-gray-400 mb-4">
-        Progetto: <Link to={`/admin/projects/${projectId}/gantt`} className="text-blue-500 hover:underline">{prog.nome || `#${projectId}`}</Link>
-        {' '}&middot; Attività: <span className="text-gray-600 font-medium">{activity.nome}</span>
-        {activity.created_at && <> &middot; Creata il {new Date(activity.created_at).toLocaleDateString('it-IT')}</>}
+        Progetto Padre: <Link to={`/admin/projects/${projectId}/gantt`} className="text-blue-500 hover:underline">{prog.nome || `#${projectId}`}</Link>
       </p>
 
       {/* Client Banner */}
@@ -192,11 +211,12 @@ export default function ActivityDetail() {
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4">
           {/* Activity Header Card */}
-          <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-6 ${statoBorder[activity.stato] || ''}`}>
-            <div className="flex items-start justify-between mb-4">
+          <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-5 ${statoBorder[activity.stato] || ''}`}>
+            <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold flex items-center gap-2">{activity.nome} <HelpTip text="Dettaglio attività con stato avanzamento, email associate, note e attività programmate. Lo slider percentuale indica l'avanzamento. Le email bloccanti mettono l'attività in stato 'bloccata'." /></h2>
+                  <h1 className="text-2xl font-bold">{activity.nome}</h1>
+                  <HelpTip text="Dettaglio attività con stato avanzamento, email associate, note e attività programmate. Lo slider percentuale indica l'avanzamento. Le email bloccanti mettono l'attività in stato 'bloccata'." />
                   {isAdmin && (
                     <>
                     <button onClick={openEditModal} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
@@ -215,7 +235,7 @@ export default function ActivityDetail() {
                   )}
                 </div>
                 {activity.descrizione && (
-                  <p className="text-gray-600 mt-2 whitespace-pre-wrap">{activity.descrizione}</p>
+                  <p className="text-sm text-gray-500 mt-1"><span className="italic text-gray-400">Descrizione:</span> {activity.descrizione}</p>
                 )}
               </div>
               <div className="flex gap-2 shrink-0">
@@ -225,53 +245,81 @@ export default function ActivityDetail() {
             </div>
 
             {/* Progress bar */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500">Avanzamento</span>
-                <span className="text-sm font-bold text-blue-600">{activity.avanzamento}%</span>
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex-1">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${activity.avanzamento}%` }} />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-blue-500 h-2.5 rounded-full transition-all" style={{ width: `${activity.avanzamento}%` }} />
-              </div>
+              <span className="text-sm font-semibold text-gray-700">{activity.avanzamento}%</span>
+              {(activity.tecnici_nomi?.length > 0 || activity.assegnato_nome) && (
+                <span className="text-sm text-gray-400">
+                  {activity.tecnici_nomi?.length > 0
+                    ? activity.tecnici_nomi.map(t => t.nome).join(', ')
+                    : activity.assegnato_nome}
+                </span>
+              )}
             </div>
 
-            {/* Metadata */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100">
-              {(activity.tecnici_nomi?.length > 0 || activity.assegnato_nome) && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Assegnato a</p>
-                  <p className="text-sm font-medium text-gray-700">
-                    {activity.tecnici_nomi?.length > 0
-                      ? activity.tecnici_nomi.map(t => t.nome).join(', ')
-                      : activity.assegnato_nome}
-                  </p>
-                </div>
-              )}
-              {activity.data_inizio && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Data Inizio</p>
-                  <p className="text-sm font-medium text-gray-700">{new Date(activity.data_inizio).toLocaleDateString('it-IT')}</p>
-                </div>
-              )}
-              {activity.data_scadenza && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Fine Prevista</p>
-                  <p className="text-sm font-medium text-gray-700">{new Date(activity.data_scadenza).toLocaleDateString('it-IT')}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Completata</p>
-                <p className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-300'}`}>
-                  {isCompleted && activity.data_completamento
-                    ? new Date(activity.data_completamento).toLocaleDateString('it-IT')
-                    : '—'}
-                </p>
-              </div>
+            {/* Dates */}
+            <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
+              {activity.data_inizio && <span>Inizio: <b className="text-gray-700">{new Date(activity.data_inizio).toLocaleDateString('it-IT')}</b></span>}
+              {activity.data_scadenza && <span>Scadenza: <b className="text-gray-700">{new Date(activity.data_scadenza).toLocaleDateString('it-IT')}</b></span>}
+              {isCompleted && activity.data_completamento && <span>Completata: <b className="text-green-600">{new Date(activity.data_completamento).toLocaleDateString('it-IT')}</b></span>}
             </div>
+
+            {/* Links row: Allegati */}
+            <div className="flex items-center gap-4 mt-3">
+              <button
+                onClick={() => setShowAllegati(prev => !prev)}
+                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+                <span className="font-medium">Allegati Attività</span>
+                {allegatiList.length > 0 && (
+                  <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegatiList.length}</span>
+                )}
+              </button>
+            </div>
+
+            {showAllegati && (
+              <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                <div className="p-3 border-b border-gray-200">
+                  <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
+                    <Upload size={16} className="text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      {uploadingFiles ? 'Caricamento...' : 'Carica allegati (clicca o trascina)'}
+                    </span>
+                    <input type="file" multiple className="hidden" disabled={uploadingFiles} onChange={e => handleUploadFiles(e.target.files)} />
+                  </label>
+                </div>
+                {allegatiList.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {allegatiList.map(a => (
+                      <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Paperclip size={14} className="text-gray-400 shrink-0" />
+                          <span className="truncate text-gray-700">{a.nome_originale}</span>
+                          <span className="text-xs text-gray-400 shrink-0">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <a href={`/api/projects/${projectId}/activities/${activityId}/allegati/${a.id}`} target="_blank" rel="noopener noreferrer"
+                            className="p-1 rounded text-gray-400 hover:text-blue-600 cursor-pointer"><Download size={14} /></a>
+                          <button onClick={() => handleDeleteAllegato(a.id)}
+                            className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-3 text-sm text-gray-400 text-center">Nessun allegato</p>
+                )}
+              </div>
+            )}
 
             {/* Blocking email warning */}
             {activity.email_bloccante && (
-              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2 text-sm text-orange-700">
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2 text-sm text-orange-700">
                 <Lock size={16} /> Bloccata da email: <b>{activity.email_bloccante.oggetto}</b>
               </div>
             )}
