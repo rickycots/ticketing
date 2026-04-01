@@ -113,6 +113,13 @@ $router->get('/dashboard/client/:clienteId', [Auth::class, 'authenticateToken'],
     );
     $tempoMedioTicket = $tempoMedio['avg_days'] ? round((float)$tempoMedio['avg_days'], 1) : null;
 
+    // Average messages per ticket
+    $mediaMsg = Database::fetchOne(
+        "SELECT AVG(cnt) as avg_msg FROM (SELECT t.id, COUNT(e.id) as cnt FROM ticket t LEFT JOIN email e ON e.ticket_id = t.id AND e.tipo = 'ticket' WHERE t.cliente_id = ? GROUP BY t.id) sub",
+        [$clienteId]
+    );
+    $mediaMessaggiTicket = $mediaMsg['avg_msg'] ? round((float)$mediaMsg['avg_msg'], 1) : 0;
+
     // Email stats
     $emailTotali = (int)Database::fetchOne(
         "SELECT COUNT(*) as count FROM email WHERE cliente_id = ? AND tipo != 'ticket'",
@@ -157,7 +164,7 @@ $router->get('/dashboard/client/:clienteId', [Auth::class, 'authenticateToken'],
 
     Response::json([
         'cliente' => $cliente,
-        'ticket' => ['totali' => $ticketTotali, 'aperti' => $ticketAperti, 'chiusi' => $ticketChiusi],
+        'ticket' => ['totali' => $ticketTotali, 'aperti' => $ticketAperti, 'chiusi' => $ticketChiusi, 'media_messaggi' => $mediaMessaggiTicket],
         'tempo_medio_ticket' => $tempoMedioTicket,
         'email' => ['totali' => $emailTotali, 'assegnate' => $emailAssegnate, 'non_assegnate' => $emailNonAssegnate],
         'progetti' => ['totali' => $progettiTotali, 'attivi' => $progettiAttivi, 'chiusi' => $progettiChiusi, 'bloccati' => $progettiBloccati, 'senza_attivita' => $progettiSenzaAttivita],

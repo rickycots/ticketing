@@ -15,7 +15,7 @@ function requireClientAdmin($req) {
 // POST /api/client-auth/login
 $router->post('/client-auth/login', function($req) {
     // Rate limit: 5 attempts per 15 minutes per IP
-    RateLimiter::enforce('client_login', 5, 900, 'Troppi tentativi di login. Riprova tra 15 minuti.');
+    RateLimiter::enforce('client_login', 5, 200, 'Troppi tentativi di login. Riprova tra qualche minuto.');
 
     $email = $req->body['email'] ?? '';
     $password = $req->body['password'] ?? '';

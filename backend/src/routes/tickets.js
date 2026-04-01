@@ -111,11 +111,17 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
     return res.status(403).json({ error: 'Accesso non consentito' });
   }
   const userEmail = req.user.email;
-  res.json(db.prepare(`
+  const tickets = db.prepare(`
     SELECT t.*, c.nome_azienda as cliente_nome FROM ticket t
     LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
     ORDER BY CASE t.stato WHEN 'in_attesa' THEN 0 WHEN 'aperto' THEN 1 WHEN 'in_lavorazione' THEN 2 WHEN 'risolto' THEN 3 ELSE 4 END, t.updated_at DESC
-  `).all(req.params.clienteId, userEmail));
+  `).all(req.params.clienteId, userEmail);
+  // Add participant count per ticket
+  for (const tk of tickets) {
+    const cnt = db.prepare('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?').get(tk.id);
+    tk.partecipanti_count = cnt ? cnt.cnt : 0;
+  }
+  res.json(tickets);
 });
 
 // GET /api/tickets/client/:clienteId/:ticketId — detail (client auth, no notes)

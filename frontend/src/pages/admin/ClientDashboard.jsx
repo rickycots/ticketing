@@ -142,7 +142,7 @@ export default function ClientDashboard() {
                 <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
                 <span>Chiusi: <strong>{ticket.chiusi}</strong></span>
               </div>
-              <div className="text-xs text-gray-400 mt-1">Totali: {ticket.totali}</div>
+              <div className="text-xs text-gray-400 mt-1">Totali: {ticket.totali} &middot; N.MedioMsg: <strong>{ticket.media_messaggi || 0}</strong></div>
             </div>
           </div>
         </StatBox>

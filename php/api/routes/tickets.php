@@ -54,6 +54,10 @@ $router->get('/tickets/client/:clienteId', [Auth::class, 'authenticateClientToke
          ORDER BY FIELD(t.stato, 'in_attesa', 'aperto', 'in_lavorazione', 'risolto', 'chiuso'), t.updated_at DESC",
         [$req->params['clienteId'], $userEmail]
     );
+    foreach ($tickets as &$tk) {
+        $cnt = Database::fetchOne('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?', [$tk['id']]);
+        $tk['partecipanti_count'] = $cnt ? (int)$cnt['cnt'] : 0;
+    }
     Response::json($tickets);
 });
 

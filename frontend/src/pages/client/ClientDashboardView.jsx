@@ -188,33 +188,7 @@ export default function ClientDashboardView() {
         </StatBox>
       </div>
 
-      {/* Recent tickets */}
-      {ticket_recenti.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-            <Ticket size={18} className="text-blue-500" />
-            <h2 className="text-lg font-semibold">{t('dashboardRecentTickets')}</h2>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {ticket_recenti.map(tk => (
-              <div key={tk.id} className="flex items-center justify-between p-4">
-                <div>
-                  <p className="text-sm font-medium">{tk.oggetto}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{tk.codice} - {new Date(tk.created_at).toLocaleDateString(getDateLocale())}</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${prioritaColors[tk.priorita] || ''}`}>
-                    {tk.priorita}
-                  </span>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[tk.stato] || ''}`}>
-                    {tk.stato.replace('_', ' ')}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Recent tickets removed */}
     </div>
   )
 }

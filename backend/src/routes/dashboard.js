@@ -145,6 +145,16 @@ router.get('/client/:clienteId', authenticateToken, (req, res) => {
     FROM ticket WHERE cliente_id = ? AND stato IN ('risolto','chiuso')
   `).get(clienteId);
 
+  // Average messages per ticket
+  const mediaMessaggiTicket = db.prepare(`
+    SELECT AVG(cnt) as avg_msg FROM (
+      SELECT t.id, COUNT(e.id) as cnt FROM ticket t
+      LEFT JOIN email e ON e.ticket_id = t.id AND e.tipo = 'ticket'
+      WHERE t.cliente_id = ?
+      GROUP BY t.id
+    )
+  `).get(clienteId);
+
   // Email stats: emails linked to this client's tickets
   const emailTotali = db.prepare(`
     SELECT COUNT(*) as count FROM email WHERE cliente_id = ? AND tipo != 'ticket'
@@ -190,7 +200,7 @@ router.get('/client/:clienteId', authenticateToken, (req, res) => {
 
   res.json({
     cliente,
-    ticket: { totali: ticketTotali, aperti: ticketAperti, chiusi: ticketChiusi },
+    ticket: { totali: ticketTotali, aperti: ticketAperti, chiusi: ticketChiusi, media_messaggi: mediaMessaggiTicket.avg_msg ? Math.round(mediaMessaggiTicket.avg_msg * 10) / 10 : 0 },
     tempo_medio_ticket: tempoMedioTicket.avg_days ? Math.round(tempoMedioTicket.avg_days * 10) / 10 : null,
     email: { totali: emailTotali, assegnate: emailAssegnate, non_assegnate: emailNonAssegnate },
     progetti: { totali: progettiTotali, attivi: progettiAttivi, chiusi: progettiChiusi, bloccati: progettiBloccati, senza_attivita: progettiSenzaAttivita },

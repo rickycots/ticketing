@@ -1,5 +1,25 @@
 # Storico Versioni
 
+## V4.7.00-0402 — 2 Aprile 2026
+- Portale cliente: redesign completo con sidebar a sinistra (stile admin)
+- Sidebar grigio scuro (bg-gray-700) differenziato dall'admin (bg-gray-900)
+- Logo cliente in alto a sinistra nel sidebar, nome azienda + versione
+- Top bar sticky con campanella comunicazioni (dropdown) e banner nuova versione
+- Rimossa pubblicità STM Domotica (LinkedIn, sito web, certificazioni)
+- Rimosso footer STM e Teams FAB
+- Ticket client: redesign stile admin con pallini stato cliccabili, percentuali, paginazione 10 righe + anno
+- Ticket client: colonne Codice, Oggetto, Priorità, Creato, Updated, Evaso, Altri (partecipanti)
+- Ticket client: filtro "Solo miei", ricerca, sfondo verde/grigio per risolti/chiusi
+- Ticket client: conteggio partecipanti (COUNT DISTINCT mittente) da backend Node.js + PHP
+- Dashboard client: rimossi ticket recenti
+- Utenti client: tabella full width, form creazione/modifica in popup modale
+- Sidebar tema personalizzabile: 5 colori scuri (gray, slate, zinc, indigo, teal) salvati per utente in localStorage
+- Rate limiter login ridotto da 900s a 200s (admin + client, Node.js + PHP)
+- Media messaggi per ticket nella dashboard cliente admin (N.MedioMsg)
+- Email inbox: dropdown cliente per assegnazione manuale nel pannello dettaglio
+- IMAP auto-match: aggiunto referenti_progetto.email
+- Dashboard email gestite: corretta query (escluse email ticket)
+
 ## V4.6.01-0401 — 1 Aprile 2026
 - SendMail: tendina Cliente obbligatoria, filtra progetti e attività a cascata
 - SendMail: tendine una sotto l'altra a metà larghezza, testo corsivo descrittivo di fianco al titolo

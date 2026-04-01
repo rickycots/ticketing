@@ -11,7 +11,7 @@ const router = express.Router();
 // Login attempt tracking (in-memory, per IP)
 const clientLoginAttempts = new Map();
 const MAX_LOGIN_ATTEMPTS = 5;
-const LOGIN_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const LOGIN_LOCKOUT_MS = 200 * 1000; // ~3 minutes
 
 function checkClientLockout(ip) {
   const record = clientLoginAttempts.get(ip);
