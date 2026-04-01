@@ -6,13 +6,16 @@ import HelpTip from '../../components/HelpTip'
 
 export default function SendMail() {
   const [searchParams] = useSearchParams()
+  const [clientList, setClientList] = useState([])
   const [projectList, setProjectList] = useState([])
+  const [allProjects, setAllProjects] = useState([])
   const [projectDetail, setProjectDetail] = useState(null)
   const [activities, setActivities] = useState([])
   const [contacts, setContacts] = useState([])
   const [selectedEmails, setSelectedEmails] = useState([])
   const [form, setForm] = useState({
     oggetto: '', corpo: '',
+    cliente_id: searchParams.get('cliente_id') || '',
     progetto_id: searchParams.get('progetto_id') || '',
     attivita_id: searchParams.get('attivita_id') || '',
     is_bloccante: false,
@@ -21,17 +24,33 @@ export default function SendMail() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
 
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+
   useEffect(() => {
-    projectsApi.list({ limit: 999 }).then(res => setProjectList(res.data || [])).catch(console.error)
+    clients.list({ limit: 999 }).then(res => setClientList(res.data || [])).catch(console.error)
+    projectsApi.list({ limit: 999 }).then(res => setAllProjects(res.data || [])).catch(console.error)
   }, [])
 
-  // When project changes, load project detail (referenti + attività + client info)
+  // Filter projects by selected client
+  useEffect(() => {
+    if (form.cliente_id) {
+      setProjectList(allProjects.filter(p => String(p.cliente_id) === String(form.cliente_id)))
+    } else {
+      setProjectList([])
+    }
+    setForm(f => ({ ...f, progetto_id: '', attivita_id: '' }))
+    setProjectDetail(null)
+    setActivities([])
+    setContacts([])
+    setSelectedEmails([])
+  }, [form.cliente_id, allProjects])
+
+  // When project changes, load detail
   useEffect(() => {
     if (form.progetto_id) {
       projectsApi.get(form.progetto_id).then(p => {
         setProjectDetail(p)
         setActivities(p.attivita || [])
-        // Build contacts list from referenti + client email
         const contactsList = []
         if (p.referenti && p.referenti.length > 0) {
           p.referenti.forEach(r => {
@@ -57,8 +76,7 @@ export default function SendMail() {
     if (!searchParams.get('attivita_id')) setForm(f => ({ ...f, attivita_id: '' }))
   }, [form.progetto_id])
 
-  // Also load utenti_cliente for the client (admin only)
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+  // Load utenti_cliente (admin only)
   useEffect(() => {
     if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin') {
       clients.getUsers(projectDetail.cliente_id).then(users => {
@@ -74,6 +92,14 @@ export default function SendMail() {
     }
   }, [projectDetail?.cliente_id])
 
+  // Auto-select cliente_id from searchParams progetto_id
+  useEffect(() => {
+    if (searchParams.get('progetto_id') && allProjects.length > 0 && !form.cliente_id) {
+      const p = allProjects.find(p => String(p.id) === searchParams.get('progetto_id'))
+      if (p) setForm(f => ({ ...f, cliente_id: String(p.cliente_id), progetto_id: String(p.id) }))
+    }
+  }, [allProjects])
+
   function toggleEmail(email) {
     setSelectedEmails(prev =>
       prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
@@ -85,19 +111,20 @@ export default function SendMail() {
     if (selectedEmails.length === 0) return alert('Seleziona almeno un destinatario')
     setSending(true)
     try {
+      const emailFooter = '\n\n---\nRicevi questo messaggio dal portale GestioneProgetti di STM Domotica Corporation srl. Una attivita/progetto inerente la tua azienda richiede il tuo supporto. Se desideri essere abilitato al portale lato Cliente contatta i tuoi referenti.'
       const data = {
         tipo: 'inviata',
         destinatario: selectedEmails.join(', '),
         oggetto: form.oggetto,
-        corpo: form.corpo,
-        cliente_id: projectDetail?.cliente_id || null,
+        corpo: (form.corpo || '') + emailFooter,
+        cliente_id: form.cliente_id || null,
         progetto_id: form.progetto_id || null,
         attivita_id: form.attivita_id || null,
         is_bloccante: form.is_bloccante ? '1' : '0',
       }
       await emails.create(data, files)
       setSent(true)
-      setForm({ oggetto: '', corpo: '', progetto_id: '', attivita_id: '', is_bloccante: false })
+      setForm({ oggetto: '', corpo: '', cliente_id: '', progetto_id: '', attivita_id: '', is_bloccante: false })
       setFiles([])
       setSelectedEmails([])
       setContacts([])
@@ -115,10 +142,15 @@ export default function SendMail() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-2 mb-6">
-        <Send size={22} className="text-blue-600" />
-        <h1 className="text-xl font-bold">Invia Mail</h1>
-        <HelpTip text="Invia email tramite assistenzatecnica@stmdomotica.it. Seleziona prima il progetto per vedere i destinatari disponibili (referenti progetto, email cliente, utenti portale). L'email verrà associata al progetto e all'attività selezionata." />
+      <div className="flex items-baseline gap-3 mb-6">
+        <h1 className="text-xl font-bold flex items-center gap-2 shrink-0">
+          <Send size={22} className="text-blue-600" />
+          Invia Mail
+          <HelpTip text="Invia email tramite assistenzatecnica@stmdomotica.it. Seleziona cliente, progetto e attività. I destinatari vengono proposti dai referenti progetto, email cliente e utenti portale." />
+        </h1>
+        <p className="text-[11px] text-gray-400 italic leading-snug max-w-[600px]">
+          Qui si inviano mail da assistenzatecnica@stmdomotica.it; è possibile mandare solo mail riferite a progetti o attività.
+        </p>
       </div>
 
       {sent && (
@@ -128,29 +160,36 @@ export default function SendMail() {
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
-        {/* Project + Activity selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Cliente + Project + Activity */}
+        <div className="space-y-3 max-w-[50%]">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Progetto *</label>
-            <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required className={selectCls}>
-              <option value="">— Seleziona progetto —</option>
-              {projectList.map(p => <option key={p.id} value={p.id}>{p.nome} ({p.cliente_nome})</option>)}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+            <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} required className={selectCls}>
+              <option value="">— Seleziona cliente —</option>
+              {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Attività</label>
-            <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} disabled={!form.progetto_id} className={`${selectCls} ${!form.progetto_id ? 'opacity-50' : ''}`}>
-              <option value="">— Nessuna attività —</option>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Progetto *</label>
+            <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required disabled={!form.cliente_id} className={`${selectCls} ${!form.cliente_id ? 'opacity-50' : ''}`}>
+              <option value="">— Seleziona progetto —</option>
+              {projectList.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Attività *</label>
+            <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} required disabled={!form.progetto_id} className={`${selectCls} ${!form.progetto_id ? 'opacity-50' : ''}`}>
+              <option value="">— Seleziona attività —</option>
               {activities.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Recipients from referenti + client contacts */}
+        {/* Recipients */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Destinatari * {selectedEmails.length > 0 && <span className="text-blue-600">({selectedEmails.length})</span>}</label>
           {!form.progetto_id ? (
-            <p className="text-sm text-gray-400 italic">Seleziona un progetto per vedere i destinatari disponibili</p>
+            <p className="text-sm text-gray-400 italic">Seleziona cliente e progetto per vedere i destinatari disponibili</p>
           ) : contacts.length === 0 ? (
             <p className="text-sm text-gray-400 italic">Nessun contatto trovato per questo progetto</p>
           ) : (
@@ -176,13 +215,17 @@ export default function SendMail() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Messaggio</label>
-          <textarea rows={8} value={form.corpo} onChange={e => setForm(f => ({ ...f, corpo: e.target.value }))} className={inputCls} />
+          <textarea rows={8} value={form.corpo} onChange={e => setForm(f => ({ ...f, corpo: e.target.value }))} className={`${inputCls} rounded-b-none border-b-0`} />
+          <div className="border border-t-0 border-gray-300 rounded-b-lg bg-gray-50 px-3 py-2 text-[11px] text-gray-400 leading-relaxed select-none">
+            Ricevi questo messaggio dal portale GestioneProgetti di STM Domotica Corporation srl. Una attivita/progetto inerente la tua azienda richiede il tuo supporto. Se desideri essere abilitato al portale lato Cliente contatta i tuoi referenti.
+          </div>
         </div>
 
         <div className="flex items-center gap-6">
           <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={form.is_bloccante} onChange={e => setForm(f => ({ ...f, is_bloccante: e.target.checked }))} className="rounded border-gray-300" />
             <span className="text-orange-600 font-medium">Email bloccante</span>
+            <HelpTip size={12} text="Se attivata, l'attività associata passerà automaticamente allo stato 'Bloccata'. Questo stato è visibile anche dal cliente nel portale." />
           </label>
 
           <label className="inline-flex items-center gap-2 text-sm text-blue-600 cursor-pointer hover:text-blue-700">
@@ -208,7 +251,7 @@ export default function SendMail() {
             <Send size={16} />
             {sending ? 'Invio in corso...' : 'Invia Email'}
           </button>
-          <span className="text-xs text-gray-400">Da: assistenzatecnica@stmdomotica.it</span>
+          <span className="text-xs text-gray-400">Da: assistenzatecnica@stmdomotica.it (Admin del portale riceverà una copia)</span>
         </div>
       </form>
     </div>

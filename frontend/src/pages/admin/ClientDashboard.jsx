@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Building2, Ticket, FolderKanban, Mail, Clock, PieChart } from 'lucide-react'
+import { ArrowLeft, Building2, Ticket, FolderKanban, Mail, Clock, PieChart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { dashboard } from '../../api/client'
 
 const statoColors = {
@@ -9,6 +9,22 @@ const statoColors = {
   in_attesa: 'bg-orange-100 text-orange-800',
   risolto: 'bg-green-100 text-green-800',
   chiuso: 'bg-gray-100 text-gray-600',
+}
+
+const statoDotColors = {
+  aperto: 'bg-blue-500',
+  in_lavorazione: 'bg-yellow-500',
+  in_attesa: 'bg-orange-500',
+  risolto: 'bg-green-500',
+  chiuso: 'bg-gray-400',
+}
+
+const statoLabels = {
+  aperto: 'Aperto',
+  in_lavorazione: 'In lavorazione',
+  in_attesa: 'In attesa',
+  risolto: 'Risolto',
+  chiuso: 'Chiuso',
 }
 
 const prioritaColors = {
@@ -78,6 +94,9 @@ export default function ClientDashboard() {
   const { id } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [ticketAnno, setTicketAnno] = useState(new Date().getFullYear())
+  const [ticketPage, setTicketPage] = useState(1)
+  const [statoFilter, setStatoFilter] = useState('')
 
   useEffect(() => {
     dashboard.client(id).then(setData).catch(console.error).finally(() => setLoading(false))
@@ -97,20 +116,11 @@ export default function ClientDashboard() {
       <h1 className="text-2xl font-bold mb-4">Dashboard Cliente</h1>
 
       {/* Client Banner */}
-      <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-            <Building2 size={20} className="text-teal-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-teal-900">{cliente.nome_azienda}</h2>
-            <div className="flex gap-4 text-sm text-teal-700">
-              {cliente.email && <span>{cliente.email}</span>}
-              {cliente.telefono && <span>{cliente.telefono}</span>}
-              {cliente.referente && <span>Ref: {cliente.referente}</span>}
-            </div>
-          </div>
+      <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+          <Building2 size={16} className="text-teal-600" />
         </div>
+        <span className="text-sm font-bold text-teal-900">Cliente: {cliente.nome_azienda}</span>
       </div>
 
       {/* Stats Grid */}
@@ -218,32 +228,132 @@ export default function ClientDashboard() {
       </div>
 
       {/* Recent tickets */}
-      {ticket_recenti.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      {(() => {
+        const LIMIT = 10
+        const filtered = ticket_recenti.filter(t => new Date(t.created_at).getFullYear() === ticketAnno)
+        const filteredByStato = statoFilter ? filtered.filter(t => t.stato === statoFilter) : filtered
+        const totalPages = Math.max(1, Math.ceil(filteredByStato.length / LIMIT))
+        const displayTickets = filteredByStato.slice((ticketPage - 1) * LIMIT, ticketPage * LIMIT)
+
+        // Stato counts for this year
+        const counts = {}
+        let totalAll = 0
+        filtered.forEach(t => { counts[t.stato] = (counts[t.stato] || 0) + 1; totalAll++ })
+        const pct = (stato) => totalAll ? Math.round(((counts[stato] || 0) / totalAll) * 100) + '%' : '0%'
+
+        function formatTimeAgo(dateStr) {
+          if (!dateStr) return '\u2014'
+          const d = new Date(dateStr)
+          const now = new Date()
+          const diffMin = Math.floor((now - d) / 60000)
+          if (diffMin < 1) return 'ora'
+          if (diffMin < 60) return `${diffMin}m fa`
+          const diffH = Math.floor(diffMin / 60)
+          if (diffH < 24) return `${diffH}h fa`
+          const diffD = Math.floor(diffH / 24)
+          if (diffD < 7) return `${diffD}g fa`
+          return d.toLocaleDateString('it-IT')
+        }
+
+        return (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center gap-2">
             <Ticket size={18} className="text-blue-500" />
-            <h2 className="text-lg font-semibold">Ticket Recenti</h2>
+            <h2 className="text-lg font-semibold">Ticket</h2>
           </div>
-          <div className="divide-y divide-gray-100">
-            {ticket_recenti.map(t => (
-              <Link key={t.id} to={`/admin/tickets/${t.id}`} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium">{t.oggetto}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{t.codice} - {new Date(t.created_at).toLocaleDateString('it-IT')}</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${prioritaColors[t.priorita] || ''}`}>
-                    {t.priorita}
-                  </span>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[t.stato] || ''}`}>
-                    {t.stato.replace('_', ' ')}
-                  </span>
-                </div>
-              </Link>
+
+          {/* Stato filter pills */}
+          <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-100">
+            <button onClick={() => { setStatoFilter(''); setTicketPage(1) }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${!statoFilter ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              Tutti <span className="font-bold">{totalAll}</span>
+            </button>
+            <span className="text-gray-300">|</span>
+            {Object.entries(statoLabels).map(([key, label]) => (
+              <button key={key} onClick={() => { setStatoFilter(statoFilter === key ? '' : key); setTicketPage(1) }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                  statoFilter === key ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300' : 'text-gray-500 hover:bg-gray-100'
+                }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${statoDotColors[key]}`} />
+                {label} <span className="text-gray-400">({pct(key)})</span>
+              </button>
             ))}
           </div>
+
+          {displayTickets.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">Nessun ticket per il {ticketAnno}</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Codice</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Oggetto</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Priorita</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Assegnato</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Data</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Updated</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Evasione</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {displayTickets.map(t => (
+                  <tr key={t.id} className={`hover:bg-gray-100 transition-colors ${t.stato === 'chiuso' ? 'bg-gray-100/80' : t.stato === 'risolto' ? 'bg-green-100/60' : ''}`}>
+                    <td className="px-4 py-3">
+                      <Link to={`/admin/tickets/${t.id}`} className="text-sm font-mono text-blue-600 hover:underline">{t.codice}</Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statoDotColors[t.stato] || 'bg-gray-400'}`} title={statoLabels[t.stato]} />
+                        <Link to={`/admin/tickets/${t.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">{t.oggetto}</Link>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${prioritaColors[t.priorita]}`}>{t.priorita}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{t.assegnato_nome || '\u2014'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-400">{new Date(t.created_at).toLocaleDateString('it-IT')}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500" title={t.updated_at ? new Date(t.updated_at).toLocaleString('it-IT') : ''}>{formatTimeAgo(t.updated_at)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {t.data_evasione ? (() => {
+                        const ev = new Date(t.data_evasione + 'T00:00:00')
+                        const isClosed = t.stato === 'chiuso'
+                        const created = new Date(t.created_at)
+                        const slaDays = t.sla_reazione === '1g' ? 1 : t.sla_reazione === '3g' ? 3 : null
+                        let color = 'text-gray-400'
+                        if (!isClosed && slaDays) {
+                          const diffDays = (ev.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+                          color = diffDays > slaDays ? 'text-red-600 font-bold' : 'text-green-600'
+                        } else if (!isClosed) { color = 'text-green-600' }
+                        return <span className={color}>{ev.toLocaleDateString('it-IT')}</span>
+                      })() : <span className="text-gray-300">{'\u2014'}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* Footer: Pagination + Year */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              {filtered.length > 0 ? <>Mostra <span className="font-medium">{Math.min((ticketPage - 1) * LIMIT + 1, filtered.length)}</span>-<span className="font-medium">{Math.min(ticketPage * LIMIT, filtered.length)}</span> di <span className="font-medium">{filtered.length}</span></> : <span>0 ticket</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setTicketAnno(a => a - 1); setTicketPage(1) }} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 cursor-pointer"><ChevronLeft size={16} /></button>
+              <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-center">{ticketAnno}</span>
+              <button onClick={() => { setTicketAnno(a => a + 1); setTicketPage(1) }} disabled={ticketAnno >= new Date().getFullYear()} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronRight size={16} /></button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setTicketPage(p => p - 1)} disabled={ticketPage <= 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronLeft size={16} /></button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, ticketPage - 3), Math.min(totalPages, ticketPage + 2)).map(p => (
+                <button key={p} onClick={() => setTicketPage(p)} className={`px-2.5 py-1 rounded-lg text-sm font-medium cursor-pointer ${p === ticketPage ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{p}</button>
+              ))}
+              <button onClick={() => setTicketPage(p => p + 1)} disabled={ticketPage >= totalPages} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronRight size={16} /></button>
+            </div>
+          </div>
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

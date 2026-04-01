@@ -38,6 +38,9 @@ function findClienteByEmail(senderEmail) {
   // Try match on utenti_cliente.email
   const utenteCliente = db.prepare('SELECT cliente_id FROM utenti_cliente WHERE email = ?').get(senderEmail);
   if (utenteCliente) return utenteCliente.cliente_id;
+  // Try match on referenti_progetto.email
+  const referente = db.prepare('SELECT cliente_id FROM referenti_progetto WHERE email = ?').get(senderEmail);
+  if (referente) return referente.cliente_id;
   return null;
 }
 

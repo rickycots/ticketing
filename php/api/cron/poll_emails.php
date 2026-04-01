@@ -52,6 +52,9 @@ function findClienteByEmail(string $email): ?int {
     $utente = Database::fetchOne('SELECT cliente_id FROM utenti_cliente WHERE email = ?', [$email]);
     if ($utente) return (int)$utente['cliente_id'];
 
+    $referente = Database::fetchOne('SELECT cliente_id FROM referenti_progetto WHERE email = ?', [$email]);
+    if ($referente) return (int)$referente['cliente_id'];
+
     return null;
 }
 

@@ -147,19 +147,13 @@ router.get('/client/:clienteId', authenticateToken, (req, res) => {
 
   // Email stats: emails linked to this client's tickets
   const emailTotali = db.prepare(`
-    SELECT COUNT(*) as count FROM email e
-    JOIN ticket t ON e.ticket_id = t.id
-    WHERE t.cliente_id = ?
+    SELECT COUNT(*) as count FROM email WHERE cliente_id = ? AND tipo != 'ticket'
   `).get(clienteId).count;
   const emailAssegnate = db.prepare(`
-    SELECT COUNT(*) as count FROM email e
-    JOIN ticket t ON e.ticket_id = t.id
-    WHERE t.cliente_id = ? AND e.ticket_id IS NOT NULL
+    SELECT COUNT(*) as count FROM email WHERE cliente_id = ? AND tipo != 'ticket' AND (progetto_id IS NOT NULL OR attivita_id IS NOT NULL)
   `).get(clienteId).count;
   const emailNonAssegnate = db.prepare(`
-    SELECT COUNT(*) as count FROM email e
-    LEFT JOIN ticket t ON e.ticket_id = t.id
-    WHERE (t.cliente_id = ? OR e.tipo = 'email_cliente') AND e.ticket_id IS NULL
+    SELECT COUNT(*) as count FROM email WHERE cliente_id = ? AND tipo != 'ticket' AND progetto_id IS NULL AND attivita_id IS NULL
   `).get(clienteId).count;
 
   // Project stats
@@ -186,9 +180,12 @@ router.get('/client/:clienteId', authenticateToken, (req, res) => {
 
   // Recent tickets
   const ticketRecenti = db.prepare(`
-    SELECT id, codice, oggetto, stato, priorita, created_at
-    FROM ticket WHERE cliente_id = ?
-    ORDER BY created_at DESC LIMIT 5
+    SELECT t.*, c.sla_reazione, u.nome as assegnato_nome
+    FROM ticket t
+    LEFT JOIN clienti c ON t.cliente_id = c.id
+    LEFT JOIN utenti u ON t.assegnato_a = u.id
+    WHERE t.cliente_id = ?
+    ORDER BY t.created_at DESC
   `).all(clienteId);
 
   res.json({

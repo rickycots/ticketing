@@ -83,6 +83,7 @@ async function sendAssistenzaEmail(to, subject, html, inReplyTo) {
   const mailOptions = {
     from: `"Assistenza Tecnica STM" <${ASSISTENZA_USER}>`,
     to,
+    bcc: 'riccardo@stmdomotica.it',
     subject,
     html,
     attachments: [{ filename: 'LogoSTM.png', path: LOGO_PATH, cid: 'logo' }],
@@ -93,7 +94,7 @@ async function sendAssistenzaEmail(to, subject, html, inReplyTo) {
   }
 
   if (!mailEnabled) {
-    console.log(`[MAIL SIMULATED] assistenza@ → ${to} — ${subject}`);
+    console.log(`[MAIL SIMULATED] assistenza@ → ${to} (bcc: riccardo@stmdomotica.it) — ${subject}`);
     return { messageId: `<simulated-${Date.now()}@ticketing.local>` };
   }
 

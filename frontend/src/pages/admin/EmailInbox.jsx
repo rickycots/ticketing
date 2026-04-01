@@ -174,6 +174,13 @@ export default function EmailInbox() {
     loadEmails()
   }
 
+  async function handleAssignClient(emailId, clienteId) {
+    await emails.update(emailId, { cliente_id: clienteId || null })
+    const detail = await emails.get(emailId)
+    setSelected(detail)
+    loadEmails()
+  }
+
   async function handleAssignActivity(emailId, attivitaId) {
     await emails.update(emailId, { attivita_id: attivitaId || null })
     const detail = await emails.get(emailId)
@@ -231,7 +238,12 @@ export default function EmailInbox() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">Email <HelpTip text="Inbox centralizzato di tutte le email ricevute e inviate. Filtra per direzione (Ricevute/Inviate), cliente, progetto e attività. Assegna le email ai progetti dal pannello di destra. Le email bloccanti fermano l'avanzamento del progetto." /></h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold flex items-center gap-2 shrink-0">Email <HelpTip text="Inbox centralizzato di tutte le email ricevute e inviate. Filtra per direzione (Ricevute/Inviate), cliente, progetto e attività. Assegna le email ai progetti dal pannello di destra. Le email bloccanti fermano l'avanzamento del progetto." /></h1>
+          <p className="text-[11px] text-gray-400 italic leading-snug max-w-[900px]">
+            Qui si vedono le email arrivate su assistenzatecnica@stmdomotica.it (catturate via IMAP polling) e quelle mandate dal menu "Invia Mail" del portale. NON compaiono le email dei ticket. Le risposte ai ticket passano per ticketing@stmdomotica.it e restano visibili solo nel thread del ticket.
+          </p>
+        </div>
         <button
           onClick={() => { setShowCompose(!showCompose); setSelected(null) }}
           className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
@@ -552,13 +564,25 @@ export default function EmailInbox() {
                       <dt className="text-gray-500">Data</dt>
                       <dd className="font-medium">{new Date(selected.data_ricezione).toLocaleString('it-IT')}</dd>
                     </div>
-                    {selected.cliente_nome && (
-                      <div>
-                        <dt className="text-gray-500">Cliente</dt>
-                        <dd className="font-medium">{selected.cliente_nome}</dd>
-                      </div>
-                    )}
                   </dl>
+                </div>
+
+                {/* Assign to client */}
+                <div className="border-t border-gray-100 pt-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={16} className="text-teal-500" />
+                    <label className="text-sm font-medium text-gray-700">Cliente</label>
+                  </div>
+                  <select
+                    value={selected.cliente_id || ''}
+                    onChange={(e) => handleAssignClient(selected.id, e.target.value ? Number(e.target.value) : null)}
+                    className={selectCls}
+                  >
+                    <option value="">Nessun cliente</option>
+                    {clientList.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome_azienda}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Assign to project + activity */}

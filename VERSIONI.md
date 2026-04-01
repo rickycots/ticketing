@@ -1,5 +1,19 @@
 # Storico Versioni
 
+## V4.6.01-0401 — 1 Aprile 2026
+- SendMail: tendina Cliente obbligatoria, filtra progetti e attività a cascata
+- SendMail: tendine una sotto l'altra a metà larghezza, testo corsivo descrittivo di fianco al titolo
+- SendMail: footer disclaimer incancellabile sotto textarea, aggiunto automaticamente al corpo email
+- SendMail: HelpTip su checkbox Email bloccante
+- Email BCC: riccardo@stmdomotica.it in copia nascosta su tutte le email da assistenzatecnica@ (Node.js + PHP)
+- Email Inbox: dropdown Cliente nel pannello dettaglio per assegnazione manuale
+- Email Inbox: testo descrittivo corsivo di fianco al titolo
+- Dashboard email gestite: corretta query (escluse email ticket, conta solo assistenzatecnica@)
+- Dashboard ticket recenti: query aggiornata con assegnato_nome, sla_reazione, updated_at
+- Banner cliente uniformato anche in ClientDashboard
+- IMAP auto-match: aggiunto match su referenti_progetto.email
+- ClientDashboard: fix useState dentro IIFE, tabella ticket con pallini/filtri/paginazione/anno
+
 ## V4.6.00-0401 — 1 Aprile 2026
 - Allegati attività: nuova tabella allegati_attivita con upload/download/delete
 - Backend Node.js + PHP: endpoint CRUD allegati attività con multer (25MB, 10 file)

@@ -199,14 +199,15 @@ $router->put('/emails/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'r
         $attivitaId = (array_key_exists('progetto_id', $req->body) && $req->body['progetto_id'] != $email['progetto_id']) ? null : $email['attivita_id'];
     }
 
+    $clienteId = array_key_exists('cliente_id', $req->body) ? $req->body['cliente_id'] : $email['cliente_id'];
     $isBloccante = array_key_exists('is_bloccante', $req->body) ? ($req->body['is_bloccante'] ? 1 : 0) : null;
     $letta = array_key_exists('letta', $req->body) ? ($req->body['letta'] ? 1 : 0) : null;
     $tipo = $req->body['tipo'] ?? null;
     $rilevanza = array_key_exists('rilevanza', $req->body) ? ($req->body['rilevanza'] ?: null) : $email['rilevanza'];
 
     Database::execute(
-        "UPDATE email SET progetto_id = ?, attivita_id = ?, is_bloccante = COALESCE(?, is_bloccante), letta = COALESCE(?, letta), tipo = COALESCE(?, tipo), rilevanza = ? WHERE id = ?",
-        [$progettoId, $attivitaId, $isBloccante, $letta, $tipo, $rilevanza, $id]
+        "UPDATE email SET cliente_id = ?, progetto_id = ?, attivita_id = ?, is_bloccante = COALESCE(?, is_bloccante), letta = COALESCE(?, letta), tipo = COALESCE(?, tipo), rilevanza = ? WHERE id = ?",
+        [$clienteId, $progettoId, $attivitaId, $isBloccante, $letta, $tipo, $rilevanza, $id]
     );
 
     // Blocking logic

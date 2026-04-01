@@ -25,7 +25,7 @@ class Mailer {
         return $mail;
     }
 
-    private static function send(string $user, string $pass, string $to, string $subject, string $html, ?string $inReplyTo = null): ?string {
+    private static function send(string $user, string $pass, string $to, string $subject, string $html, ?string $inReplyTo = null, ?string $bcc = null): ?string {
         $mail = self::createTransport($user, $pass);
         if (!$mail) {
             error_log("[MAIL] No credentials for {$user} — logging: To={$to} Subject={$subject}");
@@ -42,6 +42,8 @@ class Mailer {
             $mail->Subject = $subject;
             $mail->Body = $html;
             $mail->AltBody = strip_tags($html);
+
+            if ($bcc) $mail->addBCC($bcc);
 
             if ($inReplyTo) {
                 $mail->addCustomHeader('In-Reply-To', $inReplyTo);
@@ -67,7 +69,7 @@ class Mailer {
     }
 
     public static function sendAssistenza(string $to, string $subject, string $html, ?string $inReplyTo = null): ?string {
-        return self::send(MAIL_ASSISTENZA_USER, MAIL_ASSISTENZA_PASS, $to, $subject, $html, $inReplyTo);
+        return self::send(MAIL_ASSISTENZA_USER, MAIL_ASSISTENZA_PASS, $to, $subject, $html, $inReplyTo, 'riccardo@stmdomotica.it');
     }
 
     public static function sendNoreply(string $to, string $subject, string $html): ?string {
