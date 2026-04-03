@@ -251,6 +251,23 @@ $router->get('/client-auth/dashboard', [Auth::class, 'authenticateClientToken'],
     ]);
 });
 
+// GET /api/client-auth/alerts — blocked activities/projects for this client
+$router->get('/client-auth/alerts', [Auth::class, 'authenticateClientToken'], function($req) {
+    $clienteId = $req->user['cliente_id'];
+    $blockedActivities = Database::fetchAll(
+        "SELECT a.id, a.nome as attivita_nome, p.nome as progetto_nome, p.id as progetto_id FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE p.cliente_id = ? AND a.stato = 'bloccata'",
+        [$clienteId]
+    );
+    $blockedProjects = Database::fetchAll(
+        "SELECT p.id, p.nome FROM progetti p WHERE p.cliente_id = ? AND p.blocco = 'lato_cliente'",
+        [$clienteId]
+    );
+    Response::json([
+        'attivita_bloccate' => $blockedActivities,
+        'progetti_bloccati' => $blockedProjects,
+    ]);
+});
+
 // GET /api/client-auth/me
 $router->get('/client-auth/me', [Auth::class, 'authenticateClientToken'], function($req) {
     // Handle impersonated admin

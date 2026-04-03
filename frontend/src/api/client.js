@@ -211,6 +211,7 @@ export const clients = {
 
 // Emails
 export const emails = {
+  poll: () => request('/emails/poll', { method: 'POST' }).catch(() => {}),
   list: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/emails${qs ? `?${qs}` : ''}`);
@@ -368,6 +369,7 @@ export const clientAuth = {
   dashboard: () => clientRequest('/client-auth/dashboard'),
   impersonate: (clienteId) =>
     request(`/client-auth/impersonate/${clienteId}`, { method: 'POST' }),
+  alerts: () => clientRequest('/client-auth/alerts'),
   comunicazioni: () => clientRequest('/client-auth/comunicazioni'),
   comunicazioniReadAll: () => clientRequest('/client-auth/comunicazioni/read-all', { method: 'PUT' }),
   comunicazioneRead: (id) => clientRequest(`/client-auth/comunicazioni/${id}/read`, { method: 'PUT' }),

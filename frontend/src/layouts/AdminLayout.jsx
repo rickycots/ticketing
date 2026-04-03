@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
 
 const allNavItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
-  { to: '/admin/timeline', icon: BarChart3, label: 'Timeline Progetti' },
+  { to: '/admin/projects', icon: FolderKanban, label: 'Progetti', expandable: true, children: [
+    { to: '/admin/timeline', icon: BarChart3, label: 'Timeline Progetti' },
+  ]},
   { to: '/admin/emails', icon: Mail, label: 'Email', adminOnly: true },
   { to: '/admin/send-mail', icon: Send, label: 'Invia Mail' },
   { to: '/admin/clients', icon: Users, label: 'Clienti', adminOnly: true },
@@ -37,6 +39,16 @@ export default function AdminLayout() {
     return <Navigate to="/admin" replace />
   }
 
+  const [expandedMenus, setExpandedMenus] = useState(() => {
+    // Auto-expand if current path is inside a submenu
+    const expanded = {}
+    allNavItems.filter(i => i.expandable && i.children).forEach(item => {
+      if (location.pathname.startsWith(item.to) || item.children.some(c => location.pathname.startsWith(c.to))) {
+        expanded[item.to] = true
+      }
+    })
+    return expanded
+  })
   const [chatNotifs, setChatNotifs] = useState([])
   const [sidebarCounts, setSidebarCounts] = useState({ tickets_nuovi: 0, email_nuove: 0 })
   const [newVersionAvailable, setNewVersionAvailable] = useState(false)
@@ -166,7 +178,61 @@ export default function AdminLayout() {
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item, idx) => {
             if (item.separator) return <hr key={`sep-${idx}`} className="border-gray-700 my-2" />
-            const { to, icon: Icon, label, end, children } = item
+            const { to, icon: Icon, label, end, expandable, children } = item
+            const isExpanded = !!expandedMenus[to]
+            const isChildActive = children && children.some(c => location.pathname.startsWith(c.to))
+            const isParentActive = location.pathname === to || location.pathname.startsWith(to + '/')
+
+            if (expandable) {
+              return (
+                <div key={to}>
+                  <NavLink
+                    to={to}
+                    end
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        isActive || isChildActive
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }`
+                    }
+                  >
+                    <Icon size={18} />
+                    {label}
+                    {totalUnread > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {totalUnread}
+                      </span>
+                    )}
+                    <ChevronDown
+                      size={14}
+                      className={`ml-auto transition-transform cursor-pointer ${isExpanded ? 'rotate-180' : ''}`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedMenus(prev => ({ ...prev, [to]: !prev[to] })) }}
+                    />
+                  </NavLink>
+                  {isExpanded && children && children.map(child => {
+                    const ChildIcon = child.icon
+                    return (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 pl-9 pr-3 py-1.5 rounded-lg text-xs transition-colors mt-0.5 ${
+                            isActive
+                              ? 'bg-blue-600/80 text-white'
+                              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                          }`
+                        }
+                      >
+                        <ChildIcon size={14} />
+                        {child.label}
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              )
+            }
+
             return (
             <div key={to}>
               <NavLink
@@ -182,11 +248,6 @@ export default function AdminLayout() {
               >
                 <Icon size={18} />
                 {label}
-                {label === 'Timeline Progetti' && totalUnread > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {totalUnread}
-                  </span>
-                )}
                 {label === 'Tickets' && sidebarCounts.tickets_nuovi > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {sidebarCounts.tickets_nuovi}

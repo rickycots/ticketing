@@ -1,5 +1,26 @@
 # Storico Versioni
 
+## V4.8.00-0403 — 3 Aprile 2026
+- Sidebar admin: voce "Progetti" espandibile con sottomenu "Timeline Progetti"
+- ProjectDetail: header unificato stile Gantt (descrizione inline, barra avanzamento, date, link)
+- ProjectDetail: titolo "Dettaglio Progetto" + badge Attive/Completate + link "Vai a visualizzazione Gantt"
+- ProjectGantt: titolo rinominato "Dettaglio Progetto : Gantt Chart"
+- Dashboard admin: 3 box prima riga stessa altezza
+- Dashboard admin: attività programmate esclude quelle scadute (data < oggi)
+- ClientList compatta: righe whitespace-nowrap per altezza uniforme con UserList
+- Delete utente: riassegna tutte le FK (ticket, attività, progetti, note, allegati, notifiche, chat, email) prima di eliminare
+- Ticket client form: HelpTip su "Ticket privato" con spiegazione visibilità colleghi
+- Ticket client lista: colonna rinominata "Partecipanti" con ? prima del titolo
+- Email Inbox: IMAP polling triggerato ad ogni apertura pagina Email
+- Email Inbox: pulsante "Sblocca progetto" (rosso → verde) visibile solo su progetti bloccati da email
+- IMAP: password assistenzatecnica@ aggiornata nel config.enc cifrato
+- Noreply email: ora invia via ticketing@ con nome mittente "Noreply STM Domotica"
+- Logo STM copiato in uploads/ per embedding nelle email
+- Portale cliente: alert rossi "Attività bloccata" / "Progetto bloccato" nella top bar
+- Rate limiter login ridotto a 200 secondi
+- Eliminati 115 FAQ Suprema dal repository locale + 111 da produzione
+- Media messaggi per ticket nella dashboard cliente admin
+
 ## V4.7.00-0402 — 2 Aprile 2026
 - Portale cliente: redesign completo con sidebar a sinistra (stile admin)
 - Sidebar grigio scuro (bg-gray-700) differenziato dall'admin (bg-gray-900)

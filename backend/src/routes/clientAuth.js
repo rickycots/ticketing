@@ -300,6 +300,18 @@ router.get('/dashboard', authenticateClientToken, (req, res) => {
   });
 });
 
+// GET /api/client-auth/alerts — blocked activities/projects for this client
+router.get('/alerts', authenticateClientToken, (req, res) => {
+  const clienteId = req.user.cliente_id;
+  const blockedActivities = db.prepare(
+    "SELECT a.id, a.nome as attivita_nome, p.nome as progetto_nome, p.id as progetto_id FROM attivita a JOIN progetti p ON a.progetto_id = p.id WHERE p.cliente_id = ? AND a.stato = 'bloccata'"
+  ).all(clienteId);
+  const blockedProjects = db.prepare(
+    "SELECT p.id, p.nome FROM progetti p WHERE p.cliente_id = ? AND p.blocco = 'lato_cliente'"
+  ).all(clienteId);
+  res.json({ attivita_bloccate: blockedActivities, progetti_bloccati: blockedProjects });
+});
+
 // GET /api/client-auth/me
 router.get('/me', authenticateClientToken, (req, res) => {
   // Handle impersonated admin users (id: 0)

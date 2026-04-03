@@ -108,9 +108,9 @@ async function sendAssistenzaEmail(to, subject, html, inReplyTo) {
  * @returns {{ messageId: string }}
  */
 async function sendNoreplyEmail(to, subject, html) {
-  const fromAddr = NOREPLY_USER || 'noreply@stmdomotica.it';
+  const fromAddr = TICKETING_USER || 'ticketing@stmdomotica.it';
   const mailOptions = {
-    from: `"STM Domotica" <${fromAddr}>`,
+    from: `"Noreply STM Domotica" <${fromAddr}>`,
     to,
     subject,
     html,
@@ -121,10 +121,10 @@ async function sendNoreplyEmail(to, subject, html) {
     }],
   };
 
-  const transporter = noreplyTransporter || ticketingTransporter;
+  const transporter = ticketingTransporter;
 
   if (!mailEnabled || !transporter) {
-    console.log(`[MAIL SIMULATED] noreply@ → ${to} — ${subject}`);
+    console.log(`[MAIL SIMULATED] noreply(ticketing@) → ${to} — ${subject}`);
     return { messageId: `<simulated-${Date.now()}@ticketing.local>` };
   }
 

@@ -79,6 +79,20 @@ $router->delete('/users/:id', [Auth::class, 'authenticateToken'], [Auth::class, 
     if (!$user) Response::error('Utente non trovato', 404);
     if ($user['ruolo'] === 'admin') Response::error('Non puoi eliminare un admin', 403);
 
+    // Unassign all references before deleting
+    Database::execute('UPDATE ticket SET assegnato_a = NULL WHERE assegnato_a = ?', [$id]);
+    Database::execute('UPDATE attivita SET assegnato_a = NULL WHERE assegnato_a = ?', [$id]);
+    Database::execute('DELETE FROM progetto_tecnici WHERE utente_id = ?', [$id]);
+    Database::execute('UPDATE note_interne SET utente_id = NULL WHERE utente_id = ?', [$id]);
+    Database::execute('UPDATE note_attivita SET utente_id = NULL WHERE utente_id = ?', [$id]);
+    Database::execute('UPDATE allegati_progetto SET caricato_da = NULL WHERE caricato_da = ?', [$id]);
+    Database::execute('UPDATE allegati_attivita SET caricato_da = NULL WHERE caricato_da = ?', [$id]);
+    Database::execute('DELETE FROM notifiche WHERE utente_id = ?', [$id]);
+    Database::execute('UPDATE email SET inviata_da = NULL WHERE inviata_da = ?', [$id]);
+    try { Database::execute('DELETE FROM chat_lettura WHERE utente_id = ?', [$id]); } catch (\Exception $e) {}
+    try { Database::execute('UPDATE messaggi_progetto SET utente_id = NULL WHERE utente_id = ?', [$id]); } catch (\Exception $e) {}
+    try { Database::execute('UPDATE attivita_programmate SET creato_da = NULL WHERE creato_da = ?', [$id]); } catch (\Exception $e) {}
+
     Database::execute('DELETE FROM utenti WHERE id = ?', [$id]);
     Response::success();
 });

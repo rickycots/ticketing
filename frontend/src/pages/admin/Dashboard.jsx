@@ -7,12 +7,12 @@ import HelpTip from '../../components/HelpTip'
 
 function StatCard({ icon: Icon, label, value, sub, color, to }) {
   const content = (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow h-full">
+      <div className="flex items-center justify-between h-full">
         <div>
           <p className="text-sm text-gray-500">{label}</p>
           <p className="text-3xl font-bold mt-1">{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+          {sub ? <p className="text-xs text-gray-400 mt-1">{sub}</p> : <p className="text-xs text-gray-400 mt-1">&nbsp;</p>}
         </div>
         <div className={`p-3 rounded-xl ${color}`}>
           <Icon size={24} className="text-white" />

@@ -149,7 +149,7 @@ export default function ClientTicketList() {
                 <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">{t('created')}</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">{t('updated')}</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Evaso</th>
-                <th className="text-center text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1">Altri <HelpTip size={12} text="Numero di partecipanti al ticket. Chiunque risponda al ticket (via portale o email) diventa un partecipante e riceverà le notifiche successive." /></span></th>
+                <th className="text-center text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1"><HelpTip size={12} text="Numero di partecipanti al ticket. Chiunque risponda al ticket (via portale o email) diventa un partecipante e riceverà le notifiche successive." /> Partecipanti</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

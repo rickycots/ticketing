@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { CheckCircle, Paperclip, X } from 'lucide-react'
 import { clientTickets } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 import { t } from '../../i18n/clientTranslations'
 
 export default function TicketForm() {
@@ -193,7 +194,7 @@ export default function TicketForm() {
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.privato} onChange={e => setForm(f => ({ ...f, privato: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
             <span className="text-sm text-gray-700">{t('privateTicket') || 'Ticket privato'}</span>
-            <span className="text-xs text-gray-400">({t('privateTicketDesc') || 'visibile solo a te'})</span>
+            <HelpTip size={13} text="Se spunti questa casella, il ticket sarà visibile solo a te e all'assistenza tecnica. Se non la spunti, tutti i colleghi della tua azienda potranno vedere questo ticket nella lista e volendo parteciparvi." />
           </label>
 
           <div className="pt-2">

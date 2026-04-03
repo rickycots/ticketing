@@ -195,11 +195,11 @@ export default function ClientList() {
             <tbody className="divide-y divide-gray-100">
               {clientList.map(c => (
                 <tr key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                  <td className="px-4 py-2.5 font-medium text-gray-900">{c.nome_azienda}</td>
-                  <td className="px-4 py-2.5 text-gray-500 hidden sm:table-cell">{c.referente || '—'}</td>
-                  <td className="px-4 py-2.5 text-gray-500">{c.email}</td>
-                  <td className="px-4 py-2.5 text-gray-400 hidden md:table-cell">{[c.citta, c.provincia].filter(Boolean).join(' (') + (c.provincia ? ')' : '') || '—'}</td>
-                  <td className="px-4 py-2.5 hidden md:table-cell">
+                  <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{c.nome_azienda}</td>
+                  <td className="px-4 py-2.5 text-gray-500 hidden sm:table-cell whitespace-nowrap">{c.referente || '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{c.email}</td>
+                  <td className="px-4 py-2.5 text-gray-400 hidden md:table-cell whitespace-nowrap">{[c.citta, c.provincia].filter(Boolean).join(' (') + (c.provincia ? ')' : '') || '—'}</td>
+                  <td className="px-4 py-2.5 hidden md:table-cell whitespace-nowrap">
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.sla_reazione === '1g' ? 'bg-red-100 text-red-700' : c.sla_reazione === '3g' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
                       {slaLabel(c.sla_reazione)}
                     </span>

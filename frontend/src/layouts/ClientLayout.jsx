@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, Sparkles, BarChart3, ShieldAlert, Megaphone, ChevronDown, Check, CircleCheck, X } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, Sparkles, BarChart3, ShieldAlert, Megaphone, ChevronDown, Check, CircleCheck, X, AlertTriangle } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
 import { APP_VERSION } from '../version'
@@ -14,6 +14,7 @@ export default function ClientLayout() {
   const [showComms, setShowComms] = useState(false)
   const [commsDismissed, setCommsDismissed] = useState(false)
   const [newVersionAvailable, setNewVersionAvailable] = useState(false)
+  const [alerts, setAlerts] = useState({ attivita_bloccate: [], progetti_bloccati: [] })
 
   const sidebarThemes = [
     { id: 'gray', bg: 'bg-gray-700', border: 'border-gray-600', hover: 'hover:bg-gray-600', active: 'bg-blue-600', swatch: '#374151' },
@@ -41,7 +42,10 @@ export default function ClientLayout() {
   }, [])
 
   useEffect(() => {
-    if (clientUser) clientAuth.comunicazioni().then(setComunicazioni).catch(() => {})
+    if (clientUser) {
+      clientAuth.comunicazioni().then(setComunicazioni).catch(() => {})
+      clientAuth.alerts().then(setAlerts).catch(() => {})
+    }
   }, [])
 
   useEffect(() => {
@@ -204,6 +208,20 @@ export default function ClientLayout() {
                 <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-sm">
                   <span className="font-medium">Nuova versione disponibile</span>
                   <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-xs font-bold cursor-pointer hover:bg-blue-700">Aggiorna</button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {alerts.attivita_bloccate.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold animate-pulse">
+                  <AlertTriangle size={14} />
+                  Attività bloccata ({alerts.attivita_bloccate.length})
+                </div>
+              )}
+              {alerts.progetti_bloccati.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold animate-pulse">
+                  <AlertTriangle size={14} />
+                  Progetto bloccato ({alerts.progetti_bloccati.length})
                 </div>
               )}
             </div>

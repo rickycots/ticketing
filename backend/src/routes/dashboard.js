@@ -80,7 +80,7 @@ router.get('/', authenticateToken, (req, res) => {
 
   // All scheduled activities
   let attivitaProgrammate = [];
-  try { attivitaProgrammate = db.prepare('SELECT ap.*, a.nome as attivita_nome, p.nome as progetto_nome FROM attivita_programmate ap LEFT JOIN attivita a ON ap.attivita_id = a.id LEFT JOIN progetti p ON ap.progetto_id = p.id ORDER BY ap.data_pianificata ASC').all(); } catch(e) {}
+  try { attivitaProgrammate = db.prepare("SELECT ap.*, a.nome as attivita_nome, p.nome as progetto_nome FROM attivita_programmate ap LEFT JOIN attivita a ON ap.attivita_id = a.id LEFT JOIN progetti p ON ap.progetto_id = p.id WHERE ap.data_pianificata >= date('now') ORDER BY ap.data_pianificata ASC").all(); } catch(e) {}
 
   res.json({
     ticket_aperti: ticketAperti.count,

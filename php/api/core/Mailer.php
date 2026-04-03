@@ -25,8 +25,9 @@ class Mailer {
         return $mail;
     }
 
-    private static function send(string $user, string $pass, string $to, string $subject, string $html, ?string $inReplyTo = null, ?string $bcc = null): ?string {
+    private static function send(string $user, string $pass, string $to, string $subject, string $html, ?string $inReplyTo = null, ?string $bcc = null, ?string $fromName = null): ?string {
         $mail = self::createTransport($user, $pass);
+        if ($mail && $fromName) $mail->setFrom($user, $fromName);
         if (!$mail) {
             error_log("[MAIL] No credentials for {$user} — logging: To={$to} Subject={$subject}");
             return null;
@@ -73,7 +74,7 @@ class Mailer {
     }
 
     public static function sendNoreply(string $to, string $subject, string $html): ?string {
-        return self::send(MAIL_NOREPLY_USER, MAIL_NOREPLY_PASS, $to, $subject, $html);
+        return self::send(MAIL_TICKETING_USER, MAIL_TICKETING_PASS, $to, $subject, $html, null, null, 'Noreply STM Domotica');
     }
 
     /**

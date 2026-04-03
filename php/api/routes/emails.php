@@ -3,6 +3,16 @@
  * Emails routes — CRUD emails (admin only)
  */
 
+// POST /api/emails/poll — trigger IMAP polling (admin only, fire-and-forget)
+$router->post('/emails/poll', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    try {
+        require_once __DIR__ . '/../cron/poll_emails.php';
+    } catch (\Throwable $e) {
+        // Ignore errors — polling is best-effort
+    }
+    Response::json(['polled' => true]);
+});
+
 // GET /api/emails
 $router->get('/emails', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $page = (int)($req->query['page'] ?? 1) ?: 1;

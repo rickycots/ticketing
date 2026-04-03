@@ -27,6 +27,15 @@ const emailUpload = multer({
   fileFilter: createFileFilter(allowedExts),
 }).array('allegati', 5);
 
+// POST /api/emails/poll — trigger IMAP polling (admin only)
+router.post('/poll', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { pollEmails } = require('../services/imapPoller');
+    if (typeof pollEmails === 'function') await pollEmails();
+  } catch (e) { console.error('[POLL] Error:', e.message); }
+  res.json({ polled: true });
+});
+
 // GET /api/emails — list emails with filters (admin only)
 router.get('/', authenticateToken, requireAdmin, (req, res) => {
   const { tipo, letta, cliente_id, progetto_id, attivita_id, rilevanza, quick_filter, direzione } = req.query;

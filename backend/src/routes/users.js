@@ -61,6 +61,21 @@ router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
   if (user.ruolo === 'admin') return res.status(403).json({ error: 'Non puoi eliminare un admin' });
 
+  // Unassign all references before deleting
+  const uid = req.params.id;
+  db.prepare('UPDATE ticket SET assegnato_a = NULL WHERE assegnato_a = ?').run(uid);
+  db.prepare('UPDATE attivita SET assegnato_a = NULL WHERE assegnato_a = ?').run(uid);
+  db.prepare('DELETE FROM progetto_tecnici WHERE utente_id = ?').run(uid);
+  db.prepare('UPDATE note_interne SET utente_id = NULL WHERE utente_id = ?').run(uid);
+  db.prepare('UPDATE note_attivita SET utente_id = NULL WHERE utente_id = ?').run(uid);
+  db.prepare('UPDATE allegati_progetto SET caricato_da = NULL WHERE caricato_da = ?').run(uid);
+  db.prepare('UPDATE allegati_attivita SET caricato_da = NULL WHERE caricato_da = ?').run(uid);
+  db.prepare('DELETE FROM notifiche WHERE utente_id = ?').run(uid);
+  db.prepare('UPDATE email SET inviata_da = NULL WHERE inviata_da = ?').run(uid);
+  db.prepare('DELETE FROM chat_lettura WHERE utente_id = ?').run(uid);
+  db.prepare('UPDATE messaggi_progetto SET utente_id = NULL WHERE utente_id = ?').run(uid);
+  try { db.prepare('UPDATE attivita_programmate SET creato_da = NULL WHERE creato_da = ?').run(uid); } catch(e) {}
+
   db.prepare('DELETE FROM utenti WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

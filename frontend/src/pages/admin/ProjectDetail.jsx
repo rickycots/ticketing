@@ -219,14 +219,19 @@ export default function ProjectDetail() {
         <Link to="/admin/projects" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft size={16} /> Torna ai progetti
         </Link>
-        <div className="flex gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-100 text-orange-800 px-3 py-1.5 text-sm font-semibold">
-            Attività aperte <span className="bg-orange-200 rounded-md px-1.5 py-0.5 text-xs">{attAperte}</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-100 text-green-800 px-3 py-1.5 text-sm font-semibold">
-            Attività completate <span className="bg-green-200 rounded-md px-1.5 py-0.5 text-xs">{attCompletate}</span>
-          </span>
-        </div>
+      </div>
+
+      <div className="flex items-center gap-4 mb-5">
+        <h1 className="text-2xl font-bold">Dettaglio Progetto</h1>
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-100 text-orange-800 px-3 py-1.5 text-sm font-semibold">
+          Attive <span className="bg-orange-200 rounded-md px-1.5 py-0.5 text-xs">{attAperte}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-100 text-green-800 px-3 py-1.5 text-sm font-semibold">
+          Completate <span className="bg-green-200 rounded-md px-1.5 py-0.5 text-xs">{attCompletate}</span>
+        </span>
+        <Link to={`/admin/projects/${id}/gantt`} className="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-2">
+          Vai a visualizzazione Gantt →
+        </Link>
       </div>
 
       {/* Client Banner */}
@@ -241,12 +246,13 @@ export default function ProjectDetail() {
         {/* Main */}
         <div className="lg:col-span-2 space-y-4">
           {/* Header */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">{project.nome} <HelpTip text="Dettaglio progetto con attività, email associate, note interne e chat team. Le tab Email mostrano le email ricevute e inviate, filtrabili per rilevanza. Usa il pulsante 'Invia Mail' per scrivere ai referenti del progetto." /></h1>
+                <h1 className="text-2xl font-bold">{project.nome}</h1>
+                {project.descrizione && <p className="text-sm text-gray-500 mt-1"><span className="italic text-gray-400">Descrizione:</span> {project.descrizione}</p>}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>
                   <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
                   {statusCfg.label}
@@ -264,38 +270,30 @@ export default function ProjectDetail() {
             </div>
 
             {/* Progress */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-500">Avanzamento</span>
-                <span className="font-semibold">{project.avanzamento}%</span>
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex-1">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${project.avanzamento}%` }} />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${project.avanzamento}%` }} />
-              </div>
+              <span className="text-sm font-semibold text-gray-700">{project.avanzamento}%</span>
+              <span className="text-sm text-gray-400">{project.attivita.length} attività</span>
             </div>
 
-            <div className="flex gap-4 text-sm text-gray-500 flex-wrap">
-              {project.data_scadenza && <span>Fine prevista: {new Date(project.data_scadenza).toLocaleDateString('it-IT')}</span>}
-              <span>{project.attivita.length} attività</span>
-              <span className="font-bold text-gray-700">Ultimo aggiornamento: {new Date(project.updated_at).toLocaleString('it-IT')}</span>
+            {/* Dates */}
+            <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
+              {project.data_inizio && <span>Inizio: <b className="text-gray-700">{new Date(project.data_inizio).toLocaleDateString('it-IT')}</b></span>}
+              {project.data_scadenza && <span>Scadenza: <b className="text-gray-700">{new Date(project.data_scadenza).toLocaleDateString('it-IT')}</b></span>}
+              {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
             </div>
 
             {/* Toggle buttons row */}
-            <div className="flex items-center gap-4 mt-4 border-t border-gray-100 pt-3">
-              {project.descrizione && (
-                <button
-                  onClick={() => setEditDescrizione(editDescrizione ? '' : 'show')}
-                  className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${editDescrizione ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  <ChevronRight size={14} className={`transition-transform ${editDescrizione ? 'rotate-90' : ''}`} />
-                  <span className="font-medium">Descrizione Breve</span>
-                </button>
-              )}
+            <div className="flex items-center gap-4 mt-3">
               <button
                 onClick={toggleAllegati}
                 className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <Paperclip size={15} className={showAllegati ? 'text-blue-500' : ''} />
+                <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
                 <span className="font-medium">Allegati Progetto</span>
                 {allegati.length > 0 && (
                   <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
@@ -310,15 +308,7 @@ export default function ProjectDetail() {
                 <span className="font-medium">Referenti</span>
                 <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
               </button>
-              {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
             </div>
-
-            {/* Expanded description */}
-            {editDescrizione && project.descrizione && (
-              <div className="mt-2 pl-5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {project.descrizione}
-              </div>
-            )}
 
               {showAllegati && (
                 <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">

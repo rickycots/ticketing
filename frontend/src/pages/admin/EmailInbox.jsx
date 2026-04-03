@@ -21,6 +21,7 @@ export default function EmailInbox() {
 
   const [emailList, setEmailList] = useState([])
   const [selected, setSelected] = useState(null)
+  const [projectUnlocked, setProjectUnlocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [quickFilter, setQuickFilter] = useState('tutte')
   const [filterCounts, setFilterCounts] = useState({ tutte: 0, da_leggere: 0, non_assegnate: 0, bloccanti: 0, rilevanti: 0 })
@@ -78,6 +79,8 @@ export default function EmailInbox() {
     }).catch(console.error).finally(() => setLoading(false))
   }
 
+  // Trigger IMAP poll on page load, then load emails
+  useEffect(() => { emails.poll().then(() => loadEmails()) }, [])
   useEffect(() => { loadEmails() }, [filterTipo, filterCliente, filterProgetto, filterAttivita, quickFilter, page])
 
   // Filtered project list based on selected client
@@ -131,6 +134,7 @@ export default function EmailInbox() {
     const wasUnread = !email.letta
     const detail = await emails.get(email.id)
     setSelected(detail)
+    setProjectUnlocked(false)
     setShowReply(false)
     setReplyText('')
     loadActivities(detail.progetto_id)
@@ -590,6 +594,33 @@ export default function EmailInbox() {
                   <div className="flex items-center gap-2 mb-2">
                     <FolderKanban size={16} className="text-purple-500" />
                     <label className="text-sm font-medium text-gray-700">Progetto associato</label>
+                    {selected.progetto_id && (() => {
+                      const proj = projectList.find(p => p.id === selected.progetto_id)
+                      const isBlocked = proj && proj.blocco === 'lato_cliente'
+                      if (!isBlocked && !projectUnlocked) return null
+                      return projectUnlocked ? (
+                        <span className="ml-auto inline-flex items-center gap-1 bg-green-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium">
+                          Progetto sbloccato
+                        </span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              if (proj.email_bloccante_id) {
+                                await emails.update(proj.email_bloccante_id, { is_bloccante: false })
+                              }
+                              await projects.update(selected.progetto_id, { blocco: 'nessuno', email_bloccante_id: null })
+                              setProjectUnlocked(true)
+                              projects.list({ limit: 999 }).then(res => setProjectList(res.data || []))
+                              loadEmails()
+                            } catch (err) { alert(err.message) }
+                          }}
+                          className="ml-auto inline-flex items-center gap-1 bg-red-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-red-700 cursor-pointer"
+                        >
+                          Sblocca progetto
+                        </button>
+                      )
+                    })()}
                   </div>
                   <select
                     value={selected.progetto_id || ''}
