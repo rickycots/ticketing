@@ -57,6 +57,10 @@ $router->get('/tickets/client/:clienteId', [Auth::class, 'authenticateClientToke
     foreach ($tickets as &$tk) {
         $cnt = Database::fetchOne('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?', [$tk['id']]);
         $tk['partecipanti_count'] = $cnt ? (int)$cnt['cnt'] : 0;
+        $msgCnt = Database::fetchOne('SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ?', [$tk['id']]);
+        $tk['messaggi_count'] = $msgCnt ? (int)$msgCnt['cnt'] : 0;
+        $unread = Database::fetchOne("SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ? AND letta = 0 AND direzione = 'inviata'", [$tk['id']]);
+        $tk['has_unread'] = $unread && (int)$unread['cnt'] > 0;
     }
     Response::json($tickets);
 });
@@ -124,7 +128,8 @@ $router->post('/tickets/client/:clienteId/:ticketId/reply', [Auth::class, 'authe
     if ($ticket['stato'] === 'in_attesa') {
         Database::execute("UPDATE ticket SET stato = 'in_lavorazione', updated_at = NOW() WHERE id = ?", [$ticket['id']]);
     } elseif (in_array($ticket['stato'], ['risolto', 'chiuso'])) {
-        Database::execute("UPDATE ticket SET stato = 'aperto', updated_at = NOW() WHERE id = ?", [$ticket['id']]);
+        // Reopen: clear data_evasione (it's the resolution date, not a target)
+        Database::execute("UPDATE ticket SET stato = 'aperto', data_evasione = NULL, updated_at = NOW() WHERE id = ?", [$ticket['id']]);
     }
 
     // Notification
@@ -438,6 +443,11 @@ $router->put('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) 
     // Set data_evasione when resolved (if not already set)
     if ($stato === 'risolto' && empty($ticket['data_evasione'])) {
         Database::execute('UPDATE ticket SET data_evasione = CURDATE() WHERE id = ?', [$id]);
+    }
+
+    // Clear data_evasione when reopened
+    if ($stato === 'aperto' && in_array($ticket['stato'], ['risolto', 'chiuso'])) {
+        Database::execute('UPDATE ticket SET data_evasione = NULL WHERE id = ?', [$id]);
     }
 
     // Notification: assignment changed

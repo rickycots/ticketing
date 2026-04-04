@@ -22,6 +22,8 @@ export default function ClientLayout() {
     { id: 'zinc', bg: 'bg-zinc-800', border: 'border-zinc-700', hover: 'hover:bg-zinc-700', active: 'bg-emerald-600', swatch: '#27272a' },
     { id: 'indigo', bg: 'bg-indigo-900', border: 'border-indigo-800', hover: 'hover:bg-indigo-800', active: 'bg-indigo-500', swatch: '#312e81' },
     { id: 'teal', bg: 'bg-teal-900', border: 'border-teal-800', hover: 'hover:bg-teal-800', active: 'bg-teal-500', swatch: '#134e4a' },
+    { id: 'rose', bg: 'bg-rose-900', border: 'border-rose-800', hover: 'hover:bg-rose-800', active: 'bg-rose-500', swatch: '#881337' },
+    { id: 'amber', bg: 'bg-amber-900', border: 'border-amber-800', hover: 'hover:bg-amber-800', active: 'bg-amber-500', swatch: '#78350f' },
   ]
   const themeKey = clientUser ? `sidebar-theme-${clientUser.id}` : 'sidebar-theme'
   const [sidebarTheme, setSidebarTheme] = useState(() => {
@@ -102,6 +104,20 @@ export default function ClientLayout() {
 
   const unreadComms = comunicazioni.filter(c => !c.letta)
 
+  function SidebarClock() {
+    const [now, setNow] = useState(new Date())
+    useEffect(() => {
+      const iv = setInterval(() => setNow(new Date()), 1000)
+      return () => clearInterval(iv)
+    }, [])
+    return (
+      <>
+        <p className="text-[10px] text-gray-400">{now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p className="text-sm font-mono text-gray-300 tracking-wider">{now.toLocaleTimeString('it-IT')}</p>
+      </>
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen">
       {isImpersonated && (
@@ -115,19 +131,23 @@ export default function ClientLayout() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside className={`w-64 ${sidebarTheme.bg} text-white flex flex-col shrink-0`}>
-          {/* Logo + company name */}
-          <div className={`p-4 border-b ${sidebarTheme.border}`}>
+          {/* Logo + info */}
+          <div className={`p-3 border-b ${sidebarTheme.border}`}>
             <div className="flex items-center gap-3">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="h-10 w-auto object-contain rounded" />
-              ) : (
-                <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center text-gray-400 text-lg font-bold">
-                  {(clientUser.nome_azienda || 'C')[0].toUpperCase()}
-                </div>
-              )}
-              <div>
-                <h1 className="text-sm font-bold leading-tight">{clientUser.nome_azienda || t('clientPortal')}</h1>
+              {/* Left: Logo */}
+              <div className="shrink-0">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="h-14 w-auto object-contain rounded" />
+                ) : (
+                  <div className="w-14 h-14 bg-gray-600 rounded-xl flex items-center justify-center text-gray-300 text-2xl font-bold">
+                    {(clientUser.nome_azienda || 'C')[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {/* Right: Version + Date + Clock */}
+              <div className="min-w-0">
                 <p className="text-[10px] text-gray-400">{APP_VERSION}</p>
+                <SidebarClock />
               </div>
             </div>
           </div>
@@ -178,7 +198,7 @@ export default function ClientLayout() {
               <button
                 key={theme.id}
                 onClick={() => changeTheme(theme)}
-                className={`w-5 h-5 rounded cursor-pointer transition-transform ${sidebarTheme.id === theme.id ? 'ring-2 ring-white scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
+                className={`w-5 h-5 rounded cursor-pointer transition-transform border border-white/40 ${sidebarTheme.id === theme.id ? 'ring-2 ring-white scale-110' : 'hover:scale-110 opacity-80 hover:opacity-100'}`}
                 style={{ backgroundColor: theme.swatch }}
                 title={theme.id}
               />
@@ -188,9 +208,14 @@ export default function ClientLayout() {
           {/* User + logout */}
           <div className={`p-3 border-t ${sidebarTheme.border}`}>
             <div className="flex items-center justify-between px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">{clientUser.nome}</p>
-                <p className="text-xs text-gray-400">{isClientAdmin ? 'Admin' : 'User'}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-base" title={clientUser.lingua === 'en' ? 'English' : clientUser.lingua === 'fr' ? 'Français' : 'Italiano'}>
+                  {clientUser.lingua === 'en' ? '🇬🇧' : clientUser.lingua === 'fr' ? '🇫🇷' : '🇮🇹'}
+                </span>
+                <div>
+                  <p className="text-sm font-medium">{clientUser.nome}</p>
+                  <p className="text-xs text-gray-400">{isClientAdmin ? 'Admin' : 'User'}</p>
+                </div>
               </div>
               <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors cursor-pointer" title={t('logout')}>
                 <LogOut size={18} />

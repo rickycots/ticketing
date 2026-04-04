@@ -116,10 +116,14 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
     LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
     ORDER BY CASE t.stato WHEN 'in_attesa' THEN 0 WHEN 'aperto' THEN 1 WHEN 'in_lavorazione' THEN 2 WHEN 'risolto' THEN 3 ELSE 4 END, t.updated_at DESC
   `).all(req.params.clienteId, userEmail);
-  // Add participant count per ticket
+  // Add participant count + message count + unread per ticket
   for (const tk of tickets) {
     const cnt = db.prepare('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?').get(tk.id);
     tk.partecipanti_count = cnt ? cnt.cnt : 0;
+    const msgCnt = db.prepare('SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ?').get(tk.id);
+    tk.messaggi_count = msgCnt ? msgCnt.cnt : 0;
+    const unread = db.prepare("SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ? AND letta = 0 AND direzione = 'inviata'").get(tk.id);
+    tk.has_unread = unread ? unread.cnt > 0 : false;
   }
   res.json(tickets);
 });
@@ -175,7 +179,8 @@ router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req,
   if (ticket.stato === 'in_attesa') {
     db.prepare("UPDATE ticket SET stato = 'in_lavorazione', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
   } else if (ticket.stato === 'risolto' || ticket.stato === 'chiuso') {
-    db.prepare("UPDATE ticket SET stato = 'aperto', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
+    // Reopen: clear data_evasione (it's the resolution date, not a target)
+    db.prepare("UPDATE ticket SET stato = 'aperto', data_evasione = NULL, updated_at = datetime('now') WHERE id = ?").run(ticket.id);
   }
 
   // Notification: client replied — notify assigned technician (or all admins if reopened)
@@ -361,6 +366,11 @@ router.put('/:id', authenticateToken, (req, res) => {
   if (stato === 'risolto' && !ticket.data_evasione) {
     const today = new Date().toISOString().split('T')[0];
     db.prepare('UPDATE ticket SET data_evasione = ? WHERE id = ?').run(today, req.params.id);
+  }
+
+  // Clear data_evasione when reopened
+  if (stato === 'aperto' && (ticket.stato === 'risolto' || ticket.stato === 'chiuso')) {
+    db.prepare('UPDATE ticket SET data_evasione = NULL WHERE id = ?').run(req.params.id);
   }
 
   // Notification: assignment changed

@@ -1,5 +1,21 @@
 # Storico Versioni
 
+## V4.9.00-0404 — 4 Aprile 2026
+- Portale cliente sidebar: logo grande + versione/data/orologio su 2 colonne, bandierina lingua, 7 colori tema con contorno bianco
+- Ticket client: colonna "Msg" con conteggio messaggi e cerchio rosso per non letti (solo risposte admin inviate)
+- Ticket client: colonna "Riapri" per ticket risolti/chiusi, link al dettaglio con reopen
+- Ticket client dettaglio: header unificato stile admin (codice+data, oggetto, categoria+priorità, evasione, partecipanti con HelpTip)
+- Ticket client dettaglio: viste Estesa/Compatta con LAST MSG e ordinamento Vecchi/Nuovi
+- Ticket admin dettaglio: ordinamento Vecchi/Nuovi nel thread messaggi
+- Ticket admin dettaglio: header ristrutturato (codice + "aperto il giorno" + data, priorità spostata dopo categoria)
+- Ticket admin: blocco risposta su ticket risolto con messaggio "Ticket risolto — non è possibile scrivere messaggi"
+- Ticket riapertura: data_evasione cancellata (NULL) sia da reply client che da cambio stato admin
+- Progetti lista: popup "Nuovo Progetto" identico stile Timeline, allargato max-w-3xl
+- Progetti popup: Manutenzione Ordinaria sempre visibile in alto con HelpTip, Tecnici e Referenti su 2 colonne
+- Clienti lista: testo corsivo "Clicca sul cliente per modificare"
+- Clienti dettaglio: checkbox "Servizi Attivi" spostati sotto il box Logo in card dedicata
+- Delete utente: gestione completa FK (ticket, attività, note, email, notifiche, chat, allegati)
+
 ## V4.8.00-0403 — 3 Aprile 2026
 - Sidebar admin: voce "Progetti" espandibile con sottomenu "Timeline Progetti"
 - ProjectDetail: header unificato stile Gantt (descrizione inline, barra avanzamento, date, link)

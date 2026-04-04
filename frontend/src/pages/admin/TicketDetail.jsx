@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users, LayoutList, List } from 'lucide-react'
+import { ArrowLeft, Mail, StickyNote, Send, Building2, Phone, User, BookOpen, ChevronDown, ChevronRight, Bot, Sparkles, Loader2, Paperclip, X, FileDown, Users, LayoutList, List, ArrowUpDown } from 'lucide-react'
 import { tickets, emails, users, schede as schedeApi, ai } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 
@@ -33,6 +33,7 @@ export default function TicketDetail() {
   const [noteToKB, setNoteToKB] = useState(false)
   const [showPartecipanti, setShowPartecipanti] = useState(false)
   const [emailViewMode, setEmailViewMode] = useState('esteso')
+  const [emailSortAsc, setEmailSortAsc] = useState(true)
   const [expandedEmailId, setExpandedEmailId] = useState(null)
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
@@ -142,16 +143,18 @@ export default function TicketDetail() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">{ticket.codice} — {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
+                <p className="text-sm text-gray-500 mb-1">{ticket.codice} — aperto il giorno {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
                 <h2 className="text-lg font-bold">{ticket.oggetto}</h2>
               </div>
               <div className="flex gap-2">
-                <span className={`${badgeCls} ${prioritaColors[ticket.priorita]}`}>{ticket.priorita}</span>
                 <span className={`${badgeCls} ${statoColors[ticket.stato]}`}>{statoLabels[ticket.stato]}</span>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500">
-              <span>Categoria: <b className="text-gray-700">{ticket.categoria}</b></span>
+              <div className="flex items-center gap-6">
+                <span>Categoria: <b className="text-gray-700">{ticket.categoria}</b></span>
+                <span>Priorità: <span className={`${badgeCls} ${prioritaColors[ticket.priorita]}`}>{ticket.priorita}</span></span>
+              </div>
               {ticket.data_evasione ? (() => {
                 const ev = new Date(ticket.data_evasione + 'T00:00:00');
                 const today = new Date(); today.setHours(0,0,0,0);
@@ -212,20 +215,33 @@ export default function TicketDetail() {
                   <HelpTip text="Storico completo delle comunicazioni sul ticket. Include messaggi dal portale e risposte via email. I messaggi in azzurro sono le risposte inviate dal nostro team." />
                   <span className="text-xs text-gray-400 italic">Ciclo messaggi ticket dal portale o mail</span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setEmailSortAsc(prev => !prev)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">
+                    <ArrowUpDown size={13} />
+                    <span>{emailSortAsc ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}</span>
+                  </button>
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                     <LayoutList size={13} /> Estesa
                   </button>
-                  <button onClick={() => { setEmailViewMode('compatto'); setExpandedEmailId(null) }} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'compatto' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  <button onClick={() => { setEmailViewMode('compatto'); setExpandedEmailId(ticket.emails.length > 0 ? ticket.emails[ticket.emails.length - 1].id : null) }} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'compatto' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                     <List size={13} /> Compatta
                   </button>
                 </div>
+                </div>
               </div>
-              {emailViewMode === 'esteso' ? (
+              {(() => {
+                const sortedEmails = [...ticket.emails].sort((a, b) => {
+                  const da = new Date(a.data_ricezione), db2 = new Date(b.data_ricezione)
+                  return emailSortAsc ? da - db2 : db2 - da
+                })
+                const lastEmailId = ticket.emails[ticket.emails.length - 1]?.id
+                return emailViewMode === 'esteso' ? (
                 <div className="space-y-3 p-3">
-                  {ticket.emails.map(e => {
+                  {sortedEmails.map((e) => {
                     const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
                     const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
+                    const isLast = e.id === lastEmailId
                     let allegati = []
                     try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
                     return (
@@ -233,6 +249,7 @@ export default function TicketDetail() {
                         <div className="flex items-center justify-between mb-2">
                           <p className={`text-sm font-medium ${isOurs ? 'text-blue-700' : 'text-amber-700'}`}>
                             {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                            {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                           </p>
                           <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
                         </div>
@@ -255,10 +272,11 @@ export default function TicketDetail() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {ticket.emails.map(e => {
+                  {sortedEmails.map((e) => {
                     const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
                     const isOurs = systemAddrs.includes(e.mittente.toLowerCase())
                     const isExpanded = expandedEmailId === e.id
+                    const isLast = e.id === lastEmailId
                     let allegati = []
                     try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
                     return (
@@ -271,6 +289,7 @@ export default function TicketDetail() {
                           <span className={`w-2 h-2 rounded-full shrink-0 ${isOurs ? 'bg-blue-500' : 'bg-amber-500'}`} />
                           <span className={`text-sm font-medium truncate ${isOurs ? 'text-blue-700' : 'text-gray-700'}`}>
                             {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                            {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                           </span>
                           <span className="text-xs text-gray-400 ml-auto shrink-0">{new Date(e.data_ricezione).toLocaleString('it-IT')}</span>
                         </button>
@@ -295,12 +314,25 @@ export default function TicketDetail() {
                     )
                   })}
                 </div>
-              )}
+              )
+              })()}
             </div>
           )}
 
           {/* Reply Form */}
-          {ticket.stato !== 'chiuso' && (
+          {ticket.stato === 'risolto' && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                <Send size={18} className="text-gray-400" />
+                <h2 className="text-lg font-semibold text-gray-400">Rispondi al Cliente</h2>
+              </div>
+              <div className="p-8 bg-gray-50 rounded-b-xl text-center text-sm text-gray-400">
+                Ticket risolto — non è possibile scrivere messaggi
+              </div>
+            </div>
+          )}
+
+          {ticket.stato !== 'chiuso' && ticket.stato !== 'risolto' && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                 <Send size={18} className="text-green-500" />

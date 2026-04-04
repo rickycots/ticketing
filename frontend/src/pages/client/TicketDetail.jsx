@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown, RotateCcw, XCircle } from 'lucide-react'
+import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown, RotateCcw, XCircle, LayoutList, List, ChevronRight, ArrowUpDown, Users, Mail } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
+import HelpTip from '../../components/HelpTip'
+
+const prioritaColors = {
+  urgente: 'bg-red-100 text-red-800',
+  alta: 'bg-orange-100 text-orange-800',
+  media: 'bg-yellow-100 text-yellow-800',
+  bassa: 'bg-gray-100 text-gray-600',
+}
+const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium'
 
 const statoConfig = {
   in_attesa: { badge: 'bg-orange-100 text-orange-800', icon: AlertTriangle },
@@ -27,6 +36,10 @@ export default function ClientTicketDetail() {
   const [loading, setLoading] = useState(true)
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
+  const [emailViewMode, setEmailViewMode] = useState('esteso')
+  const [expandedEmailId, setExpandedEmailId] = useState(null)
+  const [emailSortAsc, setEmailSortAsc] = useState(true)
+  const [showPartecipanti, setShowPartecipanti] = useState(false)
   const textareaRef = useRef(null)
 
   useEffect(() => {
@@ -97,11 +110,14 @@ export default function ClientTicketDetail() {
 
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
-        <div className="flex items-start justify-between mb-2">
-          <span className="text-sm font-mono text-gray-400">{ticket.codice}</span>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-gray-500 mb-1">{ticket.codice} — {t('openedOn')} {new Date(ticket.created_at).toLocaleDateString(getDateLocale())}</p>
+            <h1 className="text-lg font-bold">{ticket.oggetto}</h1>
+          </div>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${config.badge}`}>
-              <StatusIcon size={12} />
+            <span className={`${badgeCls} ${config.badge}`}>
+              <StatusIcon size={12} className="mr-1" />
               {getStatoLabel(ticket.stato)}
             </span>
             {!isClosed && (
@@ -115,54 +131,170 @@ export default function ClientTicketDetail() {
             )}
           </div>
         </div>
-        <h1 className="text-xl font-bold">{ticket.oggetto}</h1>
-        <p className="text-sm text-gray-500 mt-2">
-          {ticket.categoria} &middot; {t('priority')}: {ticket.priorita} &middot; {t('openedOn')} {new Date(ticket.created_at).toLocaleDateString(getDateLocale())}
-        </p>
-      </div>
-
-      {/* Thread */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-4">
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="font-semibold">{t('conversation')}</h2>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500">
+          <div className="flex items-center gap-6">
+            <span>{t('category') || 'Categoria'}: <b className="text-gray-700">{ticket.categoria}</b></span>
+            <span>{t('priority') || 'Priorità'}: <span className={`${badgeCls} ${prioritaColors[ticket.priorita]}`}>{ticket.priorita}</span></span>
+          </div>
+          {ticket.data_evasione ? (() => {
+            const ev = new Date(ticket.data_evasione + 'T00:00:00');
+            const today = new Date(); today.setHours(0,0,0,0);
+            const diffMs = ev.getTime() - today.getTime();
+            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+            const color = diffDays < 0 ? 'text-red-600 font-bold' : diffDays <= 1 ? 'text-orange-500 font-semibold' : 'text-gray-600 font-medium';
+            return <span className={color}>{t('resolution') || 'Evasione'}: {ev.toLocaleDateString(getDateLocale())}</span>
+          })() : null}
         </div>
-        <div className="space-y-3 p-3">
-          {ticket.emails && ticket.emails.length > 0 ? (
-            ticket.emails.map(e => {
-              const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
-              const isAdmin = systemAddrs.includes(e.mittente.toLowerCase())
-              let allegati = []
-              try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
-              return (
-                <div key={e.id} className={`p-4 rounded-lg ${isAdmin ? 'bg-blue-50/50' : 'bg-gray-50'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className={`text-sm font-medium ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
-                      {isAdmin ? t('support') : t('you')}
-                    </p>
-                    <p className="text-xs font-semibold text-gray-400">
-                      {new Date(e.data_ricezione).toLocaleString(getDateLocale())}
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
-                  {allegati.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
-                      {allegati.map((a, i) => (
-                        <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
-                          className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
-                          <FileDown size={12} className="text-gray-400" />
-                          <span>{a.nome}</span>
-                          <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
-                        </a>
+        {/* Partecipanti */}
+        {(() => {
+          const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+          const partecipanti = [...new Set((ticket.emails || []).flatMap(e => [e.mittente, ...(e.destinatario ? e.destinatario.split(',').map(d => d.trim()) : [])]).filter(addr => addr && !systemAddrs.includes(addr.toLowerCase())))]
+          if (ticket.creatore_email && !partecipanti.includes(ticket.creatore_email)) partecipanti.unshift(ticket.creatore_email)
+          return (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => setShowPartecipanti(prev => !prev)}
+                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showPartecipanti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <ChevronRight size={14} className={`transition-transform ${showPartecipanti ? 'rotate-90' : ''}`} />
+                <Users size={14} className={showPartecipanti ? 'text-teal-500' : ''} />
+                <span className="font-medium">{t('participants') || 'Partecipanti'}</span>
+                <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{partecipanti.length}</span>
+                <span className="text-gray-400 italic ml-1">Elenco utenti che partecipano al ticket e riceveranno la risposta</span>
+                <HelpTip size={12} text="I ticket aperti da un utente, se non taggati privato, sono visibili da tutti gli utenti di quella azienda. Chiunque può aggiornarlo e diventare un partecipante." />
+              </button>
+              {showPartecipanti && (
+                <div className="mt-2 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
+                  {partecipanti.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun partecipante</p>
+                  ) : (
+                    <div className="divide-y divide-teal-100">
+                      {partecipanti.map((addr, i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                          <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                            <Mail size={12} className="text-teal-600" />
+                          </div>
+                          <span className="text-sm text-gray-700">{addr}</span>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
-              )
-            })
-          ) : (
-            <div className="p-6 text-center text-gray-400 text-sm">{t('noMessages')}</div>
-          )}
+              )}
+            </div>
+          )
+        })()}
+      </div>
+
+      {/* Thread */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-4">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold">{t('conversation')}</h2>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setEmailSortAsc(prev => !prev)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">
+              <ArrowUpDown size={13} />
+              <span>{emailSortAsc ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}</span>
+            </button>
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+              <LayoutList size={13} /> {t('extended') || 'Estesa'}
+            </button>
+            <button onClick={() => { setEmailViewMode('compatto'); setExpandedEmailId(ticket.emails && ticket.emails.length > 0 ? ticket.emails[ticket.emails.length - 1].id : null) }} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'compatto' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+              <List size={13} /> {t('compact') || 'Compatta'}
+            </button>
+          </div>
+          </div>
         </div>
+        {ticket.emails && ticket.emails.length > 0 ? (() => {
+          const sortedEmails = [...ticket.emails].sort((a, b) => {
+            const da = new Date(a.data_ricezione), db2 = new Date(b.data_ricezione)
+            return emailSortAsc ? da - db2 : db2 - da
+          })
+          const lastEmailId = ticket.emails[ticket.emails.length - 1]?.id
+          return emailViewMode === 'esteso' ? (
+            <div className="space-y-3 p-3">
+              {sortedEmails.map((e) => {
+                const isLast = e.id === lastEmailId
+                const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+                const isAdmin = systemAddrs.includes(e.mittente.toLowerCase())
+                let allegati = []
+                try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+                return (
+                  <div key={e.id} className={`p-4 rounded-lg ${isAdmin ? 'bg-blue-50/50' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className={`text-sm font-medium ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {isAdmin ? t('support') : t('you')}
+                        {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-400">
+                        {new Date(e.data_ricezione).toLocaleString(getDateLocale())}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+                    {allegati.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                        {allegati.map((a, i) => (
+                          <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                            className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                            <FileDown size={12} className="text-gray-400" />
+                            <span>{a.nome}</span>
+                            <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {sortedEmails.map((e) => {
+                const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local']
+                const isAdmin = systemAddrs.includes(e.mittente.toLowerCase())
+                const isExpanded = expandedEmailId === e.id
+                const isLast = e.id === lastEmailId
+                let allegati = []
+                try { allegati = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+                return (
+                  <div key={e.id}>
+                    <button
+                      onClick={() => setExpandedEmailId(isExpanded ? null : e.id)}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-left"
+                    >
+                      <ChevronRight size={14} className={`text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isAdmin ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                      <span className={`text-sm font-medium truncate ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {isAdmin ? t('support') : t('you')}
+                        {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-auto shrink-0">{new Date(e.data_ricezione).toLocaleString(getDateLocale())}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className={`px-10 pb-3 ${isAdmin ? 'bg-blue-50/50' : 'bg-amber-50/50'}`}>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
+                        {allegati.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
+                            {allegati.map((a, i) => (
+                              <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                                className="inline-flex items-center gap-1.5 bg-white/70 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white border border-gray-200 mr-2 transition-colors">
+                                <FileDown size={12} className="text-gray-400" />
+                                <span>{a.nome}</span>
+                                <span className="text-gray-400">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })() : (
+          <div className="p-6 text-center text-gray-400 text-sm">{t('noMessages')}</div>
+        )}
       </div>
 
       {/* Reply Form */}

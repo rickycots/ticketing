@@ -48,7 +48,10 @@ export default function ClientList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Clienti</h1>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold shrink-0">Clienti</h1>
+          <p className="text-[11px] text-gray-400 italic leading-snug">Clicca sul cliente per modificare</p>
+        </div>
         <div className="flex items-center gap-3">
           {viewToggle}
           <button

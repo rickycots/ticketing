@@ -150,6 +150,7 @@ export default function ClientTicketList() {
                 <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">{t('updated')}</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Evaso</th>
                 <th className="text-center text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1"><HelpTip size={12} text="Numero di partecipanti al ticket. Chiunque risponda al ticket (via portale o email) diventa un partecipante e riceverà le notifiche successive." /> Partecipanti</span></th>
+                <th className="text-center text-xs font-medium text-gray-500 uppercase px-4 py-3">Msg</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -182,6 +183,19 @@ export default function ClientTicketList() {
                   </td>
                   <td className="px-4 py-3 text-center text-sm text-gray-500">
                     {tk.partecipanti_count || 0}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {(tk.stato === 'risolto' || tk.stato === 'chiuso') ? (
+                      <Link to={`/client/tickets/${tk.id}?reopen=true`} onClick={e => e.stopPropagation()} className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap">
+                        Riapri
+                      </Link>
+                    ) : (
+                      tk.has_unread ? (
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold">{tk.messaggi_count || 0}</span>
+                      ) : (
+                        <span className="text-sm text-gray-500">{tk.messaggi_count || 0}</span>
+                      )
+                    )}
                   </td>
                 </tr>
               ))}
