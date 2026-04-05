@@ -166,10 +166,15 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
   if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
     return res.status(403).json({ error: 'Accesso non consentito' });
   }
+  // Check if client can see STM maintenance projects
+  const cliente = db.prepare('SELECT servizio_progetti_stm FROM clienti WHERE id = ?').get(req.params.clienteId);
+  const canSeeStm = cliente && cliente.servizio_progetti_stm;
+
   const projects = db.prepare(`
-    SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id
+    SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id, p.manutenzione_ordinaria
     FROM progetti p
     WHERE p.cliente_id = ? AND p.stato != 'annullato'
+    ${!canSeeStm ? "AND (p.manutenzione_ordinaria = 0 OR p.manutenzione_ordinaria IS NULL)" : ""}
     ORDER BY p.updated_at DESC
   `).all(req.params.clienteId);
 

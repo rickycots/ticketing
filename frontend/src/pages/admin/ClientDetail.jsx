@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3, Users } from 'lucide-react'
 import { clients, schede as schedeApi, clientAuth } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const API_BASE = '/api'
 
@@ -58,6 +59,7 @@ export default function ClientDetail() {
           servizio_ticket: !!c.servizio_ticket,
           servizio_progetti: !!c.servizio_progetti,
           servizio_ai: !!c.servizio_ai,
+          servizio_progetti_stm: !!c.servizio_progetti_stm,
         })
       })
       .catch(console.error)
@@ -144,7 +146,7 @@ export default function ClientDetail() {
     e.preventDefault()
     setSaving(true)
     try {
-      const updated = await clients.update(id, { ...form, servizio_ticket: form.servizio_ticket ? 1 : 0, servizio_progetti: form.servizio_progetti ? 1 : 0, servizio_ai: form.servizio_ai ? 1 : 0 })
+      const updated = await clients.update(id, { ...form, servizio_ticket: form.servizio_ticket ? 1 : 0, servizio_progetti: form.servizio_progetti ? 1 : 0, servizio_ai: form.servizio_ai ? 1 : 0, servizio_progetti_stm: form.servizio_progetti_stm ? 1 : 0 })
       setClient(updated)
     } catch (err) { console.error(err) }
     finally { setSaving(false) }
@@ -362,14 +364,19 @@ export default function ClientDetail() {
 
           {/* Servizi attivi */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-4">
-            <h2 className="text-lg font-semibold mb-3">Servizi Attivi</h2>
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">Servizi Attivi <HelpTip size={13} text="Solo i servizi selezionati saranno disponibili per gli utenti del cliente. Se un servizio viene disattivato, gli utenti non potranno più accedervi dal portale." /></h2>
             <div className="space-y-2.5">
-              {[['servizio_ticket', 'Ticket'], ['servizio_progetti', 'Progetti'], ['servizio_ai', 'AI Assistant']].map(([key, label]) => (
+              {[['servizio_ticket', 'Ticket'], ['servizio_progetti', 'Progetti'], ['servizio_ai', 'AI Assistant'], ['servizio_progetti_stm', 'Progetti STM']].map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={!!form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                   <span className="text-sm text-gray-700">{label}</span>
+                  {key === 'servizio_progetti_stm' && <HelpTip size={12} text="Se attivo, il cliente potrà vedere nel portale anche i progetti contrassegnati come 'STM Manutenzione Ordinaria'. Se disattivo, questi progetti rimangono visibili solo agli utenti admin e tecnici." />}
                 </label>
               ))}
+              <button onClick={(e) => handleSave(e)} disabled={saving}
+                className="mt-2 inline-flex items-center gap-1.5 bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer">
+                <Save size={14} /> {saving ? 'Salvataggio...' : 'Salva'}
+              </button>
             </div>
           </div>
         </div>
@@ -378,7 +385,7 @@ export default function ClientDetail() {
       {/* Client Users Section */}
       <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2"><UserCircle size={20} /> Utenti Portale</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><UserCircle size={20} /> Utenti Portale <HelpTip size={13} text="Utenti che possono accedere al portale cliente. Ogni utente ha credenziali proprie e può vedere solo le schede (Ticket, Progetti, AI) a lui assegnate, se il servizio è attivo a livello azienda." /></h2>
           <button onClick={() => openUserForm()} className="inline-flex items-center gap-1 bg-blue-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer">
             <Plus size={16} /> Aggiungi Utente
           </button>
@@ -476,7 +483,7 @@ export default function ClientDetail() {
                   <th className="px-4 py-3 font-medium">Nome</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Ruolo</th>
-                  <th className="px-4 py-3 font-medium">Schede</th>
+                  <th className="px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Schede <HelpTip size={11} text="Sezioni del portale visibili all'utente. Se un badge è rosso significa che il servizio è stato disattivato a livello azienda (box Servizi Attivi), ma l'utente era precedentemente autorizzato." /></span></th>
                   <th className="px-4 py-3 font-medium">Lingua</th>
                   <th className="px-4 py-3 font-medium">Creato il</th>
                   <th className="px-4 py-3 font-medium">2F</th>
@@ -499,11 +506,15 @@ export default function ClientDetail() {
                         <span className="text-xs text-gray-400">Tutte</span>
                       ) : (
                         <div className="flex gap-1">
-                          {u.schede_visibili.split(',').map(s => (
-                            <span key={s} className="bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
-                              {s === 'ticket' ? 'Ticket' : s === 'progetti' ? 'Progetti' : 'AI'}
-                            </span>
-                          ))}
+                          {u.schede_visibili.split(',').map(s => {
+                            const srvKey = s === 'ticket' ? 'servizio_ticket' : s === 'progetti' ? 'servizio_progetti' : 'servizio_ai'
+                            const isDisabled = !form[srvKey]
+                            return (
+                              <span key={s} className={`rounded-full px-2 py-0.5 text-xs font-medium ${isDisabled ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`} title={isDisabled ? 'Servizio disattivato a livello azienda' : ''}>
+                                {s === 'ticket' ? 'Ticket' : s === 'progetti' ? 'Progetti' : 'AI'}
+                              </span>
+                            )
+                          })}
                         </div>
                       )}
                     </td>
@@ -545,7 +556,7 @@ export default function ClientDetail() {
       {/* Referenti Progetti Section */}
       <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2"><Users size={20} className="text-indigo-500" /> Anagrafica Referenti Progetti</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Users size={20} className="text-indigo-500" /> Anagrafica Referenti Progetti <HelpTip size={13} text="Referenti tecnici o commerciali del cliente associabili ai progetti. Non sono utenti del portale — sono contatti a cui vengono inviate le email di progetto e che possono essere selezionati come destinatari." /></h2>
           <button onClick={() => openRefForm()} className="inline-flex items-center gap-1 bg-indigo-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-indigo-700 transition-colors cursor-pointer">
             <Plus size={16} /> Nuovo Referente
           </button>

@@ -57,6 +57,7 @@ function runMigrations() {
     "ALTER TABLE clienti ADD COLUMN servizio_ticket INTEGER NOT NULL DEFAULT 1",
     "ALTER TABLE clienti ADD COLUMN servizio_progetti INTEGER NOT NULL DEFAULT 1",
     "ALTER TABLE clienti ADD COLUMN servizio_ai INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE clienti ADD COLUMN servizio_progetti_stm INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE utenti ADD COLUMN abilitato_ai INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE attivita ADD COLUMN tecnici_ids TEXT DEFAULT NULL",
     "UPDATE utenti SET abilitato_ai = 0 WHERE ruolo = 'tecnico'",

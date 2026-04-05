@@ -101,7 +101,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
 // PUT /api/clients/:id — update client (admin only)
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai } = req.body;
+  const { nome_azienda, referente, email, telefono, indirizzo, citta, provincia, note, portale_slug, sla_reazione, servizio_ticket, servizio_progetti, servizio_ai, servizio_progetti_stm } = req.body;
 
   const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(req.params.id);
   if (!client) {
@@ -135,7 +135,8 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       sla_reazione = ?,
       servizio_ticket = COALESCE(?, servizio_ticket),
       servizio_progetti = COALESCE(?, servizio_progetti),
-      servizio_ai = COALESCE(?, servizio_ai)
+      servizio_ai = COALESCE(?, servizio_ai),
+      servizio_progetti_stm = COALESCE(?, servizio_progetti_stm)
     WHERE id = ?
   `).run(
     nome_azienda || null,
@@ -151,6 +152,7 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     servizio_ticket !== undefined ? (servizio_ticket ? 1 : 0) : null,
     servizio_progetti !== undefined ? (servizio_progetti ? 1 : 0) : null,
     servizio_ai !== undefined ? (servizio_ai ? 1 : 0) : null,
+    servizio_progetti_stm !== undefined ? (servizio_progetti_stm ? 1 : 0) : null,
     req.params.id
   );
 

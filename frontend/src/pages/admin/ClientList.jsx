@@ -139,8 +139,10 @@ export default function ClientList() {
         <div className="text-center py-12 text-gray-400">Nessun cliente trovato</div>
       ) : viewMode === 'esteso' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clientList.map(c => (
-            <div key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow relative">
+          {clientList.map(c => {
+            const serviziAttivi = [c.servizio_ticket, c.servizio_progetti, c.servizio_ai, c.servizio_progetti_stm].filter(Boolean).length
+            return (
+            <div key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition-shadow relative flex flex-col">
               <Link
                 to={`/admin/clients/${c.id}/dashboard`}
                 onClick={e => e.stopPropagation()}
@@ -149,35 +151,29 @@ export default function ClientList() {
               >
                 <BarChart3 size={16} />
               </Link>
-              <div className="flex items-start gap-3 mb-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Building2 size={20} className="text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{c.nome_azienda}</h3>
-                  {c.referente && <p className="text-sm text-gray-500">{c.referente}</p>}
-                </div>
+              <h3 className="font-bold text-gray-900 text-base mb-2">{c.nome_azienda}</h3>
+              <div className="space-y-1 text-sm text-gray-600 flex-1">
+                <p>Referente: <span className="text-gray-500">{c.referente || '—'}</span></p>
+                <p className="text-gray-400">{[c.indirizzo, c.citta, c.provincia ? `(${c.provincia})` : ''].filter(Boolean).join(', ') || '—'}</p>
+                <p>Telefono: <span className="text-gray-500">{c.telefono || '—'}</span></p>
+                <p className="text-xs text-gray-400 line-clamp-1">Note: {c.note || '—'}</p>
               </div>
-              <div className="space-y-1 text-sm text-gray-600 mb-4">
-                <p>{c.email}</p>
-                {c.telefono && <p>{c.telefono}</p>}
-                {(c.citta || c.provincia) && (
-                  <p className="text-gray-400">{[c.citta, c.provincia].filter(Boolean).join(' (') + (c.provincia ? ')' : '')}</p>
-                )}
-              </div>
-              {c.note && <p className="text-xs text-gray-400 mb-3 line-clamp-2">{c.note}</p>}
-              <div className="flex gap-3 pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Ticket size={14} />
-                  <span>{c.num_ticket} ticket</span>
+              <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Ticket size={14} />
+                    <span>{c.num_ticket} ticket</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <FolderKanban size={14} />
+                    <span>{c.num_progetti} progetti</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <FolderKanban size={14} />
-                  <span>{c.num_progetti} progetti</span>
-                </div>
+                <span className="text-xs text-gray-400">Servizi Attivi <b className="text-gray-600">{serviziAttivi}/4</b></span>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         /* Vista compatta - tabella */

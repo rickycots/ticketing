@@ -65,10 +65,14 @@ $router->get('/projects/client/:clienteId', [Auth::class, 'authenticateClientTok
         Response::error('Accesso non consentito', 403);
     }
 
+    // Check if client can see STM maintenance projects
+    $cliente = Database::fetchOne('SELECT servizio_progetti_stm FROM clienti WHERE id = ?', [$req->params['clienteId']]);
+    $canSeeStm = $cliente && !empty($cliente['servizio_progetti_stm']);
+
     $projects = Database::fetchAll(
         "SELECT p.id, p.nome, p.descrizione, p.stato, p.blocco, p.data_scadenza, p.updated_at, p.email_bloccante_id, p.manutenzione_ordinaria
          FROM progetti p
-         WHERE p.cliente_id = ? AND p.stato != 'annullato'
+         WHERE p.cliente_id = ? AND p.stato != 'annullato'" . (!$canSeeStm ? " AND (p.manutenzione_ordinaria = 0 OR p.manutenzione_ordinaria IS NULL)" : "") . "
          ORDER BY p.updated_at DESC",
         [$req->params['clienteId']]
     );

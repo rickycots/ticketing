@@ -1,5 +1,15 @@
 # Storico Versioni
 
+## V5.0.00-0405 — 5 Aprile 2026
+- Nuovo servizio "Progetti STM": campo servizio_progetti_stm su clienti, controlla visibilità progetti manutenzione ordinaria nel portale cliente
+- ClientDetail: box Servizi Attivi con 4 checkbox (Ticket, Progetti, AI, Progetti STM), pulsante Salva, HelpTip dedicato
+- ClientDetail: HelpTip su "Utenti Portale" e "Anagrafica Referenti Progetti"
+- ClientDetail: badge schede rossi per servizi disattivati a livello azienda, HelpTip su colonna Schede
+- ClientList estesa: box uniformati stessa altezza, layout ristrutturato (nome, referente, indirizzo, telefono, note), "Servizi Attivi X/4"
+- ClientList: testo corsivo "Clicca sul cliente per modificare"
+- Migrazione DB: colonna servizio_progetti_stm su clienti (Node.js + MySQL)
+- Backend: filtro progetti manutenzione_ordinaria in base a servizio_progetti_stm (Node.js + PHP)
+
 ## V4.9.00-0404 — 4 Aprile 2026
 - Portale cliente sidebar: logo grande + versione/data/orologio su 2 colonne, bandierina lingua, 7 colori tema con contorno bianco
 - Ticket client: colonna "Msg" con conteggio messaggi e cerchio rosso per non letti (solo risposte admin inviate)
