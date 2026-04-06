@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, UserCircle, X } from 'lucide-react'
 import { clientUsers } from '../../api/client'
 import { t } from '../../i18n/clientTranslations'
+import HelpTip from '../../components/HelpTip'
 
 export default function UserManagement() {
   const [users, setUsers] = useState([])
@@ -84,27 +85,32 @@ export default function UserManagement() {
 
       {/* Modal Form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 relative">
-            <button onClick={() => { setShowForm(false); setEditingUser(null) }} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
-              <X size={18} />
-            </button>
-            <h2 className="text-lg font-bold text-gray-900 mb-4">{editingUser ? t('editUser') : t('newUser')}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
-                  <input type="text" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} required className={inputCls} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')} *</label>
-                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required className={inputCls} />
-                </div>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => { setShowForm(false); setEditingUser(null) }}>
+        <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => { setShowForm(false); setEditingUser(null) }} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
+            <X size={18} />
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">{editingUser ? t('editUser') : t('newUser')}</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
+                <input type="text" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} required className={inputCls} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')} *</label>
+                <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required className={inputCls} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password {editingUser ? '(vuoto = invariata)' : '*'}</label>
+                <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value, ...(editingUser && e.target.value ? { cambio_password: 1 } : {}) }))} required={!editingUser} className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password {editingUser ? t('passwordUnchanged') : '*'}</label>
-                  <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value, ...(editingUser && e.target.value ? { cambio_password: 1 } : {}) }))} required={!editingUser} className={inputCls} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
+                  <input type="text" value="User" disabled className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-500 cursor-not-allowed" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
@@ -115,45 +121,46 @@ export default function UserManagement() {
                   </select>
                 </div>
               </div>
-              <div className="flex gap-8">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('visibleSections')}</label>
-                  <div className="flex flex-col gap-2">
-                    {[['ticket', 'Ticket', 'servizio_ticket'], ['progetti', 'Progetti', 'servizio_progetti'], ['ai', 'AI Assistant', 'servizio_ai']].map(([key, label, srv]) => {
-                      const attivo = !!currentUser[srv]
-                      return (
-                        <label key={key} className={`inline-flex items-center gap-2 text-sm ${!attivo ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <input type="checkbox" checked={form.schede_visibili.includes(key)} onChange={() => toggleScheda(key)} disabled={!attivo} className="rounded border-gray-300" />
-                          {label} {!attivo && <span className="text-[10px] text-red-400">(non attivo)</span>}
-                        </label>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('securityOptions') || 'Sicurezza'}</label>
-                  <div className="flex flex-col gap-2">
-                    <label className={`inline-flex items-center gap-2 text-sm ${editingUser && !form.cambio_password && !form.password ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                      <input type="checkbox" checked={!!form.cambio_password} onChange={() => setForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} disabled={editingUser && !form.cambio_password && !form.password} className="rounded border-gray-300" />
-                      {t('forcePasswordChange') || 'Cambio password al primo avvio'}
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={!!form.two_factor} onChange={() => setForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
-                      {t('twoFactorAuth') || '2FA'}
-                    </label>
-                  </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">{t('visibleSections')} <HelpTip size={12} text="Le voci in grigio sono servizi disattivati a livello azienda. Contatta l'amministratore per attivarli." /></label>
+                <div className="flex flex-col gap-2">
+                  {[['ticket', 'Ticket', 'servizio_ticket'], ['progetti', 'Progetti', 'servizio_progetti'], ['ai', 'AI Assistant', 'servizio_ai'], ['progetti_stm', 'Progetti STM', 'servizio_progetti_stm']].map(([key, label, srv]) => {
+                    const attivo = !!currentUser[srv]
+                    return (
+                      <label key={key} className={`inline-flex items-center gap-2 text-sm ${!attivo ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <input type="checkbox" checked={form.schede_visibili.includes(key)} onChange={() => toggleScheda(key)} disabled={!attivo} className="rounded border-gray-300" />
+                        {label} {!attivo && <span className="text-[10px] text-red-400">(non attivo)</span>}
+                      </label>
+                    )
+                  })}
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => { setShowForm(false); setEditingUser(null) }} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
-                  {t('cancel')}
-                </button>
-                <button type="submit" disabled={saving} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
-                  {saving ? t('saving') : editingUser ? t('update') : t('createUser')}
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('securityOptions') || 'Opzioni Password'}</label>
+                <div className="flex flex-col gap-2">
+                  <label className={`inline-flex items-center gap-2 text-sm ${editingUser && !form.cambio_password && !form.password ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input type="checkbox" checked={!!form.cambio_password} onChange={() => setForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} disabled={editingUser && !form.cambio_password && !form.password} className="rounded border-gray-300" />
+                    Cambio password al primo avvio
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={!!form.two_factor} onChange={() => setForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
+                    Autenticazione a 2 fattori
+                  </label>
+                </div>
               </div>
-            </form>
-          </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => { setShowForm(false); setEditingUser(null) }} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
+                {t('cancel')}
+              </button>
+              <button type="submit" disabled={saving} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
+                {saving ? t('saving') : editingUser ? t('update') : t('createUser')}
+              </button>
+            </div>
+          </form>
+        </div>
         </div>
       )}
 

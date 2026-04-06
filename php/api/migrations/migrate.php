@@ -124,6 +124,7 @@ try {
         "ALTER TABLE clienti ADD COLUMN servizio_progetti TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE clienti ADD COLUMN servizio_ai TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE clienti ADD COLUMN servizio_progetti_stm TINYINT(1) NOT NULL DEFAULT 0",
+        "CREATE TABLE IF NOT EXISTS chat_ticket_interna (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, utente_id INT NOT NULL, utente_nome VARCHAR(255), utente_email VARCHAR(255), messaggio TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES ticket(id) ON DELETE CASCADE, INDEX idx_chat_ticket_interna (ticket_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "ALTER TABLE utenti ADD COLUMN abilitato_ai TINYINT(1) NOT NULL DEFAULT 1",
         "ALTER TABLE attivita ADD COLUMN tecnici_ids TEXT DEFAULT NULL",
         "UPDATE utenti SET abilitato_ai = 0 WHERE ruolo = 'tecnico'",

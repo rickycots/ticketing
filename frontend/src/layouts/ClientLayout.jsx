@@ -46,8 +46,17 @@ export default function ClientLayout() {
   useEffect(() => {
     if (clientUser) {
       clientAuth.comunicazioni().then(setComunicazioni).catch(() => {})
-      clientAuth.alerts().then(setAlerts).catch(() => {})
     }
+  }, [])
+
+  // Reload alerts on every navigation + on custom event
+  function reloadAlerts() {
+    if (clientUser) clientAuth.alerts().then(setAlerts).catch(() => {})
+  }
+  useEffect(() => { reloadAlerts() }, [location.pathname])
+  useEffect(() => {
+    window.addEventListener('refresh-alerts', reloadAlerts)
+    return () => window.removeEventListener('refresh-alerts', reloadAlerts)
   }, [])
 
   useEffect(() => {
@@ -237,6 +246,12 @@ export default function ClientLayout() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {(alerts.ticket_in_attesa || []).length > 0 && (
+                <div className="flex items-center gap-1.5 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold animate-pulse">
+                  <AlertTriangle size={14} />
+                  Ticket in attesa ({alerts.ticket_in_attesa.length})
+                </div>
+              )}
               {alerts.attivita_bloccate.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold animate-pulse">
                   <AlertTriangle size={14} />

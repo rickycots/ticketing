@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Building2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Building2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { tickets, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
@@ -33,12 +33,14 @@ export default function TicketList() {
   const [clientList, setClientList] = useState([])
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ stato: '', priorita: '', cliente_id: '', assegnato_a: '', search: '' })
+  const [filters, setFilters] = useState({ stato: [], priorita: '', cliente_id: '', assegnato_a: '', search: '' })
   const [anno, setAnno] = useState(new Date().getFullYear())
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 10 })
   const [statoCounts, setStatoCounts] = useState({})
   const [totalAll, setTotalAll] = useState(0)
+  const [sortCol, setSortCol] = useState('updated_at')
+  const [sortDir, setSortDir] = useState('desc')
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
 
@@ -52,7 +54,10 @@ export default function TicketList() {
   useEffect(() => {
     setLoading(true)
     const params = { page, limit: 10, anno }
-    Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v })
+    Object.entries(filters).forEach(([k, v]) => {
+      if (k === 'stato') { if (v.length > 0) params[k] = v.join(',') }
+      else if (v) params[k] = v
+    })
     tickets.list(params).then(res => {
       setTicketList(res.data)
       setPagination({ total: res.total, totalPages: res.totalPages, limit: res.limit })
@@ -67,7 +72,7 @@ export default function TicketList() {
   }
 
   function toggleStatoFilter(stato) {
-    setFilters(f => ({ ...f, stato: f.stato === stato ? '' : stato }))
+    setFilters(f => ({ ...f, stato: f.stato.includes(stato) ? f.stato.filter(s => s !== stato) : [...f.stato, stato] }))
     setPage(1)
   }
 
@@ -105,9 +110,9 @@ export default function TicketList() {
       {/* Quick filters + Clickable legend with percentages */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <button
-          onClick={() => { setFilters(f => ({ ...f, stato: '' })); setPage(1) }}
+          onClick={() => { setFilters(f => ({ ...f, stato: [] })); setPage(1) }}
           className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-            !filters.stato
+            filters.stato.length === 0
               ? 'bg-blue-100 text-blue-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
@@ -121,7 +126,7 @@ export default function TicketList() {
               key={key}
               onClick={() => toggleStatoFilter(key)}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                filters.stato === key
+                filters.stato.includes(key)
                   ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300'
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
@@ -207,19 +212,41 @@ export default function TicketList() {
           <>
             <table className="w-full">
               <thead>
+                {(() => {
+                  const SortTh = ({ col, children, extra }) => (
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 cursor-pointer hover:text-gray-700 transition-colors select-none"
+                      onClick={() => { if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol(col); setSortDir('desc') } }}>
+                      <span className="inline-flex items-center gap-1">
+                        {children}
+                        {sortCol === col ? (sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={10} className="text-gray-300" />}
+                        {extra}
+                      </span>
+                    </th>
+                  )
+                  return (
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Codice</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Oggetto</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Cliente (SLA)</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Priorita</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Assegnato</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Data</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1">Updated <HelpTip size={12} text="Ultima modifica al ticket (cambio stato, risposta, assegnazione). Mostra il tempo trascorso dall'ultimo aggiornamento." /></span></th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3"><span className="inline-flex items-center gap-1">Evasione <HelpTip size={12} text="Data in cui il ticket è stato risolto. Verde = risolto entro i tempi SLA del cliente. Rosso = risolto oltre i tempi SLA. Grigio = ticket chiuso dal cliente. Il trattino indica che il ticket non è ancora stato risolto." /></span></th>
+                  <SortTh col="codice">Codice</SortTh>
+                  <SortTh col="oggetto">Oggetto</SortTh>
+                  <SortTh col="cliente_nome">Cliente (SLA)</SortTh>
+                  <SortTh col="priorita">Priorita</SortTh>
+                  <SortTh col="assegnato_nome">Assegnato</SortTh>
+                  <SortTh col="created_at">Data</SortTh>
+                  <SortTh col="updated_at" extra={<HelpTip size={12} text="Ultima modifica al ticket (cambio stato, risposta, assegnazione). Mostra il tempo trascorso dall'ultimo aggiornamento." />}>Updated</SortTh>
+                  <SortTh col="data_evasione" extra={<HelpTip size={12} text="Data in cui il ticket è stato risolto. Verde = risolto entro i tempi SLA del cliente. Rosso = risolto oltre i tempi SLA. Grigio = ticket chiuso dal cliente. Il trattino indica che il ticket non è ancora stato risolto." />}>Evasione</SortTh>
                 </tr>
+                  )
+                })()}
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {ticketList.map(t => (
+                {[...ticketList].sort((a, b) => {
+                  const dir = sortDir === 'asc' ? 1 : -1
+                  const va = a[sortCol], vb = b[sortCol]
+                  if (va == null && vb == null) return 0
+                  if (va == null) return 1
+                  if (vb == null) return -1
+                  if (typeof va === 'string') return va.localeCompare(vb) * dir
+                  return (va > vb ? 1 : va < vb ? -1 : 0) * dir
+                }).map(t => (
                   <tr key={t.id} className={`hover:bg-gray-100 transition-colors ${t.stato === 'chiuso' ? 'bg-gray-100/80' : t.stato === 'risolto' ? 'bg-green-100/60' : ''}`}>
                     <td className="px-4 py-3">
                       <Link to={`/admin/tickets/${t.id}`} className="text-sm font-mono text-blue-600 hover:underline">

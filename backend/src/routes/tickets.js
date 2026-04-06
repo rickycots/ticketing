@@ -68,7 +68,11 @@ router.get('/', authenticateToken, (req, res) => {
   const params = [];
   if (req.user.ruolo === 'tecnico') { where += ' AND t.assegnato_a = ?'; params.push(req.user.id); }
   if (anno) { where += " AND strftime('%Y', t.created_at) = ?"; params.push(String(anno)); }
-  if (stato) { where += ' AND t.stato = ?'; params.push(stato); }
+  if (stato) {
+    const stati = stato.split(',').filter(Boolean);
+    if (stati.length === 1) { where += ' AND t.stato = ?'; params.push(stati[0]); }
+    else if (stati.length > 1) { where += ` AND t.stato IN (${stati.map(() => '?').join(',')})`; params.push(...stati); }
+  }
   if (priorita) { where += ' AND t.priorita = ?'; params.push(priorita); }
   if (cliente_id) { where += ' AND t.cliente_id = ?'; params.push(cliente_id); }
   if (assegnato_a) { where += ' AND t.assegnato_a = ?'; params.push(assegnato_a); }
@@ -118,7 +122,7 @@ router.get('/client/:clienteId', authenticateClientToken, (req, res) => {
   `).all(req.params.clienteId, userEmail);
   // Add participant count + message count + unread per ticket
   for (const tk of tickets) {
-    const cnt = db.prepare('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?').get(tk.id);
+    const cnt = db.prepare("SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ? AND mittente NOT IN ('ticketing@stmdomotica.it','assistenzatecnica@stmdomotica.it','noreply@stmdomotica.it','admin@ticketing.local')").get(tk.id);
     tk.partecipanti_count = cnt ? cnt.cnt : 0;
     const msgCnt = db.prepare('SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ?').get(tk.id);
     tk.messaggi_count = msgCnt ? msgCnt.cnt : 0;
@@ -159,7 +163,7 @@ router.put('/client/:clienteId/:ticketId/close', authenticateClientToken, (req, 
 });
 
 // POST /api/tickets/client/:clienteId/:ticketId/reply — client reply (client auth)
-router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req, res) => {
+router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, async (req, res) => {
   if (req.user.cliente_id !== parseInt(req.params.clienteId)) {
     return res.status(403).json({ error: 'Accesso non consentito' });
   }
@@ -199,8 +203,90 @@ router.post('/client/:clienteId/:ticketId/reply', authenticateClientToken, (req,
     );
   }
 
+  // Send email to all participants (other clients + admin/tecnici)
+  try {
+    const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local'];
+    const allEmails = db.prepare('SELECT DISTINCT mittente, destinatario FROM email WHERE ticket_id = ?').all(ticket.id);
+    const addrs = {};
+    allEmails.forEach(row => {
+      if (row.destinatario) row.destinatario.split(',').forEach(a => { addrs[a.trim().toLowerCase()] = true });
+      if (row.mittente) addrs[row.mittente.toLowerCase()] = true;
+    });
+    // Add assigned technician + all admins
+    if (ticket.assegnato_a) {
+      const tecnico = db.prepare('SELECT email FROM utenti WHERE id = ?').get(ticket.assegnato_a);
+      if (tecnico && tecnico.email) addrs[tecnico.email.toLowerCase()] = true;
+    }
+    const admins = db.prepare("SELECT email FROM utenti WHERE ruolo = 'admin' AND attivo = 1").all();
+    admins.forEach(a => { if (a.email) addrs[a.email.toLowerCase()] = true });
+    // Remove system addresses and the sender
+    systemAddrs.forEach(s => delete addrs[s]);
+    delete addrs[mittenteReale.toLowerCase()];
+
+    const destinatari = Object.keys(addrs).join(', ');
+    if (destinatari) {
+      const htmlCorpo = corpo.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      const emailHtml = wrapEmailTemplate(`<p>Segui la risposta al tuo ticket su: <a href="https://www.stmdomotica.cloud/ticketing/client/tickets">portale</a></p>
+<br><p><i>Un tuo collega ha aggiornato il ticket, ecco il messaggio:</i></p>
+<div style="margin:12px 0;padding:12px;background:#f7f7f7;border-left:3px solid #e6a700;border-radius:4px">${htmlCorpo}</div>
+<p style="font-size:12px;color:#888;margin-top:8px">Mittente: ${mittenteReale}</p>
+<br><br><p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>`);
+      await sendTicketingEmail(destinatari, `Re: [TICKET #${ticket.codice}] ${ticket.oggetto}`, emailHtml);
+    }
+  } catch (err) {
+    console.error('[MAIL] Errore invio notifica partecipanti:', err.message);
+  }
+
   console.log(`[EMAIL] Risposta cliente: ${oggetto}`);
   res.json(getTicketWithEmails(ticket.id));
+});
+
+// GET /api/tickets/client/:clienteId/:ticketId/chat — list internal chat
+router.get('/client/:clienteId/:ticketId/chat', authenticateClientToken, (req, res) => {
+  if (req.user.cliente_id !== parseInt(req.params.clienteId)) return res.status(403).json({ error: 'Accesso non consentito' });
+  const msgs = db.prepare('SELECT * FROM chat_ticket_interna WHERE ticket_id = ? ORDER BY created_at ASC').all(req.params.ticketId);
+  res.json(msgs);
+});
+
+// POST /api/tickets/client/:clienteId/:ticketId/chat — send internal chat message
+router.post('/client/:clienteId/:ticketId/chat', authenticateClientToken, async (req, res) => {
+  if (req.user.cliente_id !== parseInt(req.params.clienteId)) return res.status(403).json({ error: 'Accesso non consentito' });
+  const { messaggio } = req.body;
+  if (!messaggio || !messaggio.trim()) return res.status(400).json({ error: 'Messaggio obbligatorio' });
+
+  const ticket = db.prepare('SELECT t.*, c.email as cliente_email FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.id = ? AND t.cliente_id = ?')
+    .get(req.params.ticketId, req.params.clienteId);
+  if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+
+  db.prepare('INSERT INTO chat_ticket_interna (ticket_id, utente_id, utente_nome, utente_email, messaggio) VALUES (?, ?, ?, ?, ?)')
+    .run(req.params.ticketId, req.user.id, req.user.nome, req.user.email, messaggio.trim());
+
+  // Notify other client participants (noreply, NOT saved in thread)
+  try {
+    const senderEmail = (req.user.email || '').toLowerCase();
+    const chatUsers = db.prepare('SELECT DISTINCT utente_email FROM chat_ticket_interna WHERE ticket_id = ? AND LOWER(utente_email) != ?')
+      .all(req.params.ticketId, senderEmail);
+    const addrs = {};
+    chatUsers.forEach(cu => { if (cu.utente_email) addrs[cu.utente_email.toLowerCase()] = true });
+    if (ticket.creatore_email && ticket.creatore_email.toLowerCase() !== senderEmail) addrs[ticket.creatore_email.toLowerCase()] = true;
+    const systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local'];
+    systemAddrs.forEach(s => delete addrs[s]);
+
+    const destinatari = Object.keys(addrs).join(', ');
+    if (destinatari) {
+      const htmlMsg = messaggio.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      const emailHtml = wrapEmailTemplate(`<p><i>Un tuo collega ha aggiornato la chat del ticket <b>${ticket.codice}</b>:</i></p>
+<div style="margin:12px 0;padding:12px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px">${htmlMsg}</div>
+<p style="font-size:12px;color:#888;margin-top:8px">Mittente: ${senderEmail}</p>
+<br><p><b>Per rispondere alla chat vai sul portale.</b></p>`);
+      await sendNoreplyEmail(destinatari, `[TICKET #${ticket.codice}] Chat interna aggiornata`, emailHtml);
+    }
+  } catch (err) {
+    console.error('[MAIL] Errore invio chat interna:', err.message);
+  }
+
+  const msgs = db.prepare('SELECT * FROM chat_ticket_interna WHERE ticket_id = ? ORDER BY created_at ASC').all(req.params.ticketId);
+  res.json(msgs);
 });
 
 // GET /api/tickets/:id — detail (admin, auth)

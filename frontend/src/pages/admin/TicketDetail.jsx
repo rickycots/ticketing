@@ -52,16 +52,23 @@ export default function TicketDetail() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiOpen, setAiOpen] = useState(true)
 
-  useEffect(() => {
-    tickets.get(id).then(t => {
+  function loadTicket() {
+    return tickets.get(id).then(t => {
       setTicket(t)
       if (t.cliente_id) {
         schedeApi.list(t.cliente_id).then(setSchedeList).catch(() => {})
       }
-      // Refresh sidebar badge (ticket marked as read by backend)
+    }).catch(console.error)
+  }
+
+  useEffect(() => {
+    loadTicket().then(() => {
       if (loadSidebarCounts) loadSidebarCounts()
-    }).catch(console.error).finally(() => setLoading(false))
+    }).finally(() => setLoading(false))
     if (isAdmin) users.list().then(setUserList).catch(() => {})
+    // Auto-refresh every 30s
+    const iv = setInterval(loadTicket, 30000)
+    return () => clearInterval(iv)
   }, [id])
 
   async function handleFieldChange(field, value) {
@@ -248,7 +255,7 @@ export default function TicketDetail() {
                       <div key={e.id} className={`p-4 rounded-lg ${isOurs ? 'bg-blue-50' : 'bg-amber-50'}`}>
                         <div className="flex items-center justify-between mb-2">
                           <p className={`text-sm font-medium ${isOurs ? 'text-blue-700' : 'text-amber-700'}`}>
-                            {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                            {isOurs ? 'Noi (Assistenza)' : (<>{e.mittente} <span className="text-xs text-gray-400">({e.mittente === ticket.creatore_email ? 'Owner' : 'Partecipante'})</span> <span className="text-xs italic text-gray-400">{!e.message_id || (e.message_id && e.message_id.startsWith('<simulated')) ? 'msg da Portale' : 'msg da Reply email'}</span></>)}
                             {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                           </p>
                           <p className="text-xs font-semibold text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
@@ -288,7 +295,7 @@ export default function TicketDetail() {
                           <ChevronRight size={14} className={`text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                           <span className={`w-2 h-2 rounded-full shrink-0 ${isOurs ? 'bg-blue-500' : 'bg-amber-500'}`} />
                           <span className={`text-sm font-medium truncate ${isOurs ? 'text-blue-700' : 'text-gray-700'}`}>
-                            {isOurs ? 'Noi (Assistenza)' : e.mittente}
+                            {isOurs ? 'Noi (Assistenza)' : (<>{e.mittente} <span className="text-xs text-gray-400 font-normal">({e.mittente === ticket.creatore_email ? 'Owner' : 'Partecipante'})</span> <span className="text-xs italic text-gray-400 font-normal">{!e.message_id || (e.message_id && e.message_id.startsWith('<simulated')) ? 'msg da Portale' : 'msg da Reply email'}</span></>)}
                             {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                           </span>
                           <span className="text-xs text-gray-400 ml-auto shrink-0">{new Date(e.data_ricezione).toLocaleString('it-IT')}</span>

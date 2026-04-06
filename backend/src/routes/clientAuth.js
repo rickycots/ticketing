@@ -309,7 +309,10 @@ router.get('/alerts', authenticateClientToken, (req, res) => {
   const blockedProjects = db.prepare(
     "SELECT p.id, p.nome FROM progetti p WHERE p.cliente_id = ? AND p.blocco = 'lato_cliente'"
   ).all(clienteId);
-  res.json({ attivita_bloccate: blockedActivities, progetti_bloccati: blockedProjects });
+  const ticketInAttesa = db.prepare(
+    "SELECT id, codice, oggetto FROM ticket WHERE cliente_id = ? AND stato = 'in_attesa'"
+  ).all(clienteId);
+  res.json({ attivita_bloccate: blockedActivities, progetti_bloccati: blockedProjects, ticket_in_attesa: ticketInAttesa });
 });
 
 // GET /api/client-auth/me

@@ -32,7 +32,7 @@ export default function ClientTicketList() {
   const [ticketList, setTicketList] = useState([])
   const [loading, setLoading] = useState(true)
   const [onlyMine, setOnlyMine] = useState(false)
-  const [statoFilter, setStatoFilter] = useState('')
+  const [statoFilter, setStatoFilter] = useState([])
   const [search, setSearch] = useState('')
   const [anno, setAnno] = useState(new Date().getFullYear())
   const [page, setPage] = useState(1)
@@ -62,7 +62,7 @@ export default function ClientTicketList() {
     const s = search.toLowerCase()
     filtered = filtered.filter(tk => (tk.oggetto || '').toLowerCase().includes(s) || (tk.codice || '').toLowerCase().includes(s))
   }
-  if (statoFilter) filtered = filtered.filter(tk => tk.stato === statoFilter)
+  if (statoFilter.length > 0) filtered = filtered.filter(tk => statoFilter.includes(tk.stato))
 
   // Stato counts (before stato filter, after year+mine+search)
   let countBase = ticketList
@@ -102,15 +102,15 @@ export default function ClientTicketList() {
 
       {/* Filters: Tutti + stato pills + Solo miei */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button onClick={() => { setStatoFilter(''); setPage(1) }}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${!statoFilter ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+        <button onClick={() => { setStatoFilter([]); setPage(1) }}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${statoFilter.length === 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
           {t('all') || 'Tutti'} <span className="font-bold">{totalAll}</span>
         </button>
         <span className="text-gray-300">|</span>
         {Object.entries(statoLabels).map(([key, label]) => (
-          <button key={key} onClick={() => { setStatoFilter(statoFilter === key ? '' : key); setPage(1) }}
+          <button key={key} onClick={() => { setStatoFilter(prev => prev.includes(key) ? prev.filter(s => s !== key) : [...prev, key]); setPage(1) }}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-              statoFilter === key ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300' : 'text-gray-500 hover:bg-gray-100'
+              statoFilter.includes(key) ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300' : 'text-gray-500 hover:bg-gray-100'
             }`}>
             <span className={`w-2.5 h-2.5 rounded-full ${statoDotColors[key]}`} />
             {label} <span className="text-gray-400">({pct(key)})</span>
@@ -119,7 +119,7 @@ export default function ClientTicketList() {
         <span className="text-gray-300">|</span>
         <button onClick={() => { setOnlyMine(v => !v); setPage(1) }}
           className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${onlyMine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}>
-          <UserRound size={13} /> {t('onlyMine')}
+          <UserRound size={13} /> {t('onlyMine')} <HelpTip size={12} text="Ogni ticket è visibile a tutti gli utenti del portale a meno che non venga segnato 'privato' dal suo creatore. In questo caso il filtro evidenzia solo quelli creati da te." />
         </button>
       </div>
 

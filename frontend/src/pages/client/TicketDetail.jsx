@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown, RotateCcw, XCircle, LayoutList, List, ChevronRight, ArrowUpDown, Users, Mail } from 'lucide-react'
+import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown, RotateCcw, XCircle, LayoutList, List, ChevronRight, ArrowUpDown, Users, Mail, Paperclip, MessageCircle, ChevronDown } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 import HelpTip from '../../components/HelpTip'
@@ -39,16 +39,41 @@ export default function ClientTicketDetail() {
   const [emailViewMode, setEmailViewMode] = useState('esteso')
   const [expandedEmailId, setExpandedEmailId] = useState(null)
   const [emailSortAsc, setEmailSortAsc] = useState(true)
+  const [onlyLast, setOnlyLast] = useState(false)
   const [showPartecipanti, setShowPartecipanti] = useState(false)
+  const [allegatiCompact, setAllegatiCompact] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatText, setChatText] = useState('')
+  const [chatSending, setChatSending] = useState(false)
+  const [chatFilter, setChatFilter] = useState('story')
   const textareaRef = useRef(null)
+
+  function loadTicket() {
+    return clientTickets.get(clienteId, id).then(setTicket).catch(console.error)
+  }
+  function loadChat() {
+    clientTickets.chatList(clienteId, id).then(setChatMessages).catch(() => {})
+  }
 
   useEffect(() => {
     if (!clienteId) return
-    clientTickets.get(clienteId, id)
-      .then(setTicket)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    loadTicket().finally(() => setLoading(false))
+    loadChat()
+    const iv = setInterval(() => { loadTicket(); loadChat() }, 30000)
+    return () => clearInterval(iv)
   }, [clienteId, id])
+
+  async function handleChatSend(e) {
+    e.preventDefault()
+    if (!chatText.trim()) return
+    setChatSending(true)
+    try {
+      await clientTickets.chatSend(clienteId, id, chatText.trim())
+      setChatText('')
+      loadChat()
+    } catch (err) { console.error(err) }
+    finally { setChatSending(false) }
+  }
 
   useEffect(() => {
     if (isReopen && !loading && ticket && textareaRef.current) {
@@ -68,6 +93,8 @@ export default function ClientTicketDetail() {
       if (isReopen) {
         setSearchParams({}, { replace: true })
       }
+      // Notify layout to refresh alerts
+      window.dispatchEvent(new CustomEvent('refresh-alerts'))
     } catch (err) {
       console.error(err)
     } finally {
@@ -99,7 +126,7 @@ export default function ClientTicketDetail() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <Link
         to="/client/tickets"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
@@ -107,6 +134,11 @@ export default function ClientTicketDetail() {
         <ArrowLeft size={16} />
         {t('backToTickets')}
       </Link>
+
+      <h1 className="text-2xl font-bold mb-4">{t('ticketManagement') || 'Gestione Ticket'}</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-4">
 
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-4">
@@ -191,6 +223,10 @@ export default function ClientTicketDetail() {
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold">{t('conversation')}</h2>
           <div className="flex items-center gap-3">
+            <button onClick={() => setOnlyLast(prev => !prev)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${onlyLast ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-700'}`}>
+              Solo Ultimo
+            </button>
             <button onClick={() => setEmailSortAsc(prev => !prev)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer transition-colors">
               <ArrowUpDown size={13} />
               <span>{emailSortAsc ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}</span>
@@ -206,11 +242,12 @@ export default function ClientTicketDetail() {
           </div>
         </div>
         {ticket.emails && ticket.emails.length > 0 ? (() => {
-          const sortedEmails = [...ticket.emails].sort((a, b) => {
+          const lastEmailId = ticket.emails[ticket.emails.length - 1]?.id
+          const allSorted = [...ticket.emails].sort((a, b) => {
             const da = new Date(a.data_ricezione), db2 = new Date(b.data_ricezione)
             return emailSortAsc ? da - db2 : db2 - da
           })
-          const lastEmailId = ticket.emails[ticket.emails.length - 1]?.id
+          const sortedEmails = onlyLast ? allSorted.filter(e => e.id === lastEmailId) : allSorted
           return emailViewMode === 'esteso' ? (
             <div className="space-y-3 p-3">
               {sortedEmails.map((e) => {
@@ -223,7 +260,7 @@ export default function ClientTicketDetail() {
                   <div key={e.id} className={`p-4 rounded-lg ${isAdmin ? 'bg-blue-50/50' : 'bg-gray-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className={`text-sm font-medium ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
-                        {isAdmin ? t('support') : t('you')}
+                        {isAdmin ? t('support') : (<>{e.mittente} <span className="text-xs text-gray-400">({e.mittente === ticket.creatore_email ? 'Owner' : 'Partecipante'})</span> <span className="text-xs italic text-gray-400">{!e.message_id || (e.message_id && e.message_id.startsWith('<simulated')) ? 'msg da Portale' : 'msg da Reply email'}</span></>)}
                         {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                       </p>
                       <p className="text-xs font-semibold text-gray-400">
@@ -265,7 +302,7 @@ export default function ClientTicketDetail() {
                       <ChevronRight size={14} className={`text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                       <span className={`w-2 h-2 rounded-full shrink-0 ${isAdmin ? 'bg-blue-500' : 'bg-amber-500'}`} />
                       <span className={`text-sm font-medium truncate ${isAdmin ? 'text-blue-700' : 'text-gray-700'}`}>
-                        {isAdmin ? t('support') : t('you')}
+                        {isAdmin ? t('support') : (<>{e.mittente} <span className="text-xs text-gray-400 font-normal">({e.mittente === ticket.creatore_email ? 'Owner' : 'Partecipante'})</span> <span className="text-xs italic text-gray-400 font-normal">{!e.message_id || (e.message_id && e.message_id.startsWith('<simulated')) ? 'msg da Portale' : 'msg da Reply email'}</span></>)}
                         {isLast && <span className="ml-2 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 uppercase">Last msg</span>}
                       </span>
                       <span className="text-xs text-gray-400 ml-auto shrink-0">{new Date(e.data_ricezione).toLocaleString(getDateLocale())}</span>
@@ -298,8 +335,23 @@ export default function ClientTicketDetail() {
       </div>
 
       {/* Reply Form */}
-      {showReplyForm ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      {ticket.stato === 'risolto' && !isReopen ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+            <Send size={18} className="text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-400">Rispondi alla Assistenza</h2>
+          </div>
+          <div className="p-8 bg-gray-50 rounded-b-xl text-center text-sm text-gray-400">
+            Ticket risolto — non è possibile scrivere messaggi
+          </div>
+        </div>
+      ) : showReplyForm ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+            <Send size={18} className="text-green-500" />
+            <h2 className="text-lg font-semibold">Rispondi alla Assistenza</h2>
+          </div>
+          <div className="p-4">
           {isReopen && isClosed && (
             <div className="flex items-center gap-2 mb-3 px-1">
               <RotateCcw size={14} className="text-orange-500" />
@@ -330,12 +382,104 @@ export default function ClientTicketDetail() {
               </button>
             </div>
           </form>
+          </div>
         </div>
       ) : (
         <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-center text-sm text-gray-500">
           {ticket.stato === 'chiuso' ? t('ticketIsClosed') : t('ticketIsResolved')} {t('ticketNoReplies')}
         </div>
       )}
+
+      </div>
+
+      {/* Sidebar */}
+      <div className="space-y-4">
+        {/* Raccolta Allegati */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Paperclip size={18} className="text-blue-500" />
+              <h2 className="text-lg font-semibold">Raccolta Allegati</h2>
+            </div>
+            <button onClick={() => setAllegatiCompact(prev => !prev)}
+              className={`text-xs cursor-pointer transition-colors ${allegatiCompact ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+              {allegatiCompact ? 'Espandi' : 'Compatta'}
+            </button>
+          </div>
+          {!allegatiCompact && (() => {
+            const allAllegati = (ticket.emails || []).flatMap(e => {
+              let att = []
+              try { att = typeof e.allegati === 'string' ? JSON.parse(e.allegati) : (e.allegati || []) } catch {}
+              return att.map(a => ({ ...a, mittente: e.mittente, data: e.data_ricezione }))
+            })
+            return allAllegati.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {allAllegati.map((a, i) => (
+                  <a key={i} href={`${import.meta.env.VITE_API_BASE || '/api'}/uploads/tickets/${a.file}`} target="_blank" rel="noopener noreferrer" download={a.nome}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-700 truncate">{a.nome}</p>
+                      <p className="text-xs text-gray-400">{(a.dimensione / 1024).toFixed(0)} KB — {new Date(a.data).toLocaleDateString(getDateLocale())}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-sm text-gray-400">Nessun allegato</div>
+            )
+          })()}
+        </div>
+
+        {/* Chat Interna */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageCircle size={18} className="text-green-500" />
+              <h2 className="text-lg font-semibold">Chat Interna</h2>
+            </div>
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+              <button onClick={() => setChatFilter('lastmsg')}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-medium cursor-pointer transition-colors ${chatFilter === 'lastmsg' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                LastMSG
+              </button>
+              <button onClick={() => setChatFilter('story')}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-medium cursor-pointer transition-colors ${chatFilter === 'story' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                Story
+              </button>
+            </div>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {(() => {
+              const msgs = chatFilter === 'lastmsg' && chatMessages.length > 0 ? [chatMessages[chatMessages.length - 1]] : chatMessages
+              return msgs.length > 0 ? (
+                <div className="divide-y divide-gray-50">
+                  {msgs.map(m => (
+                    <div key={m.id} className="px-4 py-2.5">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-medium text-green-700">{m.utente_nome || m.utente_email}</span>
+                        <span className="text-[10px] text-gray-400">{new Date(m.created_at).toLocaleString(getDateLocale())}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{m.messaggio}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-xs text-gray-400">Nessun messaggio</div>
+              )
+            })()}
+          </div>
+          <form onSubmit={handleChatSend} className="p-3 border-t border-gray-100 flex gap-2">
+            <input type="text" value={chatText} onChange={e => setChatText(e.target.value)} placeholder="Scrivi ai colleghi..."
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+            <button type="submit" disabled={chatSending || !chatText.trim()}
+              className="bg-green-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-green-700 disabled:opacity-50 cursor-pointer">
+              <Send size={14} />
+            </button>
+          </form>
+        </div>
+      </div>
+      </div>
     </div>
   )
 }

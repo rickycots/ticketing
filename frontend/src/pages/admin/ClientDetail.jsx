@@ -391,11 +391,16 @@ export default function ClientDetail() {
           </button>
         </div>
 
-        {/* User Form (inline) */}
+        {/* User Form (modal) */}
         {showUserForm && (
-          <div className="p-4 border-b border-gray-100 bg-gray-50">
-            <form onSubmit={handleUserSubmit} className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowUserForm(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowUserForm(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
+              <X size={18} />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">{editingUser ? 'Modifica Utente' : 'Nuovo Utente'}</h2>
+            <form onSubmit={handleUserSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                   <input type="text" value={userForm.nome} onChange={e => setUserForm(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -404,71 +409,69 @@ export default function ClientDetail() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                   <input type="email" value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password {editingUser ? '(lascia vuoto per non cambiare)' : '*'}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password {editingUser ? '(vuoto = invariata)' : '*'}</label>
                   <input type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value, ...(editingUser && e.target.value ? { cambio_password: 1 } : {}) }))} required={!editingUser} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
-              </div>
-              <div className="flex gap-6 items-start">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
-                  <select value={userForm.ruolo} onChange={e => setUserForm(f => ({ ...f, ruolo: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lingua</label>
-                  <select value={userForm.lingua} onChange={e => setUserForm(f => ({ ...f, lingua: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <option value="it">Italiano</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                  </select>
-                </div>
-                <div className="flex gap-8">
-                  {userForm.ruolo === 'user' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Schede Visibili</label>
-                      <div className="flex flex-col gap-2">
-                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_ticket ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('ticket')} onChange={() => toggleScheda('ticket')} disabled={!client?.servizio_ticket} className="rounded border-gray-300" />
-                          Ticket {!client?.servizio_ticket && <span className="text-[10px] text-red-400">(non attivo)</span>}
-                        </label>
-                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_progetti ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('progetti')} onChange={() => toggleScheda('progetti')} disabled={!client?.servizio_progetti} className="rounded border-gray-300" />
-                          Progetti {!client?.servizio_progetti && <span className="text-[10px] text-red-400">(non attivo)</span>}
-                        </label>
-                        <label className={`inline-flex items-center gap-2 text-sm ${!client?.servizio_ai ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                          <input type="checkbox" checked={userForm.schede_visibili.includes('ai')} onChange={() => toggleScheda('ai')} disabled={!client?.servizio_ai} className="rounded border-gray-300" />
-                          AI Assistant {!client?.servizio_ai && <span className="text-[10px] text-red-400">(non attivo)</span>}
-                        </label>
-                      </div>
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Opzioni Sicurezza</label>
-                    <div className="flex flex-col gap-2">
-                      <label className={`inline-flex items-center gap-2 text-sm ${editingUser && !userForm.cambio_password && !userForm.password ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input type="checkbox" checked={!!userForm.cambio_password} onChange={() => setUserForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} disabled={editingUser && !userForm.cambio_password && !userForm.password} className="rounded border-gray-300" />
-                        Consenti cambio password al primo avvio
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={!!userForm.two_factor} onChange={() => setUserForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
-                        Utilizza autenticazione a 2 fattori
-                      </label>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
+                    <select value={userForm.ruolo} onChange={e => setUserForm(f => ({ ...f, ruolo: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Lingua</label>
+                    <select value={userForm.lingua} onChange={e => setUserForm(f => ({ ...f, lingua: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                      <option value="it">Italiano</option>
+                      <option value="en">English</option>
+                      <option value="fr">Français</option>
+                    </select>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">
-                  {editingUser ? 'Aggiorna' : 'Crea Utente'}
-                </button>
+              {/* Servizi + Opzioni Password su 2 colonne */}
+              <div className="grid grid-cols-2 gap-4">
+                {userForm.ruolo === 'user' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">Servizi Visibili <HelpTip size={12} text="Le voci in grigio sono servizi disattivati a livello azienda (box Servizi Attivi). Attivali prima nella scheda cliente per poterli assegnare agli utenti." /></label>
+                    <div className="flex flex-col gap-2">
+                      {[['ticket', 'Ticket', 'servizio_ticket'], ['progetti', 'Progetti', 'servizio_progetti'], ['ai', 'AI Assistant', 'servizio_ai'], ['progetti_stm', 'Progetti STM', 'servizio_progetti_stm']].map(([key, label, srv]) => (
+                        <label key={key} className={`inline-flex items-center gap-2 text-sm ${!client?.[srv] ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <input type="checkbox" checked={userForm.schede_visibili.includes(key)} onChange={() => toggleScheda(key)} disabled={!client?.[srv]} className="rounded border-gray-300" />
+                          {label} {!client?.[srv] && <span className="text-[10px] text-red-400">(non attivo)</span>}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Opzioni Password</label>
+                  <div className="flex flex-col gap-2">
+                    <label className={`inline-flex items-center gap-2 text-sm ${editingUser && !userForm.cambio_password && !userForm.password ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                      <input type="checkbox" checked={!!userForm.cambio_password} onChange={() => setUserForm(f => ({ ...f, cambio_password: f.cambio_password ? 0 : 1 }))} disabled={editingUser && !userForm.cambio_password && !userForm.password} className="rounded border-gray-300" />
+                      Cambio password al primo avvio
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={!!userForm.two_factor} onChange={() => setUserForm(f => ({ ...f, two_factor: f.two_factor ? 0 : 1 }))} className="rounded border-gray-300" />
+                      Autenticazione a 2 fattori
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setShowUserForm(false)} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
                   Annulla
                 </button>
+                <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer">
+                  {editingUser ? 'Aggiorna' : 'Crea Utente'}
+                </button>
               </div>
             </form>
+          </div>
           </div>
         )}
 

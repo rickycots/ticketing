@@ -181,6 +181,20 @@ function runMigrations() {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_allegati_attivita ON allegati_attivita(attivita_id)');
 
+  // Create chat_ticket_interna table (client-side internal chat)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_ticket_interna (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL REFERENCES ticket(id) ON DELETE CASCADE,
+      utente_id INTEGER NOT NULL,
+      utente_nome TEXT,
+      utente_email TEXT,
+      messaggio TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_chat_ticket_interna ON chat_ticket_interna(ticket_id)');
+
   // Create impostazioni table (key-value settings store)
   db.exec(`
     CREATE TABLE IF NOT EXISTS impostazioni (

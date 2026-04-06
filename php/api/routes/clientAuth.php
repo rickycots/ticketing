@@ -262,9 +262,14 @@ $router->get('/client-auth/alerts', [Auth::class, 'authenticateClientToken'], fu
         "SELECT p.id, p.nome FROM progetti p WHERE p.cliente_id = ? AND p.blocco = 'lato_cliente'",
         [$clienteId]
     );
+    $ticketInAttesa = Database::fetchAll(
+        "SELECT id, codice, oggetto FROM ticket WHERE cliente_id = ? AND stato = 'in_attesa'",
+        [$clienteId]
+    );
     Response::json([
         'attivita_bloccate' => $blockedActivities,
         'progetti_bloccati' => $blockedProjects,
+        'ticket_in_attesa' => $ticketInAttesa,
     ]);
 });
 

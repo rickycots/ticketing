@@ -1,5 +1,23 @@
 # Storico Versioni
 
+## V5.1.00-0406 — 6 Aprile 2026
+- Ticket client dettaglio: layout 2 colonne stile admin, "Rispondi alla Assistenza", blocco se risolto
+- Ticket client dettaglio: sidebar con "Raccolta Allegati" (compattabile) e "Chat Interna" con filtro LastMSG/Story
+- Chat Interna ticket: nuova tabella chat_ticket_interna, endpoint GET/POST, visibile solo lato client
+- Chat Interna: notifica email ai partecipanti via noreply (non salvata nel thread), bordo verde
+- Ticket client: filtro "Solo Ultimo" per mostrare solo l'ultimo messaggio nella conversazione
+- Ticket client reply: email automatica a tutti i partecipanti + admin + tecnico assegnato
+- Ticket admin: ordinamento cliccabile su tutte le colonne (Codice, Oggetto, Cliente, Priorità, Assegnato, Data, Updated, Evasione)
+- Ticket admin/client: filtro stati multipli selezionabili contemporaneamente (backend supporta CSV)
+- Ticket client: alert "Ticket in attesa" nella top bar, refresh immediato dopo reply
+- Ticket admin/client: auto-refresh thread ogni 30s
+- Ticket client: mark email admin come lette all'apertura (fix cerchio rosso MSG)
+- Ticket: conteggio partecipanti esclude indirizzi di sistema
+- Thread messaggi: indicazione Owner/Partecipante + msg da Portale/Reply email
+- Email reply admin: testo cambiato in "Ecco la risposta di STM Domotica"
+- Popup utente admin/client unificato: stessa struttura, 540px, Ruolo fisso User lato client
+- Popup utente: aggiunto servizio "Progetti STM", HelpTip su "Servizi Visibili"
+
 ## V5.0.01-0406 — 6 Aprile 2026
 - Progetti lista: badge "STM Domotica" blu sui progetti manutenzione ordinaria
 - Ticket client: email admin marcate come lette quando il cliente apre il ticket (fix cerchio rosso MSG)

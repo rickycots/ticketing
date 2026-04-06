@@ -55,7 +55,7 @@ $router->get('/tickets/client/:clienteId', [Auth::class, 'authenticateClientToke
         [$req->params['clienteId'], $userEmail]
     );
     foreach ($tickets as &$tk) {
-        $cnt = Database::fetchOne('SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ?', [$tk['id']]);
+        $cnt = Database::fetchOne("SELECT COUNT(DISTINCT mittente) as cnt FROM email WHERE ticket_id = ? AND mittente NOT IN ('ticketing@stmdomotica.it','assistenzatecnica@stmdomotica.it','noreply@stmdomotica.it','admin@ticketing.local')", [$tk['id']]);
         $tk['partecipanti_count'] = $cnt ? (int)$cnt['cnt'] : 0;
         $msgCnt = Database::fetchOne('SELECT COUNT(*) as cnt FROM email WHERE ticket_id = ?', [$tk['id']]);
         $tk['messaggi_count'] = $msgCnt ? (int)$msgCnt['cnt'] : 0;
@@ -85,6 +85,60 @@ $router->get('/tickets/client/:clienteId/:ticketId', [Auth::class, 'authenticate
         [$ticket['id']]
     );
     Response::json($ticket);
+});
+
+// GET /api/tickets/client/:clienteId/:ticketId/chat — list internal chat
+$router->get('/tickets/client/:clienteId/:ticketId/chat', [Auth::class, 'authenticateClientToken'], function($req) {
+    if ($req->user['cliente_id'] != $req->params['clienteId']) Response::error('Accesso non consentito', 403);
+    $msgs = Database::fetchAll('SELECT * FROM chat_ticket_interna WHERE ticket_id = ? ORDER BY created_at ASC', [$req->params['ticketId']]);
+    Response::json($msgs);
+});
+
+// POST /api/tickets/client/:clienteId/:ticketId/chat — send internal chat message
+$router->post('/tickets/client/:clienteId/:ticketId/chat', [Auth::class, 'authenticateClientToken'], function($req) {
+    if ($req->user['cliente_id'] != $req->params['clienteId']) Response::error('Accesso non consentito', 403);
+    $messaggio = trim($req->body['messaggio'] ?? '');
+    if (!$messaggio) Response::error('Messaggio obbligatorio', 400);
+
+    $ticket = Database::fetchOne('SELECT t.*, c.email as cliente_email FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id WHERE t.id = ? AND t.cliente_id = ?',
+        [$req->params['ticketId'], $req->params['clienteId']]);
+    if (!$ticket) Response::error('Ticket non trovato', 404);
+
+    Database::execute(
+        'INSERT INTO chat_ticket_interna (ticket_id, utente_id, utente_nome, utente_email, messaggio) VALUES (?, ?, ?, ?, ?)',
+        [$req->params['ticketId'], $req->user['id'], $req->user['nome'] ?? '', $req->user['email'] ?? '', $messaggio]
+    );
+
+    // Notify other client participants via email (noreply, NOT saved in thread)
+    try {
+        $systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local'];
+        $senderEmail = strtolower($req->user['email'] ?? '');
+        // Get all client users who participated in chat for this ticket
+        $chatUsers = Database::fetchAll('SELECT DISTINCT utente_email FROM chat_ticket_interna WHERE ticket_id = ? AND utente_email != ?',
+            [$req->params['ticketId'], $senderEmail]);
+        // Also add ticket creator if different
+        $addrs = [];
+        foreach ($chatUsers as $cu) { if ($cu['utente_email']) $addrs[strtolower($cu['utente_email'])] = true; }
+        if ($ticket['creatore_email'] && strtolower($ticket['creatore_email']) !== $senderEmail) {
+            $addrs[strtolower($ticket['creatore_email'])] = true;
+        }
+        foreach ($systemAddrs as $sys) unset($addrs[$sys]);
+
+        if (!empty($addrs)) {
+            $destinatari = implode(', ', array_keys($addrs));
+            $htmlMsg = nl2br(htmlspecialchars($messaggio));
+            $emailHtml = Mailer::wrapEmailTemplate("<p><i>Un tuo collega ha aggiornato la chat del ticket <b>{$ticket['codice']}</b>:</i></p>
+<div style=\"margin:12px 0;padding:12px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px\">{$htmlMsg}</div>
+<p style=\"font-size:12px;color:#888;margin-top:8px\">Mittente: {$senderEmail}</p>
+<br><p><b>Per rispondere alla chat vai sul portale.</b></p>");
+            Mailer::sendNoreply($destinatari, "[TICKET #{$ticket['codice']}] Chat interna aggiornata", $emailHtml);
+        }
+    } catch (\Exception $e) {
+        error_log('[MAIL] Errore invio chat interna: ' . $e->getMessage());
+    }
+
+    $msgs = Database::fetchAll('SELECT * FROM chat_ticket_interna WHERE ticket_id = ? ORDER BY created_at ASC', [$req->params['ticketId']]);
+    Response::json($msgs);
 });
 
 // PUT /api/tickets/client/:clienteId/:ticketId/close
@@ -148,6 +202,41 @@ $router->post('/tickets/client/:clienteId/:ticketId/reply', [Auth::class, 'authe
         );
     }
 
+    // Send email to all participants (other clients + admin/tecnici)
+    try {
+        $systemAddrs = ['ticketing@stmdomotica.it', 'assistenzatecnica@stmdomotica.it', 'noreply@stmdomotica.it', 'admin@ticketing.local'];
+        $allEmails = Database::fetchAll('SELECT DISTINCT mittente, destinatario FROM email WHERE ticket_id = ?', [$ticket['id']]);
+        $addrs = [];
+        foreach ($allEmails as $row) {
+            if ($row['destinatario']) foreach (explode(',', $row['destinatario']) as $a) $addrs[strtolower(trim($a))] = true;
+            if ($row['mittente']) $addrs[strtolower(trim($row['mittente']))] = true;
+        }
+        // Add assigned technician + all admins
+        if ($ticket['assegnato_a']) {
+            $tecnico = Database::fetchOne('SELECT email FROM utenti WHERE id = ?', [$ticket['assegnato_a']]);
+            if ($tecnico && $tecnico['email']) $addrs[strtolower($tecnico['email'])] = true;
+        }
+        $admins = Database::fetchAll("SELECT email FROM utenti WHERE ruolo = 'admin' AND attivo = 1");
+        foreach ($admins as $adm) { if ($adm['email']) $addrs[strtolower($adm['email'])] = true; }
+        // Remove system addresses and the sender
+        foreach ($systemAddrs as $sys) unset($addrs[$sys]);
+        unset($addrs[strtolower($mittenteReale)]);
+
+        if (!empty($addrs)) {
+            $destinatari = implode(', ', array_keys($addrs));
+            $htmlCorpo = nl2br(htmlspecialchars($corpo));
+            $emailSubject = "Re: [TICKET #{$ticket['codice']}] {$ticket['oggetto']}";
+            $emailHtml = Mailer::wrapEmailTemplate("<p>Segui la risposta al tuo ticket su: <a href=\"https://www.stmdomotica.cloud/ticketing/client/tickets\">portale</a></p>
+<br><p><i>Un tuo collega ha aggiornato il ticket, ecco il messaggio:</i></p>
+<div style=\"margin:12px 0;padding:12px;background:#f7f7f7;border-left:3px solid #e6a700;border-radius:4px\">{$htmlCorpo}</div>
+<p style=\"font-size:12px;color:#888;margin-top:8px\">Mittente: {$mittenteReale}</p>
+<br><br><p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>");
+            Mailer::sendTicketing($destinatari, $emailSubject, $emailHtml);
+        }
+    } catch (\Exception $e) {
+        error_log('[MAIL] Errore invio notifica partecipanti: ' . $e->getMessage());
+    }
+
     Response::json(getTicketWithEmails($ticket['id']));
 });
 
@@ -166,7 +255,11 @@ $router->get('/tickets', [Auth::class, 'authenticateToken'], function($req) {
 
     if ($isTecnico) { $where .= ' AND t.assegnato_a = ?'; $params[] = $userId; }
     if (!empty($req->query['anno'])) { $where .= " AND YEAR(t.created_at) = ?"; $params[] = $req->query['anno']; }
-    if (!empty($req->query['stato'])) { $where .= ' AND t.stato = ?'; $params[] = $req->query['stato']; }
+    if (!empty($req->query['stato'])) {
+        $stati = explode(',', $req->query['stato']);
+        if (count($stati) === 1) { $where .= ' AND t.stato = ?'; $params[] = $stati[0]; }
+        else { $where .= ' AND t.stato IN (' . implode(',', array_fill(0, count($stati), '?')) . ')'; $params = array_merge($params, $stati); }
+    }
     if (!empty($req->query['priorita'])) { $where .= ' AND t.priorita = ?'; $params[] = $req->query['priorita']; }
     if (!empty($req->query['cliente_id'])) { $where .= ' AND t.cliente_id = ?'; $params[] = $req->query['cliente_id']; }
     if (!empty($req->query['assegnato_a'])) { $where .= ' AND t.assegnato_a = ?'; $params[] = $req->query['assegnato_a']; }

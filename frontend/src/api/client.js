@@ -397,6 +397,10 @@ export const clientTickets = {
     clientRequest(`/tickets/client/${clienteId}/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ corpo }) }),
   close: (clienteId, ticketId) =>
     clientRequest(`/tickets/client/${clienteId}/${ticketId}/close`, { method: 'PUT' }),
+  chatList: (clienteId, ticketId) =>
+    clientRequest(`/tickets/client/${clienteId}/${ticketId}/chat`),
+  chatSend: (clienteId, ticketId, messaggio) =>
+    clientRequest(`/tickets/client/${clienteId}/${ticketId}/chat`, { method: 'POST', body: JSON.stringify({ messaggio }) }),
   create: (data, files) => {
     const formData = new FormData();
     Object.entries(data).forEach(([k, v]) => { if (v != null) formData.append(k, v); });

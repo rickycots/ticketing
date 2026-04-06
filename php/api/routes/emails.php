@@ -157,7 +157,7 @@ $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
             $codice = $ticketInfo ? $ticketInfo['codice'] : '';
             $emailSubject = "[TICKET #{$codice}] STM Domotica Reply";
             $emailHtml = Mailer::wrapEmailTemplate("<p>Segui la risposta al tuo ticket su: <a href=\"https://www.stmdomotica.it/cloud/ticketing/client/tickets\">portale</a></p>
-<br><p><i>Ecco la tua risposta:</i></p>
+<br><p><i>Ecco la risposta di STM Domotica:</i></p>
 <div style=\"margin:12px 0;padding:12px;background:#f7f7f7;border-left:3px solid #0066cc;border-radius:4px\">{$htmlCorpo}</div>
 <br><br><p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>");
         } else {
