@@ -404,16 +404,19 @@ export default function ProjectList() {
                 )}
               </div>
 
-              {/* Tecnici avatars */}
-              {isAdmin && p.tecnici && p.tecnici.length > 0 && (
-                <div className="flex gap-1 mt-3">
-                  {getTecniciNames(p.tecnici)?.map((initials, i) => (
+              {/* Tecnici avatars + STM badge */}
+              {(isAdmin && p.tecnici && p.tecnici.length > 0) || !!p.manutenzione_ordinaria ? (
+                <div className="flex items-center gap-1 mt-3">
+                  {isAdmin && p.tecnici && p.tecnici.length > 0 && getTecniciNames(p.tecnici)?.map((initials, i) => (
                     <span key={i} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
                       {initials}
                     </span>
                   ))}
+                  {!!p.manutenzione_ordinaria && (
+                    <span className="ml-auto text-xs font-bold text-blue-600">STM Domotica</span>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               {bloccoLabels[p.blocco] && (
                 <div className={`mt-3 rounded-lg px-3 py-1.5 text-xs font-medium ${bloccoColors[p.blocco]}`}>

@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.0.01-0406 — 6 Aprile 2026
+- Progetti lista: badge "STM Domotica" blu sui progetti manutenzione ordinaria
+- Ticket client: email admin marcate come lette quando il cliente apre il ticket (fix cerchio rosso MSG)
+
 ## V5.0.00-0405 — 5 Aprile 2026
 - Nuovo servizio "Progetti STM": campo servizio_progetti_stm su clienti, controlla visibilità progetti manutenzione ordinaria nel portale cliente
 - ClientDetail: box Servizi Attivi con 4 checkbox (Ticket, Progetti, AI, Progetti STM), pulsante Salva, HelpTip dedicato

@@ -78,6 +78,8 @@ $router->get('/tickets/client/:clienteId/:ticketId', [Auth::class, 'authenticate
         [$req->params['ticketId'], $req->params['clienteId'], $userEmail]
     );
     if (!$ticket) Response::error('Ticket non trovato', 404);
+    // Mark admin replies as read when client opens ticket
+    Database::execute("UPDATE email SET letta = 1 WHERE ticket_id = ? AND letta = 0 AND direzione = 'inviata'", [$ticket['id']]);
     $ticket['emails'] = Database::fetchAll(
         'SELECT * FROM email WHERE ticket_id = ? ORDER BY data_ricezione ASC',
         [$ticket['id']]

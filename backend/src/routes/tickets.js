@@ -139,6 +139,8 @@ router.get('/client/:clienteId/:ticketId', authenticateClientToken, (req, res) =
     WHERE t.id = ? AND t.cliente_id = ? AND (t.privato = 0 OR t.creatore_email = ?)
   `).get(req.params.ticketId, req.params.clienteId, req.user.email);
   if (!ticket) return res.status(404).json({ error: 'Ticket non trovato' });
+  // Mark admin replies as read when client opens ticket
+  db.prepare("UPDATE email SET letta = 1 WHERE ticket_id = ? AND letta = 0 AND direzione = 'inviata'").run(ticket.id);
   ticket.emails = db.prepare('SELECT * FROM email WHERE ticket_id = ? ORDER BY data_ricezione ASC').all(ticket.id);
   res.json(ticket);
 });
