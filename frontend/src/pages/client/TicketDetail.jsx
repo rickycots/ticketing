@@ -231,7 +231,7 @@ export default function ClientTicketDetail() {
               <ArrowUpDown size={13} />
               <span>{emailSortAsc ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}</span>
             </button>
-          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+          <div className="hidden lg:flex items-center bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
               <LayoutList size={13} /> {t('extended') || 'Estesa'}
             </button>
@@ -437,6 +437,8 @@ export default function ClientTicketDetail() {
             <div className="flex items-center gap-2">
               <MessageCircle size={18} className="text-green-500" />
               <h2 className="text-lg font-semibold">Chat Interna</h2>
+              <span className="bg-green-100 text-green-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{[...new Set(chatMessages.map(m => m.utente_email))].length}</span>
+              <HelpTip size={12} text="Chat riservata tra i colleghi della tua azienda. I messaggi qui non sono visibili all'assistenza tecnica STM. Ogni partecipante riceve una notifica email quando qualcuno scrive. Per rispondere usa il portale, non la email." />
             </div>
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
               <button onClick={() => setChatFilter('lastmsg')}

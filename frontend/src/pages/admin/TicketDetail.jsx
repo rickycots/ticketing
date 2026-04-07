@@ -227,7 +227,7 @@ export default function TicketDetail() {
                     <ArrowUpDown size={13} />
                     <span>{emailSortAsc ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}</span>
                   </button>
-                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                <div className="hidden lg:flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button onClick={() => setEmailViewMode('esteso')} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${emailViewMode === 'esteso' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                     <LayoutList size={13} /> Estesa
                   </button>

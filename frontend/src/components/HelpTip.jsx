@@ -17,7 +17,7 @@ export default function HelpTip({ text, size = 14, className = '' }) {
   }, [show])
 
   return (
-    <span className={`relative inline-flex ${className}`}>
+    <span className={`relative hidden lg:inline-flex ${className}`}>
       <button
         ref={btnRef}
         type="button"

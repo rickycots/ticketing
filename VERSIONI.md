@@ -1,5 +1,17 @@
 # Storico Versioni
 
+## V5.1.01-0407 — 7 Aprile 2026
+- PWA: manifest.json, service worker, meta Apple per installazione su iPhone
+- Mobile admin: sidebar hamburger slide-in, top bar con menu button
+- Mobile admin: ticket list card compatte, tabella nascosta
+- Mobile admin: HelpTip nascosti, toggle estesa/compatta nascosti (sempre estesa)
+- Mobile admin: pallini stato compatti senza label, footer responsive
+- Mobile admin: email dettaglio popup fullscreen invece di pannello laterale
+- Email dettaglio: tendina progetti filtrata per cliente selezionato (desktop + mobile)
+- Fix config.enc locale: password assistenzatecnica@ aggiornata per evitare sovrascrittura al deploy
+- Fix cambio password non richiesto: conversione Number() per cambio_password da PHP
+- Fix cambio lingua senza logout: aggiornamento sessionStorage + reload automatico
+
 ## V5.1.00-0406 — 6 Aprile 2026
 - Ticket client dettaglio: layout 2 colonne stile admin, "Rispondi alla Assistenza", blocco se risolto
 - Ticket client dettaglio: sidebar con "Raccolta Allegati" (compattabile) e "Chat Interna" con filtro LastMSG/Story

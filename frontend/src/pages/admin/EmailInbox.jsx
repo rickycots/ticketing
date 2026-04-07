@@ -486,7 +486,48 @@ export default function EmailInbox() {
         </div>
 
         {/* Email Detail */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+        {/* Mobile detail popup */}
+        {selected && (
+          <div className="fixed inset-0 z-50 bg-black/40 lg:hidden" onClick={() => setSelected(null)}>
+            <div className="absolute inset-2 bg-white rounded-xl shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+                <h3 className="text-sm font-semibold truncate flex-1">{selected.oggetto}</h3>
+                <button onClick={() => setSelected(null)} className="p-1 rounded-lg hover:bg-gray-100 cursor-pointer shrink-0 ml-2">
+                  <X size={18} className="text-gray-400" />
+                </button>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>{getDirLabel(selected)}</span>
+                </div>
+                <p className="text-sm text-gray-500 mb-1">Da: {selected.mittente}</p>
+                <p className="text-sm text-gray-500 mb-1">A: {selected.destinatario}</p>
+                <p className="text-xs text-gray-400 mb-3">{new Date(selected.data_ricezione).toLocaleString('it-IT')}</p>
+                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap mb-4">{selected.corpo}</div>
+                {/* Client assign */}
+                <div className="mb-3">
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Cliente</label>
+                  <select value={selected.cliente_id || ''} onChange={e => handleAssignClient(selected.id, e.target.value ? Number(e.target.value) : null)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">Nessun cliente</option>
+                    {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
+                  </select>
+                </div>
+                {/* Project assign */}
+                <div className="mb-3">
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Progetto</label>
+                  <select value={selected.progetto_id || ''} onChange={e => handleAssignProject(selected.id, e.target.value ? Number(e.target.value) : null)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="">Nessun progetto</option>
+                    {(selected.cliente_id ? projectList.filter(p => p.cliente_id === selected.cliente_id) : projectList).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="hidden lg:flex lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-col">
           {selected ? (
             <div className="overflow-y-auto flex-1">
               <div className="p-6">
@@ -628,7 +669,7 @@ export default function EmailInbox() {
                     className={selectCls}
                   >
                     <option value="">Nessun progetto</option>
-                    {projectList.map(p => (
+                    {(selected.cliente_id ? projectList.filter(p => p.cliente_id === selected.cliente_id) : projectList).map(p => (
                       <option key={p.id} value={p.id}>{p.nome} — {p.cliente_nome}</option>
                     ))}
                   </select>

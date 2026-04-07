@@ -1,0 +1,19 @@
+{
+  "name": "STM Portal - Gestione Progetti & Ticket",
+  "short_name": "STM Portal",
+  "description": "Portale gestione ticket e progetti STM Domotica",
+  "start_url": "/ticketing/",
+  "scope": "/ticketing/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "LogoSTM.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
 
@@ -38,6 +38,11 @@ export default function AdminLayout() {
   if (location.pathname === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) {
     return <Navigate to="/admin" replace />
   }
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Close mobile menu on navigation
+  useEffect(() => { setMobileMenuOpen(false) }, [location.pathname])
 
   const [expandedMenus, setExpandedMenus] = useState(() => {
     // Auto-expand if current path is inside a submenu
@@ -167,8 +172,12 @@ export default function AdminLayout() {
         </div>
       )}
       <div className="flex flex-1 overflow-hidden">
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
+      <aside className={`w-64 bg-gray-900 text-white flex flex-col shrink-0 fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-200 lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-gray-700">
           <p className="text-[10px] text-gray-500 mb-1">{APP_VERSION}</p>
           <h1 className="text-lg font-bold">Ticketing</h1>
@@ -348,7 +357,10 @@ export default function AdminLayout() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         {/* Top bar with notifications */}
-        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end">
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center justify-between lg:justify-end">
+          <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+            <Menu size={22} className="text-gray-600" />
+          </button>
           <div className="relative" ref={notifRef}>
             <button
               onClick={toggleNotifPanel}
@@ -413,7 +425,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-3 lg:p-6">
           <Outlet context={{ loadSidebarCounts }} />
         </div>
       </main>

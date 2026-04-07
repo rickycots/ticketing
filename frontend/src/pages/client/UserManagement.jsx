@@ -23,7 +23,7 @@ export default function UserManagement() {
   function openForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: user.cambio_password ?? 1, two_factor: user.two_factor ?? 0 })
+      setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
     } else {
       setEditingUser(null)
       setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
@@ -39,6 +39,12 @@ export default function UserManagement() {
         const data = { ...form }
         if (!data.password) delete data.password
         await clientUsers.update(editingUser.id, data)
+        // If editing self, update sessionStorage with new lingua
+        if (editingUser.id === currentUser.id && form.lingua !== currentUser.lingua) {
+          const updated = { ...currentUser, lingua: form.lingua }
+          sessionStorage.setItem('clientUser', JSON.stringify(updated))
+          window.location.reload()
+        }
       } else {
         await clientUsers.create(form)
       }

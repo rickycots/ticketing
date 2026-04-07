@@ -172,7 +172,7 @@ export default function ClientDetail() {
   function openUserForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: user.cambio_password ?? 1, two_factor: user.two_factor ?? 0 })
+      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
     } else {
       setEditingUser(null)
       setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })

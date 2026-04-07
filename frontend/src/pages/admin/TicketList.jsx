@@ -108,10 +108,10 @@ export default function TicketList() {
       </div>
 
       {/* Quick filters + Clickable legend with percentages */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-1.5 lg:gap-3 mb-4">
         <button
           onClick={() => { setFilters(f => ({ ...f, stato: [] })); setPage(1) }}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+          className={`px-2 lg:px-3 py-1 lg:py-1.5 rounded-full text-[10px] lg:text-xs font-medium cursor-pointer transition-colors ${
             filters.stato.length === 0
               ? 'bg-blue-100 text-blue-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -119,23 +119,21 @@ export default function TicketList() {
         >
           Tutti <span className="font-bold">{totalAll}</span>
         </button>
-        <span className="text-gray-300">|</span>
-        <div className="flex items-center gap-2">
+        <span className="text-gray-300 hidden lg:inline">|</span>
           {Object.entries(statoLabels).map(([key, label]) => (
             <button
               key={key}
               onClick={() => toggleStatoFilter(key)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+              className={`inline-flex items-center gap-1 lg:gap-1.5 px-2 lg:px-2.5 py-1 rounded-full text-[10px] lg:text-xs font-medium cursor-pointer transition-colors ${
                 filters.stato.includes(key)
                   ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300'
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
-              <span className={`w-2.5 h-2.5 rounded-full ${statoDotColors[key]}`} />
-              {label} <span className="text-gray-400">({pct(key)})</span>
+              <span className={`w-2 lg:w-2.5 h-2 lg:h-2.5 rounded-full ${statoDotColors[key]}`} />
+              <span className="hidden lg:inline">{label}</span> <span className="text-gray-400 hidden lg:inline">({pct(key)})</span>
             </button>
           ))}
-        </div>
       </div>
 
       {/* Filters */}
@@ -210,7 +208,34 @@ export default function TicketList() {
           <div className="p-8 text-center text-gray-400">Nessun ticket trovato per il {anno}</div>
         ) : (
           <>
-            <table className="w-full">
+            {/* Mobile card view */}
+            <div className="lg:hidden divide-y divide-gray-100">
+              {[...ticketList].sort((a, b) => {
+                const dir = sortDir === 'asc' ? 1 : -1
+                const va = a[sortCol], vb = b[sortCol]
+                if (va == null && vb == null) return 0; if (va == null) return 1; if (vb == null) return -1
+                if (typeof va === 'string') return va.localeCompare(vb) * dir
+                return (va > vb ? 1 : va < vb ? -1 : 0) * dir
+              }).map(t => (
+                <Link key={t.id} to={`/admin/tickets/${t.id}`}
+                  className={`block p-3 hover:bg-gray-50 transition-colors ${t.stato === 'chiuso' ? 'bg-gray-100/80' : t.stato === 'risolto' ? 'bg-green-100/60' : ''}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statoDotColors[t.stato] || 'bg-gray-400'}`} />
+                      <span className="text-xs font-mono text-gray-400">{t.codice}</span>
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${prioritaColors[t.priorita]}`}>{t.priorita}</span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 truncate">{t.oggetto}</p>
+                  <div className="flex items-center justify-between mt-1.5 text-xs text-gray-400">
+                    <span>{t.cliente_nome}</span>
+                    <span>{formatTimeAgo(t.updated_at)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {/* Desktop table view */}
+            <table className="w-full hidden lg:table">
               <thead>
                 {(() => {
                   const SortTh = ({ col, children, extra }) => (
@@ -307,8 +332,8 @@ export default function TicketList() {
         )}
 
         {/* Footer: always visible — Pagination + Year navigator */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-          <p className="text-sm text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-gray-200">
+          <p className="text-sm text-gray-500 hidden lg:block">
             {pagination.total > 0 ? <>Mostra <span className="font-medium">{Math.min((page - 1) * 10 + 1, pagination.total)}</span>-<span className="font-medium">{Math.min(page * 10, pagination.total)}</span> di <span className="font-medium">{pagination.total}</span></> : <span>0 ticket</span>}
           </p>
 
