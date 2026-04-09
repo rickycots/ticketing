@@ -11,6 +11,7 @@ import ProjectDetail from './pages/admin/ProjectDetail'
 import ActivityDetail from './pages/admin/ActivityDetail'
 import ProjectGantt from './pages/admin/ProjectGantt'
 import TimelineList from './pages/admin/TimelineList'
+import AllActivities from './pages/admin/AllActivities'
 import EmailInbox from './pages/admin/EmailInbox'
 import ClientList from './pages/admin/ClientList'
 import ClientDetail from './pages/admin/ClientDetail'
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="projects/:id/activities/:activityId" element={<ActivityDetail />} />
         <Route path="projects/:id/gantt" element={<ProjectGantt />} />
         <Route path="timeline" element={<TimelineList />} />
+        <Route path="all-activities" element={<AllActivities />} />
         <Route path="repository" element={<Repository />} />
         <Route path="emails" element={<AdminOnly><EmailInbox /></AdminOnly>} />
         <Route path="send-mail" element={<SendMail />} />

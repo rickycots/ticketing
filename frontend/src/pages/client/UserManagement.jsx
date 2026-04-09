@@ -9,7 +9,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [form, setForm] = useState({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
+  const [form, setForm] = useState({ nome: '', cognome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
   const [saving, setSaving] = useState(false)
   const currentUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
 
@@ -23,10 +23,10 @@ export default function UserManagement() {
   function openForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setForm({ nome: user.nome, email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
+      setForm({ nome: user.nome, cognome: user.cognome || '', email: user.email, password: '', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
     } else {
       setEditingUser(null)
-      setForm({ nome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
+      setForm({ nome: '', cognome: '', email: '', password: '', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
     }
     setShowForm(true)
   }
@@ -92,16 +92,20 @@ export default function UserManagement() {
       {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => { setShowForm(false); setEditingUser(null) }}>
-        <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
+        <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '580px' }} onClick={e => e.stopPropagation()}>
           <button onClick={() => { setShowForm(false); setEditingUser(null) }} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
             <X size={18} />
           </button>
           <h2 className="text-lg font-bold text-gray-900 mb-4">{editingUser ? t('editUser') : t('newUser')}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
                 <input type="text" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} required className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+                <input type="text" value={form.cognome} onChange={e => setForm(f => ({ ...f, cognome: e.target.value }))} className={inputCls} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')} *</label>
@@ -195,7 +199,7 @@ export default function UserManagement() {
                 return (
                   <tr key={u.id} className={`hover:bg-gray-50 ${!u.attivo ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      {u.nome}
+                      {u.nome} {u.cognome || ''}
                       {isMe && <span className="ml-1.5 text-xs text-blue-500">{t('youLabel')}</span>}
                       {isAdmin && <span className="ml-1.5 text-xs text-purple-500">Admin</span>}
                     </td>

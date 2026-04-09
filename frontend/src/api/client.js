@@ -142,6 +142,7 @@ export const projects = {
 export const activities = {
   get: (projectId, activityId) => request(`/projects/${projectId}/activities/${activityId}`),
   list: (projectId) => request(`/projects/${projectId}/activities`),
+  listAll: () => request('/activities/all'),
   create: (projectId, data) =>
     request(`/projects/${projectId}/activities`, { method: 'POST', body: JSON.stringify(data) }),
   update: (projectId, activityId, data) =>
@@ -184,6 +185,7 @@ export const clients = {
   get: (id) => request(`/clients/${id}`),
   create: (data) => request('/clients', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/clients/${id}`, { method: 'DELETE' }),
   uploadLogo: (id, file) => {
     const formData = new FormData();
     formData.append('logo', file);

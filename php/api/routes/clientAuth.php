@@ -439,6 +439,7 @@ $router->post('/client-auth/portal-users',
     'requireClientAdmin',
     function($req) {
         $nome = $req->body['nome'] ?? '';
+        $cognome = $req->body['cognome'] ?? '';
         $email = $req->body['email'] ?? '';
         $password = $req->body['password'] ?? '';
         $schede_visibili = $req->body['schede_visibili'] ?? 'ticket,progetti,ai';
@@ -458,9 +459,9 @@ $router->post('/client-auth/portal-users',
         $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : 0;
 
         Database::execute(
-            'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$req->user['cliente_id'], $nome, $email, $passwordHash, 'user', $schede_visibili, $userLingua, $cambio_password, $two_factor]
+            'INSERT INTO utenti_cliente (cliente_id, nome, cognome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$req->user['cliente_id'], $nome, $cognome, $email, $passwordHash, 'user', $schede_visibili, $userLingua, $cambio_password, $two_factor]
         );
 
         $user = Database::fetchOne(
@@ -538,6 +539,7 @@ $router->put('/client-auth/portal-users/:userId',
         Database::execute(
             'UPDATE utenti_cliente SET
                 nome = COALESCE(?, nome),
+                cognome = COALESCE(?, cognome),
                 email = COALESCE(?, email),
                 password_hash = ?,
                 schede_visibili = COALESCE(?, schede_visibili),
@@ -546,7 +548,7 @@ $router->put('/client-auth/portal-users/:userId',
                 cambio_password = COALESCE(?, cambio_password),
                 two_factor = COALESCE(?, two_factor)
              WHERE id = ?',
-            [$nome, $email, $newHash, $schede_visibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
+            [$nome, $req->body['cognome'] ?? null, $email, $newHash, $schede_visibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
         );
 
         $updated = Database::fetchOne(

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3, Users } from 'lucide-react'
+import { ArrowLeft, Upload, Trash2, Plus, Pencil, X, Save, Building2, UserCircle, Calendar, BookOpen, Ticket, BarChart3, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { clients, schede as schedeApi, clientAuth } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 
@@ -16,7 +16,7 @@ export default function ClientDetail() {
   const [users, setUsers] = useState([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [userForm, setUserForm] = useState({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
+  const [userForm, setUserForm] = useState({ nome: '', cognome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
   const fileRef = useRef()
 
   // Knowledge Base state
@@ -29,6 +29,10 @@ export default function ClientDetail() {
 
   // Referenti state
   const [referenti, setReferenti] = useState([])
+  const [refPage, setRefPage] = useState(1)
+  const REF_PAGE_SIZE = 5
+  const [userPage, setUserPage] = useState(1)
+  const USER_PAGE_SIZE = 5
   const [showRefForm, setShowRefForm] = useState(false)
   const [editingRef, setEditingRef] = useState(null)
   const [refForm, setRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
@@ -172,10 +176,10 @@ export default function ClientDetail() {
   function openUserForm(user = null) {
     if (user) {
       setEditingUser(user)
-      setUserForm({ nome: user.nome, email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
+      setUserForm({ nome: user.nome, cognome: user.cognome || '', email: user.email, password: '', ruolo: user.ruolo || 'user', schede_visibili: user.schede_visibili, lingua: user.lingua || 'it', cambio_password: Number(user.cambio_password) || 0, two_factor: Number(user.two_factor) || 0 })
     } else {
       setEditingUser(null)
-      setUserForm({ nome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
+      setUserForm({ nome: '', cognome: '', email: '', password: '', ruolo: 'user', schede_visibili: 'ticket,progetti,ai', lingua: 'it', cambio_password: 1, two_factor: 0 })
     }
     setShowUserForm(true)
   }
@@ -261,6 +265,16 @@ export default function ClientDetail() {
           >
             <BarChart3 size={14} /> Dashboard Cliente
           </Link>
+          <button
+            onClick={() => {
+              if (!confirm('ATTENZIONE: Eliminando questo cliente verranno cancellati:\n\n- Tutti i progetti e le attività associate\n- Tutti i ticket del cliente\n- Tutti gli account utente del portale\n- I referenti associati\n\nLe email associate finiranno come non assegnate.\n\nQuesta operazione è IRREVERSIBILE.\n\nConfermi l\'eliminazione?')) return
+              if (!confirm('Sei davvero sicuro? Scrivi OK per confermare.')) return
+              clients.delete(id).then(() => navigate('/admin/clients')).catch(err => alert(err.message))
+            }}
+            className="inline-flex items-center gap-1.5 bg-red-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-red-700 transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} /> Elimina Cliente
+          </button>
         </div>
       </div>
 
@@ -394,16 +408,20 @@ export default function ClientDetail() {
         {/* User Form (modal) */}
         {showUserForm && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowUserForm(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '580px' }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowUserForm(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
               <X size={18} />
             </button>
             <h2 className="text-lg font-bold text-gray-900 mb-4">{editingUser ? 'Modifica Utente' : 'Nuovo Utente'}</h2>
             <form onSubmit={handleUserSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                   <input type="text" value={userForm.nome} onChange={e => setUserForm(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+                  <input type="text" value={userForm.cognome} onChange={e => setUserForm(f => ({ ...f, cognome: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
@@ -495,9 +513,9 @@ export default function ClientDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {users.map(u => (
+                {users.slice((userPage - 1) * USER_PAGE_SIZE, userPage * USER_PAGE_SIZE).map(u => (
                   <tr key={u.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{u.nome}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{u.nome} {u.cognome || ''}</td>
                     <td className="px-4 py-3 text-gray-600">{u.email}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${u.ruolo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
@@ -554,6 +572,20 @@ export default function ClientDetail() {
             </table>
           </div>
         )}
+        {users.length > USER_PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Mostra <span className="font-medium">{Math.min((userPage - 1) * USER_PAGE_SIZE + 1, users.length)}</span>-<span className="font-medium">{Math.min(userPage * USER_PAGE_SIZE, users.length)}</span> di <span className="font-medium">{users.length}</span>
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setUserPage(p => p - 1)} disabled={userPage <= 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronLeft size={16} /></button>
+              {Array.from({ length: Math.ceil(users.length / USER_PAGE_SIZE) }, (_, i) => i + 1).map(p => (
+                <button key={p} onClick={() => setUserPage(p)} className={`px-2.5 py-1 rounded-lg text-sm font-medium cursor-pointer ${p === userPage ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{p}</button>
+              ))}
+              <button onClick={() => setUserPage(p => p + 1)} disabled={userPage >= Math.ceil(users.length / USER_PAGE_SIZE)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Referenti Progetti Section */}
@@ -566,9 +598,14 @@ export default function ClientDetail() {
         </div>
 
         {showRefForm && (
-          <div className="p-4 border-b border-gray-100 bg-gray-50">
-            <form onSubmit={handleRefSubmit} className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => { setShowRefForm(false); setEditingRef(null) }}>
+          <div className="bg-white rounded-xl shadow-2xl w-full p-6 relative" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setShowRefForm(false); setEditingRef(null) }} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer">
+              <X size={18} />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">{editingRef ? 'Modifica Referente' : 'Nuovo Referente'}</h2>
+            <form onSubmit={handleRefSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                   <input type="text" value={refForm.nome} onChange={e => setRefForm(f => ({ ...f, nome: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
@@ -577,30 +614,36 @@ export default function ClientDetail() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
                   <input type="text" value={refForm.cognome} onChange={e => setRefForm(f => ({ ...f, cognome: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                  <input type="email" value={refForm.email} onChange={e => setRefForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input type="email" value={refForm.email} onChange={e => setRefForm(f => ({ ...f, email: e.target.value }))} required className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
                   <input type="text" value={refForm.telefono} onChange={e => setRefForm(f => ({ ...f, telefono: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo/Posizione</label>
-                  <input type="text" value={refForm.ruolo} onChange={e => setRefForm(f => ({ ...f, ruolo: e.target.value }))} placeholder="es. Project Manager, IT Manager..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                  <input type="text" list="ruoli-referenti" value={refForm.ruolo} onChange={e => setRefForm(f => ({ ...f, ruolo: e.target.value }))} placeholder="Seleziona o scrivi..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                  <datalist id="ruoli-referenti">
+                    {[...new Set(referenti.map(r => r.ruolo).filter(Boolean))].map(r => (
+                      <option key={r} value={r} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button type="submit" className="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 cursor-pointer">
-                  {editingRef ? 'Aggiorna' : 'Crea Referente'}
-                </button>
+              <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => { setShowRefForm(false); setEditingRef(null) }} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
                   Annulla
                 </button>
+                <button type="submit" className="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+                  {editingRef ? 'Aggiorna' : 'Crea Referente'}
+                </button>
               </div>
             </form>
+          </div>
           </div>
         )}
 
@@ -619,7 +662,7 @@ export default function ClientDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {referenti.map(r => (
+                {referenti.slice((refPage - 1) * REF_PAGE_SIZE, refPage * REF_PAGE_SIZE).map(r => (
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">{r.nome} {r.cognome}</td>
                     <td className="px-4 py-3 text-gray-600">{r.email}</td>
@@ -639,6 +682,20 @@ export default function ClientDetail() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {referenti.length > REF_PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Mostra <span className="font-medium">{Math.min((refPage - 1) * REF_PAGE_SIZE + 1, referenti.length)}</span>-<span className="font-medium">{Math.min(refPage * REF_PAGE_SIZE, referenti.length)}</span> di <span className="font-medium">{referenti.length}</span>
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setRefPage(p => p - 1)} disabled={refPage <= 1} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronLeft size={16} /></button>
+              {Array.from({ length: Math.ceil(referenti.length / REF_PAGE_SIZE) }, (_, i) => i + 1).map(p => (
+                <button key={p} onClick={() => setRefPage(p)} className={`px-2.5 py-1 rounded-lg text-sm font-medium cursor-pointer ${p === refPage ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{p}</button>
+              ))}
+              <button onClick={() => setRefPage(p => p + 1)} disabled={refPage >= Math.ceil(referenti.length / REF_PAGE_SIZE)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronRight size={16} /></button>
+            </div>
           </div>
         )}
       </div>

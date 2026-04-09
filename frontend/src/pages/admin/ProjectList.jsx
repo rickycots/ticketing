@@ -4,6 +4,7 @@ import { Plus, MessageCircle, Building2, UserPlus, X, Users } from 'lucide-react
 import { projects, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
+import ProjectMiniBox from '../../components/ProjectMiniBox'
 
 const statoColors = {
   attivo: 'bg-green-100 text-green-800',
@@ -232,7 +233,7 @@ export default function ProjectList() {
                       <p className="text-xs text-gray-400 italic">Seleziona un cliente per vedere i referenti</p>
                     ) : (
                       <>
-                        {clientReferenti.length > 0 && (
+                        {clientReferenti.length > 0 && clientReferenti.length <= 4 && (
                           <div className="space-y-1.5 mb-2">
                             {clientReferenti.map(r => (
                               <label key={r.id} className="flex items-center gap-2 cursor-pointer hover:bg-teal-100/50 rounded px-1 py-0.5">
@@ -243,6 +244,22 @@ export default function ProjectList() {
                                 <span className="text-xs text-gray-400">({r.email})</span>
                               </label>
                             ))}
+                          </div>
+                        )}
+                        {clientReferenti.length > 4 && (
+                          <div className="mb-2">
+                            <select multiple value={form.referenti.map(String)}
+                              onChange={e => {
+                                const selected = Array.from(e.target.selectedOptions, o => Number(o.value))
+                                setForm(f => ({ ...f, referenti: selected }))
+                              }}
+                              className="w-full rounded border border-gray-300 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                              size={Math.min(clientReferenti.length, 6)}>
+                              {clientReferenti.map(r => (
+                                <option key={r.id} value={r.id}>{r.nome} {r.cognome} ({r.email})</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] text-gray-400 mt-1">Tieni premuto Ctrl per selezione multipla</p>
                           </div>
                         )}
                         {form.nuovi_referenti.length > 0 && (
@@ -359,71 +376,7 @@ export default function ProjectList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleProjects.map(p => (
-            <Link
-              key={p.id}
-              to={`/admin/projects/${p.id}`}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900">{p.nome}</h3>
-                  {p.chat_non_lette > 0 && (
-                    <span className="relative inline-flex items-center" title={`${p.chat_non_lette} messaggi non letti`}>
-                      <MessageCircle size={16} className="text-blue-500" />
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                        {p.chat_non_lette}
-                      </span>
-                    </span>
-                  )}
-                </div>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[p.stato]}`}>
-                  {p.stato.replace('_', ' ')}
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-500 mb-3">{p.cliente_nome}</p>
-
-              {/* Progress bar */}
-              <div className="mb-2">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>Avanzamento</span>
-                  <span>{p.avanzamento}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
-                    style={{ width: `${p.avanzamento}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
-                <span>{p.num_attivita} attività</span>
-                {p.data_scadenza && (
-                  <span>Fine: {new Date(p.data_scadenza).toLocaleDateString('it-IT')}</span>
-                )}
-              </div>
-
-              {/* Tecnici avatars + STM badge */}
-              {(isAdmin && p.tecnici && p.tecnici.length > 0) || !!p.manutenzione_ordinaria ? (
-                <div className="flex items-center gap-1 mt-3">
-                  {isAdmin && p.tecnici && p.tecnici.length > 0 && getTecniciNames(p.tecnici)?.map((initials, i) => (
-                    <span key={i} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                      {initials}
-                    </span>
-                  ))}
-                  {!!p.manutenzione_ordinaria && (
-                    <span className="ml-auto text-xs font-bold text-blue-600">STM Domotica</span>
-                  )}
-                </div>
-              ) : null}
-
-              {bloccoLabels[p.blocco] && (
-                <div className={`mt-3 rounded-lg px-3 py-1.5 text-xs font-medium ${bloccoColors[p.blocco]}`}>
-                  {p.blocco === 'lato_cliente' ? '⚠️ ' : '🔧 '}{bloccoLabels[p.blocco]}
-                </div>
-              )}
-            </Link>
+            <ProjectMiniBox key={p.id} project={p} to={`/admin/projects/${p.id}`} isAdmin={isAdmin} getTecniciNames={getTecniciNames} />
           ))}
         </div>
       )}

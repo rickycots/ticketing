@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const DAY_WIDTH = 13
@@ -89,9 +89,10 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
     if (pStart) allStarts.push(pStart.getTime())
 
     const minDate = new Date(Math.min(...allStarts))
+    const thisMonth = startOfMonth(new Date())
 
-    // Start: beginning of the month of earliest date
-    const tStart = startOfMonth(addDays(minDate, -7))
+    // Start: earliest between minDate and current month, but at least current month
+    const tStart = minDate < thisMonth ? startOfMonth(minDate) : thisMonth
     // End: tStart + rangeMonths
     const tEnd = new Date(tStart.getFullYear(), tStart.getMonth() + rangeMonths, 1)
     const tDays = daysBetween(tStart, tEnd)
@@ -228,6 +229,15 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
     return <div className="text-sm text-gray-400 text-center py-8">Nessuna attivita da visualizzare</div>
   }
 
+  const scrollRef = useRef(null)
+  useEffect(() => {
+    if (scrollRef.current && showToday) {
+      const todayX = todayOffset * DAY_WIDTH
+      // Scroll so today line is ~50px from left edge
+      scrollRef.current.scrollLeft = Math.max(0, todayX - 50)
+    }
+  }, [timelineStart, todayOffset])
+
   return (
     <div className="relative border border-gray-200 rounded-xl overflow-hidden bg-white" ref={containerRef}>
       {/* Range filter */}
@@ -302,7 +312,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
         </div>
 
         {/* Right panel — scrollable timeline */}
-        <div className="flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-x-auto" ref={scrollRef}>
           <div style={{ width: chartWidth, minWidth: '100%' }}>
             {/* Month header */}
             <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: HEADER_HEIGHT }}>

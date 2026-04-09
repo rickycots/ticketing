@@ -176,6 +176,10 @@ $router->get('/projects/client/:clienteId/:projectId', [Auth::class, 'authentica
     $project['email_bloccante_corpo'] = $emailBloccante ? $emailBloccante['corpo'] : null;
     $project['email_bloccante_data'] = $emailBloccante ? $emailBloccante['data_ricezione'] : null;
     $project['referenti'] = getProjectReferenti($project['id']);
+    $project['emails'] = Database::fetchAll(
+        'SELECT * FROM email WHERE progetto_id = ? ORDER BY data_ricezione DESC',
+        [$project['id']]
+    );
 
     Response::json($project);
 });
@@ -646,7 +650,7 @@ $router->put('/projects/:id/referenti', [Auth::class, 'authenticateToken'], func
             $allReferenteIds[] = (int)Database::lastInsertId();
         }
     }
-    if (count($allReferenteIds) > 0) setProjectReferenti($req->params['id'], $allReferenteIds);
+    setProjectReferenti($req->params['id'], $allReferenteIds);
 
     $updated = Database::fetchOne('SELECT * FROM progetti WHERE id = ?', [$req->params['id']]);
     $updated['referenti'] = getProjectReferenti($req->params['id']);

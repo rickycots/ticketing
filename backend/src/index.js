@@ -42,6 +42,20 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 const activitiesRouter = require('./routes/activities');
 app.use('/api/projects/:id/activities', activitiesRouter);
 
+// All activities endpoint (admin only)
+const db = require('./db/database');
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
+app.get('/api/activities/all', authenticateToken, requireAdmin, (req, res) => {
+  const acts = db.prepare(`
+    SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+    FROM attivita a
+    JOIN progetti p ON a.progetto_id = p.id
+    LEFT JOIN clienti c ON p.cliente_id = c.id
+    ORDER BY a.created_at DESC
+  `).all();
+  res.json(acts);
+});
+
 // Knowledge Base routes (nested under clients)
 app.use('/api/clients/:clienteId/schede', require('./routes/knowledgeBase'));
 

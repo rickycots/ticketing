@@ -121,6 +121,7 @@ export default function UserList() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.gestione_avanzata} onChange={e => setForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                 <span className="text-sm text-gray-700">Gestione avanzata progetti</span>
+                <HelpTip size={12} text="Se attivato, il tecnico può caricare allegati, gestire referenti e modificare dettagli avanzati nei progetti a lui assegnati. Se disattivato, vede questi dati in sola lettura." />
               </label>
             </div>
             <p className="text-xs text-gray-500">Il ruolo sarà automaticamente impostato a "Tecnico"</p>
@@ -166,6 +167,7 @@ export default function UserList() {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={editForm.gestione_avanzata} onChange={e => setEditForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                       <span className="text-xs text-gray-700">Gestione avanzata progetti</span>
+                      <HelpTip size={11} text="Se attivato, il tecnico può caricare allegati, gestire referenti e modificare dettagli avanzati nei progetti a lui assegnati. Se disattivato, vede questi dati in sola lettura." />
                     </label>
                   </div>
                   <div className="flex gap-2">
@@ -293,6 +295,7 @@ export default function UserList() {
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input type="checkbox" checked={editForm.gestione_avanzata} onChange={e => setEditForm(f => ({ ...f, gestione_avanzata: e.target.checked }))} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                               <span className="text-xs text-gray-700">Gestione avanzata progetti</span>
+                              <HelpTip size={11} text="Se attivato, il tecnico può caricare allegati, gestire referenti e modificare dettagli avanzati nei progetti a lui assegnati. Se disattivato, vede questi dati in sola lettura." />
                             </label>
                             <div className="flex gap-2 ml-auto">
                               <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-medium hover:bg-blue-700 cursor-pointer">Salva</button>

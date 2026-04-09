@@ -44,6 +44,7 @@ function runMigrations() {
     "ALTER TABLE email ADD COLUMN message_id TEXT",
     "ALTER TABLE email ADD COLUMN allegati TEXT DEFAULT '[]'",
     "ALTER TABLE ticket ADD COLUMN creatore_email TEXT",
+    "ALTER TABLE utenti_cliente ADD COLUMN cognome TEXT DEFAULT ''",
     "ALTER TABLE utenti_cliente ADD COLUMN ruolo TEXT NOT NULL DEFAULT 'user'",
     "ALTER TABLE utenti_cliente ADD COLUMN lingua TEXT NOT NULL DEFAULT 'it'",
     "ALTER TABLE clienti ADD COLUMN sla_reazione TEXT DEFAULT 'nb'",

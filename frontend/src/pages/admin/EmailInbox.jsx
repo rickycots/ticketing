@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2 } from 'lucide-react'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
@@ -22,6 +22,9 @@ export default function EmailInbox() {
   const [emailList, setEmailList] = useState([])
   const [selected, setSelected] = useState(null)
   const [projectUnlocked, setProjectUnlocked] = useState(false)
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [editOggetto, setEditOggetto] = useState('')
+  const [editCorpo, setEditCorpo] = useState('')
   const [loading, setLoading] = useState(true)
   const [quickFilter, setQuickFilter] = useState('tutte')
   const [filterCounts, setFilterCounts] = useState({ tutte: 0, da_leggere: 0, non_assegnate: 0, bloccanti: 0, rilevanti: 0 })
@@ -135,6 +138,7 @@ export default function EmailInbox() {
     const detail = await emails.get(email.id)
     setSelected(detail)
     setProjectUnlocked(false)
+    setEditingEmail(false)
     setShowReply(false)
     setReplyText('')
     loadActivities(detail.progetto_id)
@@ -532,13 +536,18 @@ export default function EmailInbox() {
             <div className="overflow-y-auto flex-1">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">{selected.oggetto}</h2>
+                  <div className="flex-1 min-w-0 mr-3">
+                    {editingEmail ? (
+                      <input type="text" value={editOggetto} onChange={e => setEditOggetto(e.target.value)}
+                        className="w-full text-lg font-semibold border border-blue-300 rounded-lg px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    ) : (
+                      <h2 className="text-lg font-semibold">{selected.oggetto}</h2>
+                    )}
                     <div className="flex items-center gap-2 mt-2">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
                         {getDirLabel(selected)}
                       </span>
-                      {selected.is_bloccante && (
+                      {!!selected.is_bloccante && (
                         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
                           Bloccante
                         </span>
@@ -555,7 +564,28 @@ export default function EmailInbox() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {editingEmail ? (
+                      <>
+                        <button onClick={async () => {
+                          await emails.update(selected.id, { oggetto: editOggetto, corpo: editCorpo })
+                          const detail = await emails.get(selected.id)
+                          setSelected(detail)
+                          setEditingEmail(false)
+                          loadEmails()
+                        }} className="text-xs px-3 py-1.5 rounded-lg border bg-green-50 text-green-700 border-green-200 hover:bg-green-100 cursor-pointer inline-flex items-center gap-1">
+                          <Save size={14} /> Salva
+                        </button>
+                        <button onClick={() => setEditingEmail(false)} className="text-xs px-3 py-1.5 rounded-lg border bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 cursor-pointer">
+                          Annulla
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => { setEditingEmail(true); setEditOggetto(selected.oggetto || ''); setEditCorpo(selected.corpo || '') }}
+                        className="text-xs px-3 py-1.5 rounded-lg border bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 cursor-pointer inline-flex items-center gap-1">
+                        <Pencil size={14} /> Modifica
+                      </button>
+                    )}
                     <button
                       onClick={() => { setShowReply(!showReply); setReplyText('') }}
                       className="text-xs px-3 py-1.5 rounded-lg border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer inline-flex items-center gap-1"
@@ -693,7 +723,40 @@ export default function EmailInbox() {
                 </div>
 
                 <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{selected.corpo}</p>
+                  {editingEmail ? (
+                    <div>
+                      <div className="flex gap-1 mb-2 border border-gray-200 rounded-lg p-1 bg-gray-50">
+                        <button type="button" onClick={() => document.execCommand('bold')}
+                          className="px-2.5 py-1 rounded text-sm font-bold text-gray-700 hover:bg-gray-200 cursor-pointer">B</button>
+                        <button type="button" onClick={() => document.execCommand('italic')}
+                          className="px-2.5 py-1 rounded text-sm italic text-gray-700 hover:bg-gray-200 cursor-pointer">I</button>
+                        <button type="button" onClick={() => document.execCommand('underline')}
+                          className="px-2.5 py-1 rounded text-sm underline text-gray-700 hover:bg-gray-200 cursor-pointer">U</button>
+                        <span className="w-px bg-gray-300 mx-1" />
+                        <button type="button" onClick={() => document.execCommand('foreColor', false, '#dc2626')}
+                          className="px-2.5 py-1 rounded text-sm font-bold text-red-600 hover:bg-gray-200 cursor-pointer">A</button>
+                        <button type="button" onClick={() => document.execCommand('foreColor', false, '#2563eb')}
+                          className="px-2.5 py-1 rounded text-sm font-bold text-blue-600 hover:bg-gray-200 cursor-pointer">A</button>
+                        <button type="button" onClick={() => document.execCommand('foreColor', false, '#333333')}
+                          className="px-2.5 py-1 rounded text-sm font-bold text-gray-700 hover:bg-gray-200 cursor-pointer">A</button>
+                        <span className="w-px bg-gray-300 mx-1" />
+                        <button type="button" onClick={() => document.execCommand('hiliteColor', false, '#fef08a')}
+                          className="px-2.5 py-1 rounded text-sm bg-yellow-200 text-gray-700 hover:bg-yellow-300 cursor-pointer">Evidenzia</button>
+                        <button type="button" onClick={() => document.execCommand('removeFormat')}
+                          className="px-2.5 py-1 rounded text-xs text-gray-500 hover:bg-gray-200 cursor-pointer">Pulisci</button>
+                      </div>
+                      <div
+                        contentEditable
+                        suppressContentEditableWarning
+                        ref={el => { if (el && !el.dataset.init) { el.innerHTML = editCorpo.replace(/\n/g, '<br>'); el.dataset.init = '1' } }}
+                        onInput={e => setEditCorpo(e.currentTarget.innerHTML)}
+                        className="w-full min-h-[200px] text-sm text-gray-700 border border-blue-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 overflow-y-auto bg-white"
+                        style={{ maxHeight: '400px' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: selected.corpo }} />
+                  )}
                 </div>
 
                 {/* Thread */}

@@ -297,7 +297,7 @@ router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (r
 
 // PUT /api/emails/:id — update email (admin only)
 router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
-  const { progetto_id, attivita_id, is_bloccante, letta, tipo, rilevanza, cliente_id } = req.body;
+  const { progetto_id, attivita_id, is_bloccante, letta, tipo, rilevanza, cliente_id, oggetto, corpo } = req.body;
 
   const email = db.prepare('SELECT * FROM email WHERE id = ?').get(req.params.id);
   if (!email) {
@@ -328,7 +328,9 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       is_bloccante = COALESCE(?, is_bloccante),
       letta = COALESCE(?, letta),
       tipo = COALESCE(?, tipo),
-      rilevanza = ?
+      rilevanza = ?,
+      oggetto = COALESCE(?, oggetto),
+      corpo = COALESCE(?, corpo)
     WHERE id = ?
   `).run(
     newClienteId,
@@ -338,6 +340,8 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
     letta !== undefined ? (letta ? 1 : 0) : null,
     tipo || null,
     newRilevanza,
+    oggetto !== undefined ? oggetto : null,
+    corpo !== undefined ? corpo : null,
     req.params.id
   );
 

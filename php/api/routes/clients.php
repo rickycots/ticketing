@@ -103,6 +103,68 @@ $router->put('/clients/:id', [Auth::class, 'authenticateToken'], [Auth::class, '
     Response::json(Database::fetchOne('SELECT * FROM clienti WHERE id = ?', [$id]));
 });
 
+// DELETE /api/clients/:id — delete client and all related data
+$router->delete('/clients/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $id = $req->params['id'];
+    $client = Database::fetchOne('SELECT * FROM clienti WHERE id = ?', [$id]);
+    if (!$client) Response::error('Cliente non trovato', 404);
+
+    // Delete all related data
+    // Get project IDs for this client
+    $projects = Database::fetchAll('SELECT id FROM progetti WHERE cliente_id = ?', [$id]);
+    $projectIds = array_column($projects, 'id');
+
+    foreach ($projectIds as $pid) {
+        // Delete activities and their related data
+        $activities = Database::fetchAll('SELECT id FROM attivita WHERE progetto_id = ?', [$pid]);
+        foreach ($activities as $act) {
+            try { Database::execute('DELETE FROM note_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
+            try { Database::execute('DELETE FROM allegati_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
+            try { Database::execute('DELETE FROM attivita_programmate WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
+        }
+        try { Database::execute('DELETE FROM attivita WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM progetto_tecnici WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM allegati_progetto WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM messaggi_progetto WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM chat_lettura WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
+    }
+    // Delete projects
+    if (!empty($projectIds)) {
+        Database::execute('DELETE FROM progetti WHERE cliente_id = ?', [$id]);
+    }
+
+    // Unassign emails (keep them but remove client association)
+    try { Database::execute('UPDATE email SET cliente_id = NULL, progetto_id = NULL, attivita_id = NULL WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete tickets and their emails
+    $tickets = Database::fetchAll('SELECT id FROM ticket WHERE cliente_id = ?', [$id]);
+    foreach ($tickets as $tk) {
+        try { Database::execute('DELETE FROM email WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM note_interne WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM chat_ticket_interna WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
+    }
+    try { Database::execute('DELETE FROM ticket WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete client users
+    try { Database::execute('DELETE FROM utenti_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete referenti
+    try { Database::execute('DELETE FROM referenti_progetto WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete comunicazioni
+    try { Database::execute('DELETE FROM comunicazioni_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+    try { Database::execute('DELETE FROM comunicazioni_lette WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete schede
+    try { Database::execute('DELETE FROM schede_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+
+    // Delete client
+    Database::execute('DELETE FROM clienti WHERE id = ?', [$id]);
+
+    Response::success();
+});
+
 // POST /api/clients/:id/logo
 $router->post('/clients/:id/logo', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $id = $req->params['id'];
@@ -166,8 +228,8 @@ $router->post('/clients/:id/users', [Auth::class, 'authenticateToken'], [Auth::c
     $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : 0;
 
     Database::execute(
-        'INSERT INTO utenti_cliente (cliente_id, nome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$req->params['id'], $nome, $email, password_hash($password, PASSWORD_BCRYPT), $ruolo, $visibili, $lingua, $cambio_password, $two_factor]
+        'INSERT INTO utenti_cliente (cliente_id, nome, cognome, email, password_hash, ruolo, schede_visibili, lingua, cambio_password, two_factor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$req->params['id'], $nome, $req->body['cognome'] ?? '', $email, password_hash($password, PASSWORD_BCRYPT), $ruolo, $visibili, $lingua, $cambio_password, $two_factor]
     );
 
     // Send welcome email
@@ -228,8 +290,8 @@ $router->put('/clients/:id/users/:userId', [Auth::class, 'authenticateToken'], [
     $two_factor = isset($req->body['two_factor']) ? (int)$req->body['two_factor'] : null;
 
     Database::execute(
-        'UPDATE utenti_cliente SET nome = COALESCE(?, nome), email = COALESCE(?, email), password_hash = ?, ruolo = ?, schede_visibili = ?, lingua = ?, attivo = COALESCE(?, attivo), cambio_password = COALESCE(?, cambio_password), two_factor = COALESCE(?, two_factor) WHERE id = ?',
-        [$req->body['nome'] ?? null, $email, $newHash, $newRuolo, $newVisibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
+        'UPDATE utenti_cliente SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email), password_hash = ?, ruolo = ?, schede_visibili = ?, lingua = ?, attivo = COALESCE(?, attivo), cambio_password = COALESCE(?, cambio_password), two_factor = COALESCE(?, two_factor) WHERE id = ?',
+        [$req->body['nome'] ?? null, $req->body['cognome'] ?? null, $email, $newHash, $newRuolo, $newVisibili, $newLingua, $attivo, $cambio_password, $two_factor, $userId]
     );
 
     Response::json(Database::fetchOne(

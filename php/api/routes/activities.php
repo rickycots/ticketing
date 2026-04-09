@@ -18,6 +18,18 @@ function checkProjectAccess($req) {
     }
 }
 
+// GET /activities/all — all activities across all projects (admin only)
+$router->get('/activities/all', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $activities = Database::fetchAll(
+        "SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+         FROM attivita a
+         JOIN progetti p ON a.progetto_id = p.id
+         LEFT JOIN clienti c ON p.cliente_id = c.id
+         ORDER BY a.created_at DESC"
+    );
+    Response::json($activities);
+});
+
 // GET /projects/:id/activities — list activities
 $router->get('/projects/:id/activities', [Auth::class, 'authenticateToken'], function($req) {
     checkProjectAccess($req);

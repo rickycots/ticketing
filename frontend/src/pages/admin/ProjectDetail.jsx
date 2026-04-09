@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X } from 'lucide-react'
-import { projects, activities, users } from '../../api/client'
+import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X, UserCog } from 'lucide-react'
+import { projects, activities, users, clients } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
+import ProjectDataBox from '../../components/ProjectDataBox'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -49,11 +50,17 @@ export default function ProjectDetail() {
   const [expandedEmails, setExpandedEmails] = useState({})
   const [showAllegati, setShowAllegati] = useState(false)
   const [showReferenti, setShowReferenti] = useState(false)
+  const [showTecnici, setShowTecnici] = useState(false)
+  const [showAddRef, setShowAddRef] = useState(false)
+  const [showNewRefForm, setShowNewRefForm] = useState(false)
+  const [clientReferenti, setClientReferenti] = useState([])
+  const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
   const [allegati, setAllegati] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [mainTab, setMainTab] = useState('attivita')
   const [actFilter, setActFilter] = useState('attive')
+  const [actTecnicoFilter, setActTecnicoFilter] = useState(null)
   const [emailFilter, setEmailFilter] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
   const chatEndRef = useRef(null)
@@ -199,6 +206,37 @@ export default function ProjectDetail() {
   const computedStatus = computeProjectStatus(project.attivita)
   const statusCfg = projectStatusConfig[computedStatus]
 
+  async function handleOpenAddRef() {
+    if (project.cliente_id) {
+      try { const refs = await clients.getReferenti(project.cliente_id); setClientReferenti(refs) } catch(e) {}
+    }
+    setShowAddRef(true)
+  }
+
+  async function handleRemoveRef(refId) {
+    const currentIds = (project.referenti || []).map(r => r.id).filter(rid => rid !== refId)
+    await projects.updateReferenti(id, { referenti: currentIds })
+    loadProject()
+  }
+
+  async function handleAssignExisting(refId) {
+    const currentIds = (project.referenti || []).map(r => r.id)
+    if (!currentIds.includes(refId)) {
+      await projects.updateReferenti(id, { referenti: [...currentIds, refId] })
+      loadProject()
+    }
+  }
+
+  async function handleCreateAndAssign(form) {
+    if (!form.nome || !form.email) return
+    try {
+      const created = await clients.createReferente(project.cliente_id, form)
+      const currentIds = (project.referenti || []).map(r => r.id)
+      await projects.updateReferenti(id, { referenti: [...currentIds, created.id] })
+      loadProject()
+    } catch(err) { alert(err.message) }
+  }
+
   async function handleDeleteProject() {
     if (!confirm('Sei sicuro di voler eliminare questo progetto e tutte le sue attività? Questa azione è irreversibile.')) return
     try {
@@ -245,167 +283,31 @@ export default function ProjectDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Header */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h1 className="text-2xl font-bold">{project.nome}</h1>
-                {project.descrizione && <p className="text-sm text-gray-500 mt-1"><span className="italic text-gray-400">Descrizione:</span> {project.descrizione}</p>}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.classes}`}>
-                  <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
-                  {statusCfg.label}
-                </span>
-                {isAdmin && (
-                  <button
-                    onClick={handleDeleteProject}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    title="Elimina progetto"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
+          {/* Box Dati Progetto */}
+          <ProjectDataBox
+            project={project}
+            isAdmin={isAdmin}
+            onDelete={handleDeleteProject}
+            onUpdateProject={async (data) => { await projects.update(id, data); load() }}
+            onCreateActivity={async (act) => {
+              await activities.create(id, { ...act, assegnato_a: act.assegnato_a || null, dipende_da: act.dipende_da || null })
+              load()
+            }}
+            allegati={allegati}
+            showAllegati={showAllegati}
+            onToggleAllegati={toggleAllegati}
+            onUploadFiles={handleUploadFiles}
+            uploadingFiles={uploadingFiles}
+            onDeleteAllegato={handleDeleteAllegato}
+            clientReferenti={clientReferenti}
+            onOpenAddRef={handleOpenAddRef}
+            onRemoveRef={handleRemoveRef}
+            onAssignExistingRef={handleAssignExisting}
+            onCreateAndAssignRef={async (form) => { await handleCreateAndAssign(form) }}
+            tecnici={tecnici}
+            onTecnicoToggle={handleTecnicoToggle}
+          />
 
-            {/* Progress */}
-            <div className="flex items-center gap-4 mt-3">
-              <div className="flex-1">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${project.avanzamento}%` }} />
-                </div>
-              </div>
-              <span className="text-sm font-semibold text-gray-700">{project.avanzamento}%</span>
-              <span className="text-sm text-gray-400">{project.attivita.length} attività</span>
-            </div>
-
-            {/* Dates */}
-            <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
-              {project.data_inizio && <span>Inizio: <b className="text-gray-700">{new Date(project.data_inizio).toLocaleDateString('it-IT')}</b></span>}
-              {project.data_scadenza && <span>Scadenza: <b className="text-gray-700">{new Date(project.data_scadenza).toLocaleDateString('it-IT')}</b></span>}
-              {!!project.manutenzione_ordinaria && <span className="ml-auto text-sm font-bold text-blue-600">STM Manutenzione Ordinaria</span>}
-            </div>
-
-            {/* Toggle buttons row */}
-            <div className="flex items-center gap-4 mt-3">
-              <button
-                onClick={toggleAllegati}
-                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
-                <span className="font-medium">Allegati Progetto</span>
-                {allegati.length > 0 && (
-                  <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
-                )}
-              </button>
-              <button
-                onClick={() => setShowReferenti(prev => !prev)}
-                className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
-                <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
-                <span className="font-medium">Referenti</span>
-                <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
-              </button>
-            </div>
-
-              {showAllegati && (
-                <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                  {/* Upload area (admin only) */}
-                  {isAdmin && (
-                    <div className="p-3 border-b border-gray-200">
-                      <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
-                        <Upload size={16} className="text-gray-400" />
-                        <span className="text-sm text-gray-500">
-                          {uploadingFiles ? 'Caricamento...' : 'Carica allegati (clicca o trascina)'}
-                        </span>
-                        <input
-                          type="file"
-                          multiple
-                          className="hidden"
-                          disabled={uploadingFiles}
-                          onChange={e => handleUploadFiles(e.target.files)}
-                        />
-                      </label>
-                    </div>
-                  )}
-
-                  {loadingAllegati ? (
-                    <div className="p-4 text-center text-xs text-gray-400">Caricamento...</div>
-                  ) : allegati.length === 0 ? (
-                    <div className="p-4 text-center">
-                      <FileText size={24} className="text-gray-300 mx-auto mb-1" />
-                      <p className="text-xs text-gray-400">Nessun allegato</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-200">
-                      {allegati.map(a => (
-                        <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white transition-colors">
-                          <FileText size={18} className={
-                            a.tipo_mime?.includes('pdf') ? 'text-red-500'
-                            : a.tipo_mime?.includes('image') ? 'text-blue-500'
-                            : a.tipo_mime?.includes('word') || a.tipo_mime?.includes('document') ? 'text-blue-600'
-                            : a.tipo_mime?.includes('sheet') || a.tipo_mime?.includes('excel') ? 'text-green-600'
-                            : 'text-gray-400'
-                          } />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{a.nome_originale}</p>
-                            <p className="text-[11px] text-gray-400">
-                              {a.dimensione < 1024 ? a.dimensione + ' B' : a.dimensione < 1048576 ? (a.dimensione / 1024).toFixed(1) + ' KB' : (a.dimensione / 1048576).toFixed(1) + ' MB'}
-                              {' '}&middot; {new Date(a.created_at).toLocaleDateString('it-IT')}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handleDownloadAllegato(a.id, a.nome_originale)}
-                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors shrink-0"
-                          >
-                            <Download size={13} /> Scarica
-                          </button>
-                          {isAdmin && (
-                            <button
-                              onClick={() => handleDeleteAllegato(a.id)}
-                              className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0"
-                              title="Elimina"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-            {/* Expanded referenti */}
-            {showReferenti && (
-              <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
-                {(!project.referenti || project.referenti.length === 0) ? (
-                  <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente assegnato</p>
-                ) : (
-                  <div className="divide-y divide-teal-100">
-                    {project.referenti.map(r => (
-                      <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
-                        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-teal-700">
-                            {(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
-                          <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
-                        </div>
-                        {r.ruolo && (
-                          <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
 
           {/* Tabs: Attività / Email Progetto / Email Attività */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -443,14 +345,6 @@ export default function ProjectDetail() {
                 </button>
               </div>
               <div className="flex items-center gap-2 mr-4">
-                {mainTab === 'attivita' && isAdmin && (
-                  <button
-                    onClick={() => setShowNewActivity(!showNewActivity)}
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
-                  >
-                    <Plus size={16} /> Aggiungi
-                  </button>
-                )}
                 {(mainTab === 'email' || mainTab === 'email_attivita') && (
                   <Link
                     to={`/admin/send-mail?progetto_id=${project.id}`}
@@ -465,8 +359,8 @@ export default function ProjectDetail() {
             {/* ===== TAB ATTIVITÀ ===== */}
             {mainTab === 'attivita' && (
               <>
-                {/* Sub-filter: Attive / Completate */}
-                <div className="flex gap-1 px-4 pt-3 pb-2">
+                {/* Sub-filter: Attive / Completate + Tecnici */}
+                <div className="flex items-center gap-1 px-4 pt-3 pb-2">
                   <button
                     onClick={() => setActFilter('attive')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
@@ -487,113 +381,38 @@ export default function ProjectDetail() {
                   >
                     Completate <span className={`ml-1 px-1 py-0.5 rounded text-xs ${actFilter === 'completate' ? 'bg-green-200' : 'bg-gray-200'}`}>{attCompletate}</span>
                   </button>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {userList.filter(u => u.attivo && (u.ruolo === 'tecnico' || u.ruolo === 'admin')).map(u => (
+                      <button key={u.id} onClick={() => setActTecnicoFilter(actTecnicoFilter === u.id ? null : u.id)}
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold cursor-pointer transition-all ${
+                          actTecnicoFilter === u.id
+                            ? 'bg-blue-600 text-white ring-2 ring-blue-300 scale-110'
+                            : 'bg-blue-100 text-blue-700 hover:scale-105'
+                        }`}
+                        title={u.nome}
+                      >
+                        {u.nome.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+                      </button>
+                    ))}
+                    {actTecnicoFilter && (
+                      <button onClick={() => setActTecnicoFilter(null)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer ml-1">tutti</button>
+                    )}
+                  </div>
                 </div>
 
                 {/* New Activity Form */}
-                {showNewActivity && isAdmin && (
-                  <form onSubmit={handleCreateActivity} className="p-4 border-b border-gray-100 bg-blue-50/50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                      <input
-                        type="text"
-                        placeholder="Titolo attività *"
-                        value={newActivity.nome}
-                        onChange={(e) => setNewActivity(a => ({ ...a, nome: e.target.value }))}
-                        required
-                        className={selectCls}
-                      />
-                      <select
-                        value={newActivity.assegnato_a}
-                        onChange={(e) => setNewActivity(a => ({ ...a, assegnato_a: e.target.value }))}
-                        className={selectCls}
-                      >
-                        <option value="">Assegna a...</option>
-                        {userList.filter(u => u.attivo).map(u => (
-                          <option key={u.id} value={u.id}>{u.nome} ({u.ruolo})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mb-3">
-                      <textarea
-                        placeholder="Descrizione (opzionale)"
-                        value={newActivity.descrizione}
-                        onChange={(e) => setNewActivity(a => ({ ...a, descrizione: e.target.value }))}
-                        rows={2}
-                        className={selectCls + " resize-y"}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <select
-                        value={newActivity.priorita}
-                        onChange={(e) => setNewActivity(a => ({ ...a, priorita: e.target.value }))}
-                        className={selectCls}
-                      >
-                        <option value="alta">Priorità Alta</option>
-                        <option value="media">Priorità Media</option>
-                        <option value="bassa">Priorità Bassa</option>
-                      </select>
-                      <div>
-                        <input
-                          type="date"
-                          value={newActivity.data_scadenza}
-                          onChange={(e) => setNewActivity(a => ({ ...a, data_scadenza: e.target.value }))}
-                          className={selectCls}
-                          title="Data Fine Prevista"
-                        />
-                        <p className="text-xs text-gray-400 mt-0.5">Data Fine Prevista</p>
-                      </div>
-                      <div>
-                        <input
-                          type="date"
-                          value={newActivity.data_inizio}
-                          onChange={(e) => setNewActivity(a => ({ ...a, data_inizio: e.target.value }))}
-                          className={selectCls}
-                          title="Data Inizio"
-                        />
-                        <p className="text-xs text-gray-400 mt-0.5">Data Inizio</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                      {!newActivity.dipende_da && (
-                        <div>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Ordine"
-                            value={newActivity.ordine}
-                            onChange={(e) => setNewActivity(a => ({ ...a, ordine: e.target.value }))}
-                            className={selectCls}
-                          />
-                          <p className="text-xs text-gray-400 mt-0.5">Ordine (auto se vuoto)</p>
-                        </div>
-                      )}
-                      <select
-                        value={newActivity.dipende_da}
-                        onChange={(e) => setNewActivity(a => ({ ...a, dipende_da: e.target.value }))}
-                        className={selectCls}
-                      >
-                        <option value="">Nessuna dipendenza</option>
-                        {(project?.attivita || []).map(att => (
-                          <option key={att.id} value={att.id}>#{att.ordine || att.id} - {att.nome}</option>
-                        ))}
-                      </select>
-                      <div className="flex gap-2">
-                        <button type="submit" className="flex-1 bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 cursor-pointer">
-                          Crea
-                        </button>
-                        <button type="button" onClick={() => setShowNewActivity(false)} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-2 text-sm hover:bg-gray-200 cursor-pointer">
-                          Annulla
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                )}
-
                 {/* Activity List */}
                 <div className="divide-y-2 divide-gray-200">
                   {(() => {
-                    const filteredAtt = actFilter === 'attive'
+                    let filteredAtt = actFilter === 'attive'
                       ? project.attivita.filter(a => a.stato !== 'completata')
                       : project.attivita.filter(a => a.stato === 'completata')
+                    if (actTecnicoFilter) {
+                      filteredAtt = filteredAtt.filter(a => {
+                        const ids = a.tecnici_ids ? a.tecnici_ids.split(',').map(Number) : []
+                        return a.assegnato_a === actTecnicoFilter || ids.includes(actTecnicoFilter)
+                      })
+                    }
                     if (filteredAtt.length === 0) return (
                       <p className="p-4 text-sm text-gray-400">
                         {actFilter === 'attive' ? 'Nessuna attività attiva' : 'Nessuna attività completata'}
@@ -1038,29 +857,6 @@ export default function ProjectDetail() {
                     <option value="lato_cliente">Fermo lato cliente</option>
                   </select>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Visibility / Tecnici */}
-          {isAdmin && tecnici.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Users size={16} className="text-blue-500" />
-                <h3 className="text-sm font-semibold">Visibilità</h3>
-              </div>
-              <div className="space-y-2">
-                {tecnici.map(u => (
-                  <label key={u.id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(project.tecnici || []).includes(u.id)}
-                      onChange={() => handleTecnicoToggle(u.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">{u.nome}</span>
-                  </label>
-                ))}
               </div>
             </div>
           )}

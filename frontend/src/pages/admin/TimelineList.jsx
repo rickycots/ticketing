@@ -117,7 +117,8 @@ export default function TimelineList() {
 
     const allStarts = barsRaw.map(b => b.barStart.getTime())
     const minDate = new Date(Math.min(...allStarts))
-    const tStart = startOfMonth(addDays(minDate, -7))
+    const thisMonth = startOfMonth(new Date())
+    const tStart = minDate < thisMonth ? startOfMonth(minDate) : thisMonth
     const tEnd = new Date(tStart.getFullYear(), tStart.getMonth() + rangeMonths, 1)
     const tDays = daysBetween(tStart, tEnd)
 
@@ -168,6 +169,12 @@ export default function TimelineList() {
   today.setHours(0, 0, 0, 0)
   const todayOffset = daysBetween(timelineStart, today)
   const showToday = todayOffset >= 0 && todayOffset <= totalDays
+  const timelineScrollRef = useRef(null)
+  useEffect(() => {
+    if (timelineScrollRef.current && showToday) {
+      timelineScrollRef.current.scrollLeft = Math.max(0, todayOffset * DAY_WIDTH - 50)
+    }
+  }, [timelineStart, todayOffset])
 
   function handleMouseEnter(e, bar) {
     const rect = containerRef.current?.getBoundingClientRect()
@@ -329,7 +336,7 @@ export default function TimelineList() {
             </div>
 
             {/* Right panel — scrollable timeline */}
-            <div className="flex-1 overflow-x-auto">
+            <div className="flex-1 overflow-x-auto" ref={timelineScrollRef}>
               <div style={{ width: chartWidth, minWidth: '100%' }}>
                 {/* Month header */}
                 <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: HEADER_HEIGHT }}>

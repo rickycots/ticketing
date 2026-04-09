@@ -160,6 +160,45 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   res.json(updated);
 });
 
+// DELETE /api/clients/:id — delete client and all related data (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+  const id = req.params.id;
+  const client = db.prepare('SELECT * FROM clienti WHERE id = ?').get(id);
+  if (!client) return res.status(404).json({ error: 'Cliente non trovato' });
+
+  const projects = db.prepare('SELECT id FROM progetti WHERE cliente_id = ?').all(id);
+  for (const p of projects) {
+    const acts = db.prepare('SELECT id FROM attivita WHERE progetto_id = ?').all(p.id);
+    for (const a of acts) {
+      try { db.prepare('DELETE FROM note_attivita WHERE attivita_id = ?').run(a.id); } catch(e) {}
+      try { db.prepare('DELETE FROM allegati_attivita WHERE attivita_id = ?').run(a.id); } catch(e) {}
+      try { db.prepare('DELETE FROM attivita_programmate WHERE attivita_id = ?').run(a.id); } catch(e) {}
+    }
+    try { db.prepare('DELETE FROM attivita WHERE progetto_id = ?').run(p.id); } catch(e) {}
+    try { db.prepare('DELETE FROM progetto_tecnici WHERE progetto_id = ?').run(p.id); } catch(e) {}
+    try { db.prepare('DELETE FROM progetto_referenti WHERE progetto_id = ?').run(p.id); } catch(e) {}
+    try { db.prepare('DELETE FROM allegati_progetto WHERE progetto_id = ?').run(p.id); } catch(e) {}
+    try { db.prepare('DELETE FROM messaggi_progetto WHERE progetto_id = ?').run(p.id); } catch(e) {}
+    try { db.prepare('DELETE FROM chat_lettura WHERE progetto_id = ?').run(p.id); } catch(e) {}
+  }
+  try { db.prepare('DELETE FROM progetti WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare("UPDATE email SET cliente_id = NULL, progetto_id = NULL, attivita_id = NULL WHERE cliente_id = ?").run(id); } catch(e) {}
+  const tickets = db.prepare('SELECT id FROM ticket WHERE cliente_id = ?').all(id);
+  for (const tk of tickets) {
+    try { db.prepare('DELETE FROM email WHERE ticket_id = ?').run(tk.id); } catch(e) {}
+    try { db.prepare('DELETE FROM note_interne WHERE ticket_id = ?').run(tk.id); } catch(e) {}
+    try { db.prepare('DELETE FROM chat_ticket_interna WHERE ticket_id = ?').run(tk.id); } catch(e) {}
+  }
+  try { db.prepare('DELETE FROM ticket WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare('DELETE FROM utenti_cliente WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare('DELETE FROM referenti_progetto WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare('DELETE FROM comunicazioni_cliente WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare('DELETE FROM comunicazioni_lette WHERE cliente_id = ?').run(id); } catch(e) {}
+  try { db.prepare('DELETE FROM schede_cliente WHERE cliente_id = ?').run(id); } catch(e) {}
+  db.prepare('DELETE FROM clienti WHERE id = ?').run(id);
+  res.json({ success: true });
+});
+
 // POST /api/clients/:id/logo — upload logo (admin only)
 router.post('/:id/logo', authenticateToken, requireAdmin, (req, res) => {
   uploadLogo.single('logo')(req, res, (err) => {

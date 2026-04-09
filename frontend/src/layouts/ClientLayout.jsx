@@ -249,7 +249,7 @@ export default function ClientLayout() {
               {(alerts.ticket_in_attesa || []).length > 0 && (
                 <div className="flex items-center gap-1.5 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold animate-pulse">
                   <AlertTriangle size={14} />
-                  Ticket in attesa ({alerts.ticket_in_attesa.length})
+                  Ticket in attesa tua risposta ({alerts.ticket_in_attesa.length})
                 </div>
               )}
               {alerts.attivita_bloccate.length > 0 && (

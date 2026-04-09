@@ -143,7 +143,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="admin@ticketing.local"
+                  placeholder="email@stmdomotica.it"
                   required
                 />
               </div>
@@ -172,10 +172,7 @@ export default function Login() {
 
           {!showChangePassword && (
             <div className="mt-6 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-400 text-center">Credenziali demo:</p>
-              <p className="text-xs text-gray-500 text-center mt-1">
-                admin@ticketing.local / admin123
-              </p>
+              <p className="text-xs text-green-600 text-center font-medium">Sito Operativo</p>
             </div>
           )}
         </div>

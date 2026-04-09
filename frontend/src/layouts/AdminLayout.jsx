@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X, List } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
 
@@ -9,6 +9,7 @@ const allNavItems = [
   { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
   { to: '/admin/projects', icon: FolderKanban, label: 'Progetti', expandable: true, children: [
     { to: '/admin/timeline', icon: BarChart3, label: 'Timeline Progetti' },
+    { to: '/admin/all-activities', icon: List, label: 'Tutte le Attività' },
   ]},
   { to: '/admin/emails', icon: Mail, label: 'Email', adminOnly: true },
   { to: '/admin/send-mail', icon: Send, label: 'Invia Mail' },

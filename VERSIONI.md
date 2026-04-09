@@ -1,5 +1,33 @@
 # Storico Versioni
 
+## V5.2.00-0409 — 9 Aprile 2026
+- Componente ProjectDataBox: box standard riutilizzabile per header progetto + toggle (descrizione, allegati, referenti, tecnici, nuova attività)
+- ProjectDataBox usato in ProjectDetail, ProjectGantt e ClientProjectDetail — una modifica aggiorna tutte le pagine
+- Descrizione progetto spostata nel toggle box come espandibile, rimossa dal titolo
+- Matita per modificare nome progetto inline (solo admin)
+- Popup "Nuova Attività" integrato nel ProjectDataBox, rimosso form inline e link Aggiungi dal tab attività
+- Componente ProjectMiniBox: card progetto standard con data aggiornamento (pallino verde/giallo/grigio), "Cliente:" prefix
+- Nuova pagina "Tutte le Attività" (/admin/all-activities): tabella con Azienda, Titolo (ordina per progetto), Ordine (calcolato da dipendenze), Fine prevista, Tecnico (pallino), Avanzamento
+- Endpoint /api/activities/all (Node.js + PHP) per lista attività cross-progetto
+- Filtro tecnici pallini nella lista attività del ProjectDetail
+- Filtro email per numero attività nel Gantt
+- Email editing rich text: B/I/U, colori rosso/blu/nero, evidenzia giallo, pulisci formattazione
+- Email corpo/oggetto modificabili e salvabili nel DB (backend PUT aggiornato)
+- Gantt/Timeline: primo mese visibile = mese corrente, auto-scroll alla linea "oggi"
+- Eliminazione cliente con cascade completa (progetti, attività, ticket, utenti, referenti, email)
+- Campo Cognome aggiunto a utenti_cliente (DB + frontend + backend)
+- Popup utente unificato admin/client con Nome, Cognome, Email su 3 colonne
+- Popup referente in modale con datalist ruoli
+- Paginazione 5/pagina per tabelle Utenti Portale e Referenti nel ClientDetail
+- Select multipla referenti (>4) nel popup nuovo progetto
+- Login page: credenziali admin aggiornate, rimossa demo, "Sito Operativo"
+- Fix: referenti X non funzionante (rimossa condizione count>0 in PHP)
+- Fix: tecnici panel vuoto in ProjectDetail (IDs vs oggetti)
+- Fix: "0" dopo badge Ricevuta email (!!is_bloccante)
+- Fix: bcrypt $2y/$2a incompatibilità PHP/Node.js
+- Client project detail: box email al posto delle attività
+- HelpTip su gestione avanzata progetti
+
 ## V5.1.01-0407 — 7 Aprile 2026
 - PWA: manifest.json, service worker, meta Apple per installazione su iPhone
 - Mobile admin: sidebar hamburger slide-in, top bar con menu button
