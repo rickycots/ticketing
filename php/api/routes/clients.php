@@ -109,58 +109,51 @@ $router->delete('/clients/:id', [Auth::class, 'authenticateToken'], [Auth::class
     $client = Database::fetchOne('SELECT * FROM clienti WHERE id = ?', [$id]);
     if (!$client) Response::error('Cliente non trovato', 404);
 
-    // Delete all related data
-    // Get project IDs for this client
-    $projects = Database::fetchAll('SELECT id FROM progetti WHERE cliente_id = ?', [$id]);
-    $projectIds = array_column($projects, 'id');
+    // 1. Unassign ALL emails first (before deleting projects/activities that emails reference)
+    try { Database::execute('UPDATE email SET cliente_id = NULL, progetto_id = NULL, attivita_id = NULL WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
 
-    foreach ($projectIds as $pid) {
-        // Delete activities and their related data
-        $activities = Database::fetchAll('SELECT id FROM attivita WHERE progetto_id = ?', [$pid]);
-        foreach ($activities as $act) {
-            try { Database::execute('DELETE FROM note_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
-            try { Database::execute('DELETE FROM allegati_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
-            try { Database::execute('DELETE FROM attivita_programmate WHERE attivita_id = ?', [$act['id']]); } catch (\Exception $e) {}
-        }
-        try { Database::execute('DELETE FROM attivita WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM progetto_tecnici WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM allegati_progetto WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM messaggi_progetto WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM chat_lettura WHERE progetto_id = ?', [$pid]); } catch (\Exception $e) {}
-    }
-    // Delete projects
-    if (!empty($projectIds)) {
-        Database::execute('DELETE FROM progetti WHERE cliente_id = ?', [$id]);
-    }
-
-    // Unassign emails (keep them but remove client association)
-    try { Database::execute('UPDATE email SET cliente_id = NULL, progetto_id = NULL, attivita_id = NULL WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
-
-    // Delete tickets and their emails
+    // 2. Delete ticket emails and tickets
     $tickets = Database::fetchAll('SELECT id FROM ticket WHERE cliente_id = ?', [$id]);
     foreach ($tickets as $tk) {
-        try { Database::execute('DELETE FROM email WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM note_interne WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
-        try { Database::execute('DELETE FROM chat_ticket_interna WHERE ticket_id = ?', [$tk['id']]); } catch (\Exception $e) {}
+        try { Database::execute('DELETE FROM email WHERE ticket_id = ?', [$tk['id']]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM note_interne WHERE ticket_id = ?', [$tk['id']]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM chat_ticket_interna WHERE ticket_id = ?', [$tk['id']]); } catch (\Throwable $e) {}
     }
-    try { Database::execute('DELETE FROM ticket WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+    try { Database::execute('DELETE FROM ticket WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
 
-    // Delete client users
-    try { Database::execute('DELETE FROM utenti_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+    // 3. Delete projects and all nested data
+    $projects = Database::fetchAll('SELECT id FROM progetti WHERE cliente_id = ?', [$id]);
+    foreach ($projects as $pr) {
+        $pid = $pr['id'];
+        // Nullify email references to this project's activities
+        try { Database::execute('UPDATE email SET progetto_id = NULL, attivita_id = NULL WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        // Delete activities and nested
+        $activities = Database::fetchAll('SELECT id FROM attivita WHERE progetto_id = ?', [$pid]);
+        foreach ($activities as $act) {
+            try { Database::execute('DELETE FROM note_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Throwable $e) {}
+            try { Database::execute('DELETE FROM allegati_attivita WHERE attivita_id = ?', [$act['id']]); } catch (\Throwable $e) {}
+            try { Database::execute('DELETE FROM attivita_programmate WHERE attivita_id = ?', [$act['id']]); } catch (\Throwable $e) {}
+        }
+        try { Database::execute('DELETE FROM attivita WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM progetto_tecnici WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM progetto_referenti WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM allegati_progetto WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM messaggi_progetto WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+        try { Database::execute('DELETE FROM chat_lettura WHERE progetto_id = ?', [$pid]); } catch (\Throwable $e) {}
+    }
+    try { Database::execute('DELETE FROM progetti WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
 
-    // Delete referenti
-    try { Database::execute('DELETE FROM referenti_progetto WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
+    // 4. Delete client users, referenti, comunicazioni, schede
+    try { Database::execute('DELETE FROM utenti_cliente WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
+    try { Database::execute('DELETE FROM referenti_progetto WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
+    try { Database::execute('DELETE FROM comunicazioni_cliente WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
+    try { Database::execute('DELETE FROM comunicazioni_lette WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
+    try { Database::execute('DELETE FROM schede_cliente WHERE cliente_id = ?', [$id]); } catch (\Throwable $e) {}
 
-    // Delete comunicazioni
-    try { Database::execute('DELETE FROM comunicazioni_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
-    try { Database::execute('DELETE FROM comunicazioni_lette WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
-
-    // Delete schede
-    try { Database::execute('DELETE FROM schede_cliente WHERE cliente_id = ?', [$id]); } catch (\Exception $e) {}
-
-    // Delete client
-    Database::execute('DELETE FROM clienti WHERE id = ?', [$id]);
+    // 5. Delete client
+    try { Database::execute('DELETE FROM clienti WHERE id = ?', [$id]); } catch (\Throwable $e) {
+        Response::error('Impossibile eliminare il cliente: ' . $e->getMessage(), 500);
+    }
 
     Response::success();
 });

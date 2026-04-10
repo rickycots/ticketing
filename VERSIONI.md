@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.3.00-0411 — 11 Aprile 2026
+- Fix eliminazione cliente: riordinato cascade (email NULL prima di delete progetti/attività), tutti try/catch con Throwable, messaggio errore se fallisce
+
 ## V5.2.00-0409 — 9 Aprile 2026
 - Componente ProjectDataBox: box standard riutilizzabile per header progetto + toggle (descrizione, allegati, referenti, tecnici, nuova attività)
 - ProjectDataBox usato in ProjectDetail, ProjectGantt e ClientProjectDetail — una modifica aggiorna tutte le pagine
