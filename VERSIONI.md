@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.27-0411 — 11 Aprile 2026
+- Tecnico sidebar: label rinominate (Ticket assegnati, Progetti visibili, Attività visibili)
+
 ## V5.4.26-0411 — 11 Aprile 2026
 - Tecnico TicketList: titolo "Ticket a te assegnati"
 

@@ -29,7 +29,18 @@ export default function AdminLayout() {
   const location = useLocation()
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   document.title = `STM-Portal : ${user.ruolo === 'admin' ? 'admin' : 'tecnico'}`
-  const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin')
+  const isTecnico = user.ruolo === 'tecnico'
+  const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin').map(item => {
+    if (!isTecnico) return item
+    // Rename labels for tecnico
+    if (item.to === '/admin/tickets') return { ...item, label: 'Ticket assegnati' }
+    if (item.expandable && item.children) return { ...item, label: 'Progetti', children: item.children.map(c => {
+      if (c.to === '/admin/timeline') return { ...c, label: 'Progetti visibili' }
+      if (c.to === '/admin/all-activities') return { ...c, label: 'Attività visibili' }
+      return c
+    })}
+    return item
+  })
   const bottomItems = bottomNavItems.filter(item => {
     if (item.adminOnly && user.ruolo !== 'admin') return false
     if (item.to === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) return false

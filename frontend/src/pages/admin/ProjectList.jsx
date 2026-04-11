@@ -142,7 +142,9 @@ export default function ProjectList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Progetti</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {isAdmin ? 'Progetti' : <>Progetti di cui hai visibilità <HelpTip text="Per ogni progetto l'admin può scegliere i tecnici abilitati; essi potranno averne visibilità generale ma lavorare solo sulle attività a loro assegnate." /></>}
+        </h1>
         {isAdmin && (
           <button
             onClick={() => setShowForm(!showForm)}
