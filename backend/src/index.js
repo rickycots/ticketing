@@ -47,17 +47,29 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 const activitiesRouter = require('./routes/activities');
 app.use('/api/projects/:id/activities', activitiesRouter);
 
-// All activities endpoint (admin only)
+// All activities endpoint (admin: all, tecnico: only assigned projects)
 const db = require('./db/database');
 const { authenticateToken, requireAdmin } = require('./middleware/auth');
-app.get('/api/activities/all', authenticateToken, requireAdmin, (req, res) => {
-  const acts = db.prepare(`
-    SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
-    FROM attivita a
-    JOIN progetti p ON a.progetto_id = p.id
-    LEFT JOIN clienti c ON p.cliente_id = c.id
-    ORDER BY a.created_at DESC
-  `).all();
+app.get('/api/activities/all', authenticateToken, (req, res) => {
+  let acts;
+  if (req.user.ruolo === 'admin') {
+    acts = db.prepare(`
+      SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+      FROM attivita a
+      JOIN progetti p ON a.progetto_id = p.id
+      LEFT JOIN clienti c ON p.cliente_id = c.id
+      ORDER BY a.created_at DESC
+    `).all();
+  } else {
+    acts = db.prepare(`
+      SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+      FROM attivita a
+      JOIN progetti p ON a.progetto_id = p.id
+      LEFT JOIN clienti c ON p.cliente_id = c.id
+      INNER JOIN progetto_tecnici pt ON pt.progetto_id = p.id AND pt.utente_id = ?
+      ORDER BY a.created_at DESC
+    `).all(req.user.id);
+  }
   res.json(acts);
 });
 
