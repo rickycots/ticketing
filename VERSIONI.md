@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.11-0411 — 11 Aprile 2026
+- Nuova attività: data inizio bloccata (readonly grigio) quando ha una dipendenza
+
 ## V5.5.10-0411 — 11 Aprile 2026
 - Nuova attività popup: "Dipende da" spostato prima delle date
 - Selezione dipendenza imposta automaticamente data inizio = data fine dell'attività padre

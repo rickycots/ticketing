@@ -412,7 +412,8 @@ export default function ProjectDataBox({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
                   <input type="date" value={newAct.data_inizio} onChange={e => setNewAct(f => ({ ...f, data_inizio: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    disabled={!!newAct.dipende_da}
+                    className={`w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${newAct.dipende_da ? 'bg-gray-100 text-gray-500' : ''}`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Scadenza</label>
