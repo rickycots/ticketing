@@ -173,7 +173,7 @@ export default function ProjectDataBox({
             <span className="font-medium">Referenti</span>
             <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
           </button>
-          {isAdmin && (
+          {(project.tecnici || []).length > 0 && (
             <button onClick={() => { setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici') }}
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'tecnici' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
               <ChevronRight size={14} className={`transition-transform ${openPanel === 'tecnici' ? 'rotate-90' : ''}`} />
@@ -312,24 +312,54 @@ export default function ProjectDataBox({
         )}
 
         {/* Expanded tecnici */}
-        {openPanel === 'tecnici' && isAdmin && (
+        {openPanel === 'tecnici' && (
           <div className="mt-3 bg-indigo-50 rounded-lg border border-indigo-200 overflow-hidden">
             <div className="p-3">
-              <p className="text-xs font-medium text-gray-500 mb-2">Seleziona i tecnici abilitati su questo progetto:</p>
-              <div className="flex flex-wrap gap-2">
-                {tecnici.map(u => {
-                  const assigned = (project.tecnici || []).includes(u.id)
-                  return (
-                    <button key={u.id} onClick={() => onTecnicoToggle && onTecnicoToggle(u.id)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-                        assigned ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-100'
-                      }`}>
-                      <UserCog size={13} /> {u.nome}
-                    </button>
-                  )
-                })}
-              </div>
-              {tecnici.length === 0 && <p className="text-xs text-gray-400 italic">Nessun tecnico disponibile</p>}
+              {isAdmin ? (
+                <>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Seleziona i tecnici abilitati su questo progetto:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tecnici.map(u => {
+                      const assigned = (project.tecnici || []).includes(u.id)
+                      return (
+                        <button key={u.id} onClick={() => onTecnicoToggle && onTecnicoToggle(u.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                            assigned ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-100'
+                          }`}>
+                          <UserCog size={13} /> {u.nome}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {tecnici.length === 0 && <p className="text-xs text-gray-400 italic">Nessun tecnico disponibile</p>}
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Tecnici abilitati su questo progetto:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      // Build names from tecnici prop or from activity data
+                      const ids = (project.tecnici || []).map(Number)
+                      const namesFromList = tecnici.filter(u => ids.includes(Number(u.id)))
+                      if (namesFromList.length > 0) return namesFromList.map(u => (
+                        <span key={u.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white">
+                          <UserCog size={13} /> {u.nome}
+                        </span>
+                      ))
+                      // Fallback: extract names from activities
+                      const nameMap = new Map()
+                      ;(project.attivita || []).forEach(a => {
+                        if (a.assegnato_a && a.assegnato_nome && ids.includes(Number(a.assegnato_a))) nameMap.set(Number(a.assegnato_a), a.assegnato_nome)
+                      })
+                      return [...nameMap.entries()].map(([id, nome]) => (
+                        <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white">
+                          <UserCog size={13} /> {nome}
+                        </span>
+                      ))
+                    })()}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

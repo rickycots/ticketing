@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.8.02-0411 — 11 Aprile 2026
+- ProjectDataBox: toggle Tecnici visibile anche per tecnico (readonly, nomi da attività come fallback)
+
 ## V5.8.01-0411 — 11 Aprile 2026
 - HelpTip su Chat Progetto: "La chat coinvolge tutti i tecnici abilitati al progetto"
 
