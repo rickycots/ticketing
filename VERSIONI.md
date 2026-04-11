@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.23-0411 — 11 Aprile 2026
+- Tecnico: titolo "Timeline Progetti di cui hai visibilità" e "Elenco Attività di cui hai visibilità"
+
 ## V5.4.22-0411 — 11 Aprile 2026
 - ActivityDetail: link "torna" gestisce anche provenienza Gantt (state from:'gantt')
 - GanttChart: click su attività passa state from:'gantt' per navigazione di ritorno

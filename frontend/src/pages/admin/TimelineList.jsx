@@ -194,7 +194,7 @@ export default function TimelineList() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BarChart3 size={24} className="text-blue-600" />
-          <h1 className="text-2xl font-bold">Timeline Progetti</h1>
+          <h1 className="text-2xl font-bold">{isAdmin ? 'Timeline Progetti' : 'Timeline Progetti di cui hai visibilità'}</h1>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && clientList.length > 0 && (
