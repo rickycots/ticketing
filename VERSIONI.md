@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.01-0411 — 11 Aprile 2026
+- Fix gestione avanzata progetti: tecnico con flag gestione_avanzata ora può caricare allegati e gestire referenti nel ProjectDataBox
+- Nuova prop canEdit in ProjectDataBox, passata da ProjectDetail e ProjectGantt
+
 ## V5.4.00-0411 — 11 Aprile 2026
 - Security: fix XSS in EmailInbox — sanitizeHtml() rimuove script/style/iframe/event handlers prima del rendering HTML email
 - Security: fix_referenti.php ora usa MIGRATE_KEY dedicata + flag file _ENABLE_MIGRATE (come migrate.php)

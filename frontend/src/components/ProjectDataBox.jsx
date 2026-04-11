@@ -39,6 +39,7 @@ const projectStatusConfig = {
 export default function ProjectDataBox({
   project,
   isAdmin = false,
+  canEdit = false,
   onDelete,
   extraActions,
   // Allegati
@@ -195,7 +196,7 @@ export default function ProjectDataBox({
         {/* Expanded allegati */}
         {showAllegati && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-            {isAdmin && onUploadFiles && (
+            {(isAdmin || canEdit) && onUploadFiles && (
               <div className="p-3 border-b border-gray-200">
                 <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
                   <Upload size={16} className="text-gray-400" />
@@ -216,7 +217,7 @@ export default function ProjectDataBox({
                     <div className="flex items-center gap-1 shrink-0">
                       <a href={`/api/projects/${project.id}/allegati/${a.id}`} target="_blank" rel="noopener noreferrer"
                         className="p-1 rounded text-gray-400 hover:text-blue-600 cursor-pointer"><Download size={14} /></a>
-                      {isAdmin && onDeleteAllegato && (
+                      {(isAdmin || canEdit) && onDeleteAllegato && (
                         <button onClick={() => onDeleteAllegato(a.id)}
                           className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button>
                       )}
@@ -247,7 +248,7 @@ export default function ProjectDataBox({
                       <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
                     </div>
                     {r.ruolo && <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>}
-                    {isAdmin && onRemoveRef && (
+                    {(isAdmin || canEdit) && onRemoveRef && (
                       <button onClick={() => onRemoveRef(r.id)} className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0">
                         <X size={14} />
                       </button>
@@ -256,7 +257,7 @@ export default function ProjectDataBox({
                 ))}
               </div>
             )}
-            {isAdmin && onOpenAddRef && (
+            {(isAdmin || canEdit) && onOpenAddRef && (
               <div className="border-t border-teal-200 p-3">
                 {!showAddRef ? (
                   <button onClick={() => { onOpenAddRef(); setShowAddRef(true) }} className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer">

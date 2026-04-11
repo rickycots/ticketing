@@ -224,6 +224,7 @@ export default function ProjectGantt() {
       <ProjectDataBox
         project={project}
         isAdmin={isAdmin}
+        canEdit={canEdit}
         onDelete={handleDeleteProject}
         onUpdateProject={async (data) => { await projects.update(id, data); loadProject() }}
         onCreateActivity={async (act) => {

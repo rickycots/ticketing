@@ -123,6 +123,8 @@ export default function ProjectDetail() {
   }, [project?.chat?.length])
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
+  const isTecnicoProgetto = !isAdmin && project && (project.tecnici || []).includes(currentUser.id)
+  const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
 
   async function handleCreateActivity(e) {
     e.preventDefault()
@@ -287,6 +289,7 @@ export default function ProjectDetail() {
           <ProjectDataBox
             project={project}
             isAdmin={isAdmin}
+            canEdit={canEdit}
             onDelete={handleDeleteProject}
             onUpdateProject={async (data) => { await projects.update(id, data); load() }}
             onCreateActivity={async (act) => {
