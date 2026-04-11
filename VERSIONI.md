@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.13-0411 — 11 Aprile 2026
+- Completamento attività padre: rimuove automaticamente dipende_da dai figli (Node.js + PHP, tecnico + admin)
+
 ## V5.5.12-0411 — 11 Aprile 2026
 - Auto-fix attività scadute: all'apertura del progetto, aggiorna data fine prevista ad oggi per attività non terminate con data passata
 - Cascade: aggiorna data inizio delle attività dipendenti

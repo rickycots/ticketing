@@ -332,6 +332,11 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
              WHERE id = ?",
             [$allowedStato, $allowedNote, $allowedAvanzamento, $dataCompletamento, $activityId]
         );
+
+        // When completed: release dependent activities
+        if ($allowedStato === 'completata' && $activity['stato'] !== 'completata') {
+            Database::execute('UPDATE attivita SET dipende_da = NULL WHERE dipende_da = ? AND progetto_id = ?', [$activityId, $projectId]);
+        }
     } else {
         // Admin: full update
         $newStato = $stato ?: $activity['stato'];
@@ -421,6 +426,12 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
                 $activityId
             ]
         );
+
+        // When completed: release dependent activities
+        $finalStato = $stato ?: $activity['stato'];
+        if ($finalStato === 'completata' && $activity['stato'] !== 'completata') {
+            Database::execute('UPDATE attivita SET dipende_da = NULL WHERE dipende_da = ? AND progetto_id = ?', [$activityId, $projectId]);
+        }
     }
 
     Database::execute(

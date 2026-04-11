@@ -256,6 +256,11 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
         updated_at = datetime('now')
       WHERE id = ?
     `).run(allowedStato, allowedNote, allowedAvanzamento, dataCompletamento, req.params.activityId);
+
+    // When completed: release dependent activities
+    if (allowedStato === 'completata' && activity.stato !== 'completata') {
+      db.prepare('UPDATE attivita SET dipende_da = NULL WHERE dipende_da = ? AND progetto_id = ?').run(req.params.activityId, req.params.id);
+    }
   } else {
     // Admin: full update
     // Auto-manage data_completamento + avanzamento
@@ -336,6 +341,12 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
       tecnici_ids !== undefined ? (Array.isArray(tecnici_ids) ? tecnici_ids.join(',') : tecnici_ids) : null,
       req.params.activityId
     );
+
+    // When completed: release dependent activities
+    const newStato2 = stato || activity.stato;
+    if (newStato2 === 'completata' && activity.stato !== 'completata') {
+      db.prepare('UPDATE attivita SET dipende_da = NULL WHERE dipende_da = ? AND progetto_id = ?').run(req.params.activityId, req.params.id);
+    }
   }
 
   db.prepare("UPDATE progetti SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
