@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V5.5.12-0411 — 11 Aprile 2026
+- Auto-fix attività scadute: all'apertura del progetto, aggiorna data fine prevista ad oggi per attività non terminate con data passata
+- Cascade: aggiorna data inizio delle attività dipendenti
+- Popup di avviso "Attenzione: attività non terminate! Le date sono state modificate"
+- Date modificate evidenziate in rosso (font-semibold text-red-600)
+
 ## V5.5.11-0411 — 11 Aprile 2026
 - Nuova attività: data inizio bloccata (readonly grigio) quando ha una dipendenza
 

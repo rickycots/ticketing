@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X, UserCog } from 'lucide-react'
+import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X, UserCog, AlertTriangle } from 'lucide-react'
 import { projects, activities, users, clients } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ProjectDataBox from '../../components/ProjectDataBox'
@@ -63,6 +63,9 @@ export default function ProjectDetail() {
   const [actTecnicoFilter, setActTecnicoFilter] = useState(null)
   const [emailFilter, setEmailFilter] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
+  const [overdueChecked, setOverdueChecked] = useState(false)
+  const [overdueIds, setOverdueIds] = useState(new Set())
+  const [showOverduePopup, setShowOverduePopup] = useState(false)
   const chatEndRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -71,6 +74,50 @@ export default function ProjectDetail() {
   function load() {
     projects.get(id).then(p => { setProject(p); setEditDescrizione(p.descrizione || '') }).catch(console.error).finally(() => setLoading(false))
   }
+
+  // Check for overdue activities and auto-fix dates
+  useEffect(() => {
+    if (!project || overdueChecked || !project.attivita) return
+    setOverdueChecked(true)
+
+    const today = new Date().toISOString().slice(0, 10)
+    const modified = new Set()
+    const updates = []
+
+    // Find overdue activities (past end date, not completed)
+    for (const a of project.attivita) {
+      if (a.stato === 'completata') continue
+      if (a.data_scadenza && a.data_scadenza < today) {
+        modified.add(a.id)
+        updates.push({ id: a.id, data_scadenza: today })
+      }
+    }
+
+    if (updates.length === 0) return
+
+    // Also cascade: update dependents whose start date comes from parent's end date
+    for (const a of project.attivita) {
+      if (a.dipende_da) {
+        const parent = project.attivita.find(p => Number(p.id) === Number(a.dipende_da))
+        if (parent && modified.has(parent.id)) {
+          modified.add(a.id)
+          updates.push({ id: a.id, data_inizio: today })
+        }
+      }
+    }
+
+    // Apply updates
+    Promise.all(updates.map(u => {
+      const data = {}
+      if (u.data_scadenza) data.data_scadenza = u.data_scadenza
+      if (u.data_inizio) data.data_inizio = u.data_inizio
+      return activities.update(id, u.id, data).catch(() => {})
+    })).then(() => {
+      setOverdueIds(modified)
+      setShowOverduePopup(true)
+      load()
+    })
+  }, [project, overdueChecked])
 
   function loadAllegati() {
     setLoadingAllegati(true)
@@ -273,6 +320,23 @@ export default function ProjectDetail() {
 
   return (
     <div>
+      {/* Overdue popup */}
+      {showOverduePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowOverduePopup(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} className="text-red-600" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Attenzione: attività non terminate!</h2>
+            <p className="text-sm text-gray-600 mb-4">Le date di fine prevista delle attività scadute sono state aggiornate ad oggi. Le date delle attività dipendenti sono state ricalcolate di conseguenza.</p>
+            <p className="text-xs text-red-500 mb-4">Le date modificate sono evidenziate in rosso.</p>
+            <button onClick={() => setShowOverduePopup(false)} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 cursor-pointer">
+              Ho capito
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 mb-4">
         <Link to="/admin/projects" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft size={16} /> Torna ai progetti
@@ -603,10 +667,10 @@ export default function ProjectDetail() {
                               <span>Creata: {new Date(a.created_at).toLocaleDateString('it-IT')}</span>
                             )}
                             {a.data_inizio && (
-                              <span>Inizio: {new Date(a.data_inizio).toLocaleDateString('it-IT')}</span>
+                              <span className={overdueIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Inizio: {new Date(a.data_inizio).toLocaleDateString('it-IT')}</span>
                             )}
                             {a.data_scadenza && (
-                              <span>Fine prevista: {new Date(a.data_scadenza).toLocaleDateString('it-IT')}</span>
+                              <span className={overdueIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Fine prevista: {new Date(a.data_scadenza).toLocaleDateString('it-IT')}</span>
                             )}
                             <span className={isCompleted ? 'text-green-600 font-medium' : 'text-gray-300'}>
                               Completata: {isCompleted && a.data_completamento
