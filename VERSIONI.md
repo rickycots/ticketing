@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.05-0411 — 11 Aprile 2026
+- ProjectDetail: HelpTip su Dipendenza attività (admin e tecnico)
+
 ## V5.5.04-0411 — 11 Aprile 2026
 - ProjectGantt: link "Vai a dettaglio progetto" dopo il titolo
 
