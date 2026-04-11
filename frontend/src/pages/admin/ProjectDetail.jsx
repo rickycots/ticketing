@@ -518,18 +518,18 @@ export default function ProjectDetail() {
                               <Link to={`/admin/projects/${id}/activities/${a.id}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap">
                                 Dettaglio attività
                               </Link>
-                              {isWaitingDep ? (
-                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-500">
-                                  In Attesa
-                                </span>
-                              ) : (
+                              {!isWaitingDep && (
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actStatoColors[a.stato]}`}>
                                   {actStatoLabels[a.stato]}
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {canEdit && !a.email_bloccante && !isWaitingDep && (
+                              {isWaitingDep ? (
+                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-500">
+                                  In Attesa
+                                </span>
+                              ) : canEdit && !a.email_bloccante && (
                                 <select
                                   value={a.stato}
                                   onChange={(e) => handleUpdateActivity(a.id, { stato: e.target.value })}

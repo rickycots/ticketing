@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.07-0411 — 11 Aprile 2026
+- ProjectDetail: badge "In Attesa" allineato a destra con gli altri stati (spostato nel div azioni)
+
 ## V5.5.06-0411 — 11 Aprile 2026
 - Attività con dipendenza non completata: stato "In Attesa" grigio, non modificabile, bordo grigio, sfondo grigio chiaro
 - Select stato e avanzamento nascosti quando attività è in attesa della dipendenza
