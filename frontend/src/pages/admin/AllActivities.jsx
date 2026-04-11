@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
-import { activities, users as usersApi } from '../../api/client'
+import { activities } from '../../api/client'
 
 export default function AllActivities() {
   const [allActivities, setAllActivities] = useState([])
@@ -15,10 +15,7 @@ export default function AllActivities() {
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([
-      activities.listAll(),
-      usersApi.list()
-    ]).then(([acts, users]) => {
+    activities.listAll().then(acts => {
       const actMap = {}
       acts.forEach(a => { actMap[a.id] = a })
 
@@ -35,8 +32,13 @@ export default function AllActivities() {
         a.ordine_calcolato = countOpenPredecessors(a) + 1
       })
 
+      // Build user list from activity data
+      const uMap = new Map()
+      acts.forEach(a => {
+        if (a.assegnato_a && a.assegnato_nome) uMap.set(a.assegnato_a, { id: a.assegnato_a, nome: a.assegnato_nome })
+      })
+      setUserList([...uMap.values()])
       setAllActivities(acts)
-      setUserList(users)
     }).catch(console.error).finally(() => setLoading(false))
   }, [])
 

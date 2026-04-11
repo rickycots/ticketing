@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.10-0411 — 11 Aprile 2026
+- Fix AllActivities per tecnico: rimossa chiamata usersApi.list() (admin-only), pallini tecnici estratti dalle attività
+
 ## V5.4.09-0411 — 11 Aprile 2026
 - Pagina "Tutte le Attività" accessibile al tecnico: mostra solo attività dei progetti assegnati (Node.js + PHP)
 
