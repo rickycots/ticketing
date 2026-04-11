@@ -64,7 +64,8 @@ export default function ProjectDetail() {
   const [emailFilter, setEmailFilter] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
   const [overdueChecked, setOverdueChecked] = useState(false)
-  const [overdueIds, setOverdueIds] = useState(new Set())
+  const [overdueEndIds, setOverdueEndIds] = useState(new Set())
+  const [overdueStartIds, setOverdueStartIds] = useState(new Set())
   const [showOverduePopup, setShowOverduePopup] = useState(false)
   const chatEndRef = useRef(null)
   const navigate = useNavigate()
@@ -81,26 +82,27 @@ export default function ProjectDetail() {
     setOverdueChecked(true)
 
     const today = new Date().toISOString().slice(0, 10)
-    const modified = new Set()
+    const endModified = new Set()
+    const startModified = new Set()
     const updates = []
 
     // Find overdue activities (past end date, not completed)
     for (const a of project.attivita) {
       if (a.stato === 'completata') continue
       if (a.data_scadenza && a.data_scadenza < today) {
-        modified.add(a.id)
+        endModified.add(a.id)
         updates.push({ id: a.id, data_scadenza: today })
       }
     }
 
     if (updates.length === 0) return
 
-    // Also cascade: update dependents whose start date comes from parent's end date
+    // Also cascade: update dependents' start date only
     for (const a of project.attivita) {
       if (a.dipende_da) {
         const parent = project.attivita.find(p => Number(p.id) === Number(a.dipende_da))
-        if (parent && modified.has(parent.id)) {
-          modified.add(a.id)
+        if (parent && endModified.has(parent.id)) {
+          startModified.add(a.id)
           updates.push({ id: a.id, data_inizio: today })
         }
       }
@@ -113,7 +115,8 @@ export default function ProjectDetail() {
       if (u.data_inizio) data.data_inizio = u.data_inizio
       return activities.update(id, u.id, data).catch(() => {})
     })).then(() => {
-      setOverdueIds(modified)
+      setOverdueEndIds(endModified)
+      setOverdueStartIds(startModified)
       setShowOverduePopup(true)
       load()
     })
@@ -667,10 +670,10 @@ export default function ProjectDetail() {
                               <span>Creata: {new Date(a.created_at).toLocaleDateString('it-IT')}</span>
                             )}
                             {a.data_inizio && (
-                              <span className={overdueIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Inizio: {new Date(a.data_inizio).toLocaleDateString('it-IT')}</span>
+                              <span className={overdueStartIds.has(a.id) || overdueEndIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Inizio: {new Date(a.data_inizio).toLocaleDateString('it-IT')}</span>
                             )}
                             {a.data_scadenza && (
-                              <span className={overdueIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Fine prevista: {new Date(a.data_scadenza).toLocaleDateString('it-IT')}</span>
+                              <span className={overdueEndIds.has(a.id) ? 'text-red-600 font-semibold' : ''}>Fine prevista: {new Date(a.data_scadenza).toLocaleDateString('it-IT')}</span>
                             )}
                             <span className={isCompleted ? 'text-green-600 font-medium' : 'text-gray-300'}>
                               Completata: {isCompleted && a.data_completamento

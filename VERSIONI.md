@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.14-0411 — 11 Aprile 2026
+- Fix date rosse: solo "Fine prevista" rossa per attività scadute, solo "Inizio" rosso per dipendenti (non la fine)
+
 ## V5.5.13-0411 — 11 Aprile 2026
 - Completamento attività padre: rimuove automaticamente dipende_da dai figli (Node.js + PHP, tecnico + admin)
 
