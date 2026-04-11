@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.25-0411 — 11 Aprile 2026
+- Tecnico Timeline: titolo "Progetti di cui hai visibilità" con HelpTip esplicativo su abilitazione tecnici
+
 ## V5.4.24-0411 — 11 Aprile 2026
 - Fix titolo AllActivities tecnico: "Elenco Tutte le Attività dei Progetti di cui hai visibilità"
 

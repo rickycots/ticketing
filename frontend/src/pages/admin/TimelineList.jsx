@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BarChart3, Building2, Plus, X, Users, UserPlus } from 'lucide-react'
 import { projects, clients as clientsApi, users as usersApi } from '../../api/client'
+import HelpTip from '../../components/HelpTip'
 
 const DAY_WIDTH = 13
 const ROW_HEIGHT = 40
@@ -194,7 +195,9 @@ export default function TimelineList() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BarChart3 size={24} className="text-blue-600" />
-          <h1 className="text-2xl font-bold">{isAdmin ? 'Timeline Progetti' : 'Timeline Progetti di cui hai visibilità'}</h1>
+          <h1 className="text-2xl font-bold">
+            {isAdmin ? 'Timeline Progetti' : <>Progetti di cui hai visibilità <HelpTip text="Per ogni progetto l'admin può scegliere i tecnici abilitati; essi potranno averne visibilità generale ma lavorare solo sulle attività a loro assegnate." /></>}
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           {isAdmin && clientList.length > 0 && (
