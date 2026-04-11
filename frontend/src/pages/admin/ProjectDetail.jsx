@@ -442,16 +442,45 @@ export default function ProjectDetail() {
                     // Build tree: roots sorted by ordine, dependents nested under parent
                     function buildTree(list) {
                       const ids = new Set(list.map(a => Number(a.id)))
-                      // Root = no dependency OR parent not in filtered list
-                      const roots = list.filter(a => !a.dipende_da || !ids.has(Number(a.dipende_da))).sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+                      // Detect circular dependencies: walk chain, if we revisit an id it's a cycle
+                      function hasCycle(startId) {
+                        const visited = new Set()
+                        let cur = startId
+                        while (cur) {
+                          if (visited.has(cur)) return true
+                          visited.add(cur)
+                          const parent = list.find(a => Number(a.id) === cur)
+                          cur = parent && parent.dipende_da ? Number(parent.dipende_da) : null
+                        }
+                        return false
+                      }
+                      // Root = no dependency, parent not in list, OR part of a cycle (break cycle at lowest ordine)
+                      const cycleIds = new Set()
+                      list.forEach(a => { if (a.dipende_da && hasCycle(Number(a.id))) cycleIds.add(Number(a.id)) })
+                      // For cycle members, pick the one with lowest ordine as root
+                      const cycleRootId = cycleIds.size > 0 ? [...cycleIds].sort((a, b) => {
+                        const aa = list.find(x => Number(x.id) === a)
+                        const bb = list.find(x => Number(x.id) === b)
+                        return (aa?.ordine || 0) - (bb?.ordine || 0)
+                      })[0] : null
+
+                      const roots = list.filter(a => {
+                        if (!a.dipende_da) return true
+                        if (!ids.has(Number(a.dipende_da))) return true
+                        if (cycleRootId && Number(a.id) === cycleRootId) return true
+                        return false
+                      }).sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+
                       const result = []
+                      const added = new Set()
                       function addWithChildren(parent, depth) {
+                        if (added.has(Number(parent.id))) return // prevent infinite loop
+                        added.add(Number(parent.id))
                         result.push({ ...parent, _depth: depth })
-                        list.filter(a => Number(a.dipende_da) === Number(parent.id)).forEach(c => addWithChildren(c, depth + 1))
+                        list.filter(a => Number(a.dipende_da) === Number(parent.id) && !added.has(Number(a.id))).forEach(c => addWithChildren(c, depth + 1))
                       }
                       roots.forEach(r => addWithChildren(r, 0))
                       // Safety: any remaining orphans
-                      const added = new Set(result.map(r => Number(r.id)))
                       list.filter(a => !added.has(Number(a.id))).forEach(a => result.push({ ...a, _depth: 0 }))
                       return result
                     }

@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.02-0411 — 11 Aprile 2026
+- Fix rientri dipendenze: gestione dipendenze circolari in buildTree (spezza il ciclo al nodo con ordine più basso)
+
 ## V5.5.01-0411 — 11 Aprile 2026
 - Fix rientri dipendenze in ProjectDetail: Number() cast su id/dipende_da per compatibilità PHP string IDs con Set.has()
 
