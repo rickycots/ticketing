@@ -12,6 +12,10 @@ export default function AllActivities() {
   const [sortDir, setSortDir] = useState('asc')
   const [filterCliente, setFilterCliente] = useState('')
   const [filterTecnico, setFilterTecnico] = useState(null)
+  const [filterAperte, setFilterAperte] = useState(false)
+  const [initialized, setInitialized] = useState(false)
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
+  const isTecnico = currentUser.ruolo === 'tecnico'
   const PAGE_SIZE = 7
 
   useEffect(() => {
@@ -40,6 +44,12 @@ export default function AllActivities() {
       })
       setUserList([...uMap.values()])
       setAllActivities(acts)
+      // Tecnico default: filter by self + solo aperte
+      if (isTecnico && !initialized) {
+        setFilterTecnico(Number(currentUser.id))
+        setFilterAperte(true)
+      }
+      setInitialized(true)
     }).catch(console.error).finally(() => setLoading(false))
   }, [])
 
@@ -50,6 +60,7 @@ export default function AllActivities() {
   let filtered = allActivities
   if (filterCliente) filtered = filtered.filter(a => a.cliente_nome === filterCliente)
   if (filterTecnico) filtered = filtered.filter(a => Number(a.assegnato_a) === filterTecnico)
+  if (filterAperte) filtered = filtered.filter(a => a.stato !== 'completata')
 
   // Sort
   const sorted = [...filtered].sort((a, b) => {
@@ -98,6 +109,16 @@ export default function AllActivities() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Elenco Attività</h1>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <button onClick={() => { setFilterAperte(true); setPage(1) }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${filterAperte ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+              Solo Aperte
+            </button>
+            <button onClick={() => { setFilterAperte(false); setPage(1) }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${!filterAperte ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+              Tutte
+            </button>
+          </div>
           <div className="flex items-center gap-1.5">
             {userList.map(u => (
               <button key={u.id} onClick={() => { setFilterTecnico(filterTecnico === u.id ? null : u.id); setPage(1) }}

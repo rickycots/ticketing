@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.21-0411 — 11 Aprile 2026
+- AllActivities: filtro "Solo Aperte" / "Tutte" con bottoni toggle
+- Tecnico: pagina si apre con filtro automatico per sé stesso + solo aperte
+
 ## V5.4.20-0411 — 11 Aprile 2026
 - AllActivities: filtro per tecnico con pallini cliccabili (stesso stile ProjectDetail)
 
