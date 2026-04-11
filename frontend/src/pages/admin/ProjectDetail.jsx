@@ -565,8 +565,8 @@ export default function ProjectDetail() {
                                 : '—'}
                             </span>
                           </div>
-                          {/* Admin inline edits for ordine and dipende_da */}
-                          {isAdmin && (
+                          {/* Ordine (admin edit) + Dipendenza (admin edit, tecnico readonly) */}
+                          {isAdmin ? (
                             <div className="flex flex-wrap items-center gap-3 mt-2">
                               {!a.dipende_da && (
                                 <label className="flex items-center gap-1 text-xs text-gray-400">
@@ -593,6 +593,12 @@ export default function ProjectDetail() {
                                   ))}
                                 </select>
                               </label>
+                            </div>
+                          ) : a.dipende_da && (
+                            <div className="flex flex-wrap items-center gap-3 mt-2">
+                              <span className="text-xs text-gray-400">
+                                Dipendenza: <span className="text-gray-600">{(() => { const dep = project.attivita.find(x => x.id === a.dipende_da); return dep ? `#${dep.ordine || dep.id} - ${dep.nome}` : '—' })()}</span>
+                              </span>
                             </div>
                           )}
 

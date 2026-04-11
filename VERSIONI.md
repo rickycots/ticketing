@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.07-0411 — 11 Aprile 2026
+- Tecnico ProjectDetail: dipendenza attività visibile in sola lettura (nome attività padre)
+
 ## V5.4.06-0411 — 11 Aprile 2026
 - Fix pallini tecnici per ruolo tecnico: estratti dalle attività del progetto (non da /api/users che è admin-only)
 - Fix service worker v2: cancella cache vecchie, esclude risorse esterne (font Google)
