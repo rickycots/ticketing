@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V5.4.06-0411 — 11 Aprile 2026
+- Fix pallini tecnici per ruolo tecnico: estratti dalle attività del progetto (non da /api/users che è admin-only)
+- Fix service worker v2: cancella cache vecchie, esclude risorse esterne (font Google)
+- Fix CSP: aggiunto connect-src per fonts.googleapis.com
+- Fix deploy smart: version.json sempre caricato (bypass check dimensione)
+
 ## V5.4.05-0411 — 11 Aprile 2026
 - Tecnico ProjectDetail: pallini filtro tecnici ora visibili (userList caricata per tutti, non solo admin)
 - Tecnico ProjectDetail: input avanzamento % editabile sulle attività assegnate (non solo testo readonly)

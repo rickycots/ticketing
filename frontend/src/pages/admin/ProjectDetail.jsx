@@ -115,14 +115,32 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     load()
-    users.list().then(setUserList).catch(() => {})
+    if (isAdmin) users.list().then(setUserList).catch(() => {})
   }, [id])
 
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [project?.chat?.length])
 
-  const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
+  // For admin: full user list; for tecnico: extract from project activities
+  const tecnici = isAdmin
+    ? userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
+    : []
+  // Build pallini list from activity data (works for both admin and tecnico)
+  const actTecniciMap = new Map()
+  if (project) {
+    for (const a of (project.attivita || [])) {
+      if (a.assegnato_a && a.assegnato_nome) actTecniciMap.set(a.assegnato_a, a.assegnato_nome)
+      if (a.tecnici_nomi && a.tecnici_ids) {
+        const ids = a.tecnici_ids.split(',').map(Number)
+        const nomi = a.tecnici_nomi
+        ids.forEach((tid, i) => { if (nomi[i]) actTecniciMap.set(tid, nomi[i]) })
+      }
+    }
+  }
+  const palliniUsers = isAdmin
+    ? userList.filter(u => u.attivo && (u.ruolo === 'tecnico' || u.ruolo === 'admin'))
+    : [...actTecniciMap.entries()].map(([id, nome]) => ({ id, nome }))
   const isTecnicoProgetto = !isAdmin && project && (project.tecnici || []).map(Number).includes(Number(currentUser.id))
   const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
 
@@ -385,7 +403,7 @@ export default function ProjectDetail() {
                     Completate <span className={`ml-1 px-1 py-0.5 rounded text-xs ${actFilter === 'completate' ? 'bg-green-200' : 'bg-gray-200'}`}>{attCompletate}</span>
                   </button>
                   <div className="ml-auto flex items-center gap-1.5">
-                    {userList.filter(u => u.attivo && (u.ruolo === 'tecnico' || u.ruolo === 'admin')).map(u => (
+                    {palliniUsers.map(u => (
                       <button key={u.id} onClick={() => setActTecnicoFilter(actTecnicoFilter === u.id ? null : u.id)}
                         className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold cursor-pointer transition-all ${
                           actTecnicoFilter === u.id
