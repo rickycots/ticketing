@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.03-0411 — 11 Aprile 2026
+- Fix referenti ProjectDetail: loadProject() non esisteva, rinominato in load() — ora assegna/rimuovi/crea referente aggiorna la vista immediatamente
+
 ## V5.4.02-0411 — 11 Aprile 2026
 - Fix gestione avanzata: confronto tecnici IDs con Number() per compatibilità PHP string vs JS number
 - Fix link "Torna al progetto" in ActivityDetail: ora punta a /admin/projects/:id (dettaglio) invece di /gantt

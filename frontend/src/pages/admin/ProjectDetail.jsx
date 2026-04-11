@@ -218,14 +218,14 @@ export default function ProjectDetail() {
   async function handleRemoveRef(refId) {
     const currentIds = (project.referenti || []).map(r => r.id).filter(rid => rid !== refId)
     await projects.updateReferenti(id, { referenti: currentIds })
-    loadProject()
+    load()
   }
 
   async function handleAssignExisting(refId) {
     const currentIds = (project.referenti || []).map(r => r.id)
     if (!currentIds.includes(refId)) {
       await projects.updateReferenti(id, { referenti: [...currentIds, refId] })
-      loadProject()
+      load()
     }
   }
 
@@ -235,7 +235,7 @@ export default function ProjectDetail() {
       const created = await clients.createReferente(project.cliente_id, form)
       const currentIds = (project.referenti || []).map(r => r.id)
       await projects.updateReferenti(id, { referenti: [...currentIds, created.id] })
-      loadProject()
+      load()
     } catch(err) { alert(err.message) }
   }
 
