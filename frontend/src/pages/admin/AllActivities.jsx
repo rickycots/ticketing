@@ -85,7 +85,8 @@ export default function AllActivities() {
   )
 
   function getUserInitials(userId) {
-    const u = userList.find(u => u.id === userId)
+    if (!userId) return null
+    const u = userList.find(u => Number(u.id) === Number(userId))
     if (!u) return null
     return { nome: u.nome, initials: u.nome.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2) }
   }

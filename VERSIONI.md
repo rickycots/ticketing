@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.11-0411 — 11 Aprile 2026
+- Fix pallino tecnico in AllActivities: Number() cast per compatibilità PHP string IDs
+
 ## V5.4.10-0411 — 11 Aprile 2026
 - Fix AllActivities per tecnico: rimossa chiamata usersApi.list() (admin-only), pallini tecnici estratti dalle attività
 
