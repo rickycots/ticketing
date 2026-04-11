@@ -478,7 +478,7 @@ export default function ProjectDetail() {
                         if (!ids.has(Number(a.dipende_da))) return true
                         if (cycleRootId && Number(a.id) === cycleRootId) return true
                         return false
-                      }).sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+                      }).sort((a, b) => (ganttNumMap[a.id] || 0) - (ganttNumMap[b.id] || 0))
 
                       const result = []
                       const added = new Set()

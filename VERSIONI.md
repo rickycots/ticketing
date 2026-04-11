@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.09-0411 — 11 Aprile 2026
+- ProjectDetail: attività ordinate per numero d'ordine Gantt (data_inizio)
+
 ## V5.5.08-0411 — 11 Aprile 2026
 - ProjectDetail: numerazione attività sincronizzata con Gantt (basata su data_inizio)
 - Cambio ordine con popup di conferma: "la data di inizio verrà modificata"
