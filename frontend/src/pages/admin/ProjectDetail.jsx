@@ -1038,6 +1038,7 @@ export default function ProjectDetail() {
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <MessageCircle size={16} className="text-blue-500" />
               <h3 className="text-sm font-semibold">Chat Progetto</h3>
+              <HelpTip text="La chat coinvolge tutti i tecnici abilitati al progetto." />
               {project.chat && project.chat.length > 0 && (
                 <span className="text-xs text-gray-400">({project.chat.length})</span>
               )}

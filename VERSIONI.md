@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.8.01-0411 — 11 Aprile 2026
+- HelpTip su Chat Progetto: "La chat coinvolge tutti i tecnici abilitati al progetto"
+
 ## V5.8.00-0411 — 11 Aprile 2026
 - Dashboard tecnico: 4 stat card (Ticket Aperti, Ticket Chiusi, Attività Aperte, Attività Chiuse)
 - Dashboard tecnico: sezione "Scadenze da rispettare" con lista ordinata per urgenza
