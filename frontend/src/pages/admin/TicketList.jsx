@@ -104,7 +104,7 @@ export default function TicketList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">Tickets <HelpTip text="Gestione ticket di assistenza. I pallini colorati indicano lo stato. Clicca su uno stato per filtrare. La SLA indica i tempi di reazione contrattualizzati col cliente. Solo il cliente può chiudere un ticket; il tecnico può impostare Risolto." /></h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">{isAdmin ? 'Tickets' : 'Ticket a te assegnati'} <HelpTip text="Gestione ticket di assistenza. I pallini colorati indicano lo stato. Clicca su uno stato per filtrare. La SLA indica i tempi di reazione contrattualizzati col cliente. Solo il cliente può chiudere un ticket; il tecnico può impostare Risolto." /></h1>
       </div>
 
       {/* Quick filters + Clickable legend with percentages */}

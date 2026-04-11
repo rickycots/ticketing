@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.26-0411 — 11 Aprile 2026
+- Tecnico TicketList: titolo "Ticket a te assegnati"
+
 ## V5.4.25-0411 — 11 Aprile 2026
 - Tecnico Timeline: titolo "Progetti di cui hai visibilità" con HelpTip esplicativo su abilitazione tecnici
 
