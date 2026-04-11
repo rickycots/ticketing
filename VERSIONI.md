@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.7.02-0411 — 11 Aprile 2026
+- ActivityDataBox dipendenze: figli mostrano "In Attesa" se padre non completato
+
 ## V5.7.01-0411 — 11 Aprile 2026
 - ActivityDataBox: toggle "Attenzione Dipendenze" (se ha padre) o "Attività Padre" (se ha solo figli), allineato a destra
 - Pannello dipendenze: mostra padre (link arancione) e figli (link blu) con badge stato

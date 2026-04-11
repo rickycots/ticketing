@@ -244,13 +244,20 @@ export default function ActivityDataBox({
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Attività dipendenti</p>
                 <div className="space-y-1">
-                  {dipendenti.map(d => (
-                    <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
-                      className="flex items-center gap-2 text-xs text-blue-700 bg-white border border-blue-200 rounded-lg px-2.5 py-1.5 hover:bg-blue-100 transition-colors">
-                      {d.nome}
-                      <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
-                    </Link>
-                  ))}
+                  {dipendenti.map(d => {
+                    const childWaiting = !isCompleted
+                    return (
+                      <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
+                        className="flex items-center gap-2 text-xs text-blue-700 bg-white border border-blue-200 rounded-lg px-2.5 py-1.5 hover:bg-blue-100 transition-colors">
+                        {d.nome}
+                        {childWaiting ? (
+                          <span className={`${badgeCls} bg-gray-200 text-gray-500 text-[10px]`}>In Attesa</span>
+                        ) : (
+                          <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
+                        )}
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             )}
