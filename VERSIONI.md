@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.24-0411 — 11 Aprile 2026
+- ActivityDetail: HelpTip su "Assegna a" — "Una attività può avere più tecnici abilitati"
+
 ## V5.5.23-0411 — 11 Aprile 2026
 - ActivityDetail assegnazione: ignora tecnici_ids con ID utenti inesistenti/cancellati
 

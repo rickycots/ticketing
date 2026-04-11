@@ -508,7 +508,7 @@ export default function ActivityDetail() {
               </div>
               {isAdmin && (
                 <div className="relative">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Assegna a</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">Assegna a <HelpTip text="Una attività può avere più tecnici abilitati." /></label>
                   {(() => {
                     const rawIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number)
                     const validUserIds = new Set(userList.map(u => u.id))
