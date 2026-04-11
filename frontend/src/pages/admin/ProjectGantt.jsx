@@ -209,7 +209,10 @@ export default function ProjectGantt() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold mb-5">Dettaglio Progetto : Gantt Chart</h1>
+      <div className="flex items-center gap-3 mb-5">
+        <h1 className="text-2xl font-bold">Dettaglio Progetto : Gantt Chart</h1>
+        <Link to={`/admin/projects/${id}`} className="text-sm text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap">Vai a dettaglio progetto</Link>
+      </div>
 
       {/* Client Banner */}
       <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4 flex items-center gap-3">

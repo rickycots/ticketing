@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.04-0411 — 11 Aprile 2026
+- ProjectGantt: link "Vai a dettaglio progetto" dopo il titolo
+
 ## V5.5.03-0411 — 11 Aprile 2026
 - ProjectDetail: riga separatrice tra filtri attività e lista attività
 
