@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.23-0411 — 11 Aprile 2026
+- ActivityDetail assegnazione: ignora tecnici_ids con ID utenti inesistenti/cancellati
+
 ## V5.5.22-0411 — 11 Aprile 2026
 - ActivityDetail: tendina "Assegna a" filtrata per soli tecnici attivi (admin escluso)
 

@@ -510,7 +510,9 @@ export default function ActivityDetail() {
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-500 mb-1">Assegna a</label>
                   {(() => {
-                    const selectedIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number)
+                    const rawIds = (activity.tecnici_ids || '').split(',').filter(Boolean).map(Number)
+                    const validUserIds = new Set(userList.map(u => u.id))
+                    const selectedIds = rawIds.filter(id => validUserIds.has(id))
                     const selectedNames = userList.filter(u => selectedIds.includes(u.id)).map(u => u.nome)
                     const label = selectedNames.length === 0 ? 'Non assegnato' : selectedNames.length === 1 ? selectedNames[0] : `Abilitati ${selectedNames.length}`
                     return (
