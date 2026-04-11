@@ -54,8 +54,8 @@ export default function AdminLayout() {
     // Rename labels for tecnico
     if (item.to === '/admin/tickets') return { ...item, label: 'Ticket assegnati' }
     if (item.expandable && item.children) return { ...item, label: 'Progetti', children: item.children.map(c => {
-      if (c.to === '/admin/timeline') return { ...c, label: 'Progetti visibili' }
-      if (c.to === '/admin/all-activities') return { ...c, label: 'Attività visibili' }
+      if (c.to === '/admin/timeline') return { ...c, label: 'Timeline Progetti' }
+      if (c.to === '/admin/all-activities') return { ...c, label: 'Elenco Attività' }
       return c
     })}
     return item

@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.6.03-0411 — 11 Aprile 2026
+- Tecnico sidebar: ripristinati nomi "Timeline Progetti" e "Elenco Attività"
+
 ## V5.6.02-0411 — 11 Aprile 2026
 - ProjectDataBox + ActivityDataBox: pannelli toggle mutuamente esclusivi (clicca uno, gli altri si chiudono)
 
