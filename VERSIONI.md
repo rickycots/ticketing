@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.5.19-0411 — 11 Aprile 2026
+- Chat progetto: cestino per eliminare singoli messaggi (solo admin, visibile su hover)
+- Endpoint DELETE /api/projects/:id/chat/:messageId (Node.js + PHP, admin only)
+
 ## V5.5.18-0411 — 11 Aprile 2026 (Consolidamento sessione)
 Riepilogo completo delle modifiche della giornata (V5.3.01 → V5.5.18):
 

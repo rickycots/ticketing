@@ -1051,8 +1051,8 @@ export default function ProjectDetail() {
                   const isMe = m.utente_id === currentUser.id
                   const isMsgAdmin = m.utente_ruolo === 'admin'
                   return (
-                    <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[90%] rounded-lg px-3 py-1.5 ${
+                    <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+                      <div className={`max-w-[90%] rounded-lg px-3 py-1.5 relative ${
                         isMsgAdmin
                           ? 'bg-blue-50 border border-blue-100'
                           : 'bg-gray-100 border border-gray-200'
@@ -1064,6 +1064,15 @@ export default function ProjectDetail() {
                           <span className="text-xs text-gray-400">
                             {new Date(m.created_at).toLocaleString('it-IT')}
                           </span>
+                          {isAdmin && (
+                            <button onClick={async () => {
+                              if (!confirm('Eliminare questo messaggio?')) return
+                              await projects.deleteChat(id, m.id)
+                              load()
+                            }} className="text-gray-300 hover:text-red-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                              <Trash2 size={12} />
+                            </button>
+                          )}
                         </div>
                         <p className="text-xs text-gray-700 whitespace-pre-wrap">{m.testo}</p>
                       </div>

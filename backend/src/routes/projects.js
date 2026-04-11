@@ -416,6 +416,14 @@ router.post('/:id/chat', authenticateToken, (req, res) => {
   res.status(201).json(msg);
 });
 
+// DELETE /api/projects/:id/chat/:messageId — delete chat message (admin only)
+router.delete('/:id/chat/:messageId', authenticateToken, requireAdmin, (req, res) => {
+  const msg = db.prepare('SELECT id FROM messaggi_progetto WHERE id = ? AND progetto_id = ?').get(req.params.messageId, req.params.id);
+  if (!msg) return res.status(404).json({ error: 'Messaggio non trovato' });
+  db.prepare('DELETE FROM messaggi_progetto WHERE id = ?').run(req.params.messageId);
+  res.json({ success: true });
+});
+
 // POST /api/projects — create project (admin only)
 router.post('/', authenticateToken, requireAdmin, (req, res) => {
   const { cliente_id, nome, descrizione, data_inizio, data_scadenza, stato, tecnici } = req.body;

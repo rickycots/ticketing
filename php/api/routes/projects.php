@@ -500,6 +500,17 @@ $router->post('/projects/:id/chat', [Auth::class, 'authenticateToken'], function
     Response::created($msg);
 });
 
+// DELETE /api/projects/:id/chat/:messageId — delete chat message (admin only)
+$router->delete('/projects/:id/chat/:messageId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $msg = Database::fetchOne(
+        'SELECT id FROM messaggi_progetto WHERE id = ? AND progetto_id = ?',
+        [$req->params['messageId'], $req->params['id']]
+    );
+    if (!$msg) Response::error('Messaggio non trovato', 404);
+    Database::execute('DELETE FROM messaggi_progetto WHERE id = ?', [$req->params['messageId']]);
+    Response::json(['success' => true]);
+});
+
 // POST /api/projects — create project (admin only)
 $router->post('/projects', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $clienteId = $req->body['cliente_id'] ?? null;

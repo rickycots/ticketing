@@ -117,6 +117,8 @@ export const projects = {
   delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
   sendChat: (id, testo) =>
     request(`/projects/${id}/chat`, { method: 'POST', body: JSON.stringify({ testo }) }),
+  deleteChat: (id, messageId) =>
+    request(`/projects/${id}/chat/${messageId}`, { method: 'DELETE' }),
   chatUnread: () => request('/projects/chat-unread'),
   clientProjects: (clienteId) => request(`/projects/client/${clienteId}`),
   allegati: (id) => request(`/projects/${id}/allegati`),
