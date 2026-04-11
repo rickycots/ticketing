@@ -1,5 +1,62 @@
 # Storico Versioni
 
+## V5.5.18-0411 — 11 Aprile 2026 (Consolidamento sessione)
+Riepilogo completo delle modifiche della giornata (V5.3.01 → V5.5.18):
+
+### Security (V5.4.00)
+- XSS: sanitizeHtml() in EmailInbox per email HTML
+- CORS: whitelist localhost nel backend Node.js
+- Migration: fix_referenti.php usa MIGRATE_KEY + flag file
+- config.enc rimosso dal tracking git
+- Service worker v2: cancella cache vecchie, esclude risorse esterne
+
+### Ruolo Tecnico — UX completa (V5.4.01–V5.4.28)
+- Gestione avanzata: tecnico con flag può caricare allegati e gestire referenti (prop canEdit in ProjectDataBox)
+- Fix compatibilità PHP string IDs: Number() cast su tutti i confronti (tecnici, dipendenze, pallini)
+- Pallini filtro tecnici estratti dalle attività (non da /api/users admin-only)
+- Avanzamento % editabile dal tecnico sulle attività assegnate
+- Dipendenze visibili in sola lettura
+- AllActivities accessibile al tecnico (filtrato per progetti assegnati), auto-filtro per sé + solo aperte
+- SendMail: tecnico senza parametri vede "Non autorizzato"; con parametri: tendine readonly, solo referenti
+- Sidebar: label personalizzate (Ticket assegnati, Progetti visibili, Attività visibili)
+- Titoli pagina: "di cui hai visibilità" con HelpTip esplicativo
+- Ticket: tendina "Assegna a" mostra solo tecnici attivi
+
+### Navigazione (V5.4.13–V5.4.22)
+- ActivityDetail: link "torna" dinamico (Gantt / Dettaglio Progetto / Tutte le Attività) via React Router state
+- Link "Vai a dettaglio progetto" nella pagina Gantt
+- Link "Invia Mail" da ActivityDetail/ProjectDetail passa cliente_id nei parametri URL
+
+### Dipendenze Attività (V5.5.00–V5.5.17)
+- Stato "In Attesa" grigio per attività con dipendenza non completata, non modificabile
+- Completamento padre: auto-release dipendenza (dipende_da=NULL) sui figli
+- Assegnazione dipendenza: data inizio auto = data fine padre (creazione + modifica)
+- Data inizio bloccata se ha dipendenza
+- Dipendenza prima delle date nel popup nuova attività
+- Numerazione sincronizzata con Gantt (per data_inizio)
+- Gestione dipendenze circolari
+- HelpTip su Dipendenza
+
+### Auto-Fix Scadute (V5.5.12–V5.5.14)
+- All'apertura: aggiorna date attività scadute e cascata sui dipendenti
+- Popup avviso con date rosse differenziate (fine per scadute, inizio per dipendenti)
+
+### Avanzamento Automatico (V5.4.04–V5.4.08)
+- Completata → 100%, Riaperta → 0%
+
+### Admin Sidebar Theme (V5.5.00)
+- 7 temi colore per sidebar admin (gray, slate, zinc, indigo, teal, rose, amber)
+
+### Deploy Smart (V5.4.00+)
+- Confronto dimensioni file, version.json sempre caricato, cleanup-assets.js, riepilogo deploy
+- 214 asset obsoleti eliminati dal server (119MB)
+
+### Fix vari
+- loadProject() inesistente in ProjectDetail → load()
+- Riga separatrice tra filtri e lista attività
+- buildTree: gestione cicli circolari
+- Remote URL git corretto (Ticketing → ticketing)
+
 ## V5.5.17-0411 — 11 Aprile 2026
 - TicketDetail: tendina "Assegna a" mostra solo tecnici attivi (escluso admin)
 
