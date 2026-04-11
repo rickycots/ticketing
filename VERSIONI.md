@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.5.08-0411 — 11 Aprile 2026
+- ProjectDetail: numerazione attività sincronizzata con Gantt (basata su data_inizio)
+- Cambio ordine con popup di conferma: "la data di inizio verrà modificata"
+- Ricalcolo data_inizio automatico per mantenere coerenza con il nuovo ordinamento
+
 ## V5.5.07-0411 — 11 Aprile 2026
 - ProjectDetail: badge "In Attesa" allineato a destra con gli altri stati (spostato nel div azioni)
 

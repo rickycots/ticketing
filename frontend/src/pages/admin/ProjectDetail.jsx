@@ -425,6 +425,15 @@ export default function ProjectDetail() {
                 {/* Activity List */}
                 <div className="divide-y-2 divide-gray-200">
                   {(() => {
+                    // Compute Gantt-style numbering (by start date) across ALL activities
+                    const ganttOrder = [...project.attivita].sort((a, b) => {
+                      const da = a.data_inizio || a.created_at || ''
+                      const db = b.data_inizio || b.created_at || ''
+                      return da.localeCompare(db)
+                    })
+                    const ganttNumMap = {}
+                    ganttOrder.forEach((a, i) => { ganttNumMap[a.id] = i + 1 })
+
                     let filteredAtt = actFilter === 'attive'
                       ? project.attivita.filter(a => a.stato !== 'completata')
                       : project.attivita.filter(a => a.stato === 'completata')
@@ -509,7 +518,7 @@ export default function ProjectDetail() {
                             <div className="flex items-center gap-3">
                               {!a.dipende_da ? (
                                 <span className="w-5 h-5 rounded bg-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center shrink-0">
-                                  {a.ordine || '—'}
+                                  {ganttNumMap[a.id] || '—'}
                                 </span>
                               ) : (
                                 <span className="text-gray-300 text-xs">↳</span>
@@ -613,9 +622,26 @@ export default function ProjectDetail() {
                                   Ordine:
                                   <input
                                     type="number"
-                                    min="0"
-                                    value={a.ordine ?? 0}
-                                    onChange={(e) => handleUpdateActivity(a.id, { ordine: parseInt(e.target.value) || 0 })}
+                                    min="1"
+                                    value={ganttNumMap[a.id] || 1}
+                                    onChange={(e) => {
+                                      const newPos = parseInt(e.target.value) || 1
+                                      const currentPos = ganttNumMap[a.id] || 1
+                                      if (newPos === currentPos) return
+                                      if (confirm('Attenzione: cambiando l\'ordine la data di inizio attività verrà modificata per precedere quella delle attività che la seguiranno nel nuovo ordinamento.')) {
+                                        // Find the activity at newPos and swap start dates
+                                        const targetAct = ganttOrder.find((_, i) => i + 1 === newPos)
+                                        if (targetAct && targetAct.data_inizio) {
+                                          // Set this activity's start date to 1 day before target
+                                          const targetDate = new Date(targetAct.data_inizio)
+                                          const newDate = new Date(targetDate)
+                                          newDate.setDate(newDate.getDate() - (newPos < currentPos ? 1 : 0))
+                                          handleUpdateActivity(a.id, { data_inizio: newDate.toISOString().slice(0, 10), ordine: newPos })
+                                        } else {
+                                          handleUpdateActivity(a.id, { ordine: newPos })
+                                        }
+                                      }
+                                    }}
                                     className="w-14 rounded border border-gray-200 px-1.5 py-0.5 text-xs text-center"
                                   />
                                 </label>
