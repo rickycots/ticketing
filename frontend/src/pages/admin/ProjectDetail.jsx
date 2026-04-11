@@ -722,7 +722,7 @@ export default function ProjectDetail() {
                                 >
                                   <option value="">Nessuna</option>
                                   {project.attivita.filter(x => x.id !== a.id).map(x => (
-                                    <option key={x.id} value={x.id}>#{x.ordine || x.id} - {x.nome}</option>
+                                    <option key={x.id} value={x.id}>#{ganttNumMap[x.id] || '?'} - {x.nome}</option>
                                   ))}
                                 </select>
                                 <HelpTip text="Una attività con una dipendenza non può partire se prima non termina l'attività padre." />
@@ -731,7 +731,7 @@ export default function ProjectDetail() {
                           ) : a.dipende_da && (
                             <div className="flex flex-wrap items-center gap-3 mt-2">
                               <span className="text-xs text-gray-400 flex items-center gap-1">
-                                Dipendenza: <span className="text-gray-600">{(() => { const dep = project.attivita.find(x => x.id === a.dipende_da); return dep ? `#${dep.ordine || dep.id} - ${dep.nome}` : '—' })()}</span>
+                                Dipendenza: <span className="text-gray-600">{(() => { const dep = project.attivita.find(x => Number(x.id) === Number(a.dipende_da)); return dep ? `#${ganttNumMap[dep.id] || '?'} - ${dep.nome}` : '—' })()}</span>
                                 <HelpTip text="Una attività con una dipendenza non può partire se prima non termina l'attività padre." />
                               </span>
                             </div>
