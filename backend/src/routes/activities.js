@@ -244,6 +244,7 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
       allowedAvanzamento = 100;
     } else if (allowedStato !== 'completata' && activity.stato === 'completata') {
       dataCompletamento = null;
+      allowedAvanzamento = 0;
     }
 
     db.prepare(`
@@ -265,6 +266,7 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
       if (avanzamento === undefined || avanzamento === null) avanzamento = 100;
     } else if (newStato !== 'completata' && activity.stato === 'completata') {
       dataCompletamento = null;
+      if (avanzamento === undefined || avanzamento === null) avanzamento = 0;
     }
 
     // Validate dipende_da is in same project

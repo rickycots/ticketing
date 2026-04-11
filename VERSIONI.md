@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.08-0411 — 11 Aprile 2026
+- Riapertura attività: avanzamento resettato a 0% quando stato cambia da completata ad altro (Node.js + PHP, tecnico + admin)
+
 ## V5.4.07-0411 — 11 Aprile 2026
 - Tecnico ProjectDetail: dipendenza attività visibile in sola lettura (nome attività padre)
 

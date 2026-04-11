@@ -305,6 +305,7 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
             $allowedAvanzamento = 100;
         } elseif ($allowedStato !== 'completata' && $activity['stato'] === 'completata') {
             $dataCompletamento = null;
+            $allowedAvanzamento = 0;
         }
 
         Database::execute(
@@ -328,6 +329,7 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
             if ($avanzamento === null) $avanzamento = 100;
         } elseif ($newStato !== 'completata' && $activity['stato'] === 'completata') {
             $dataCompletamento = null;
+            if ($avanzamento === null) $avanzamento = 0;
         }
 
         // Validate dipende_da is in same project
