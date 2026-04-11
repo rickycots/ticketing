@@ -106,9 +106,9 @@ export default function SendMail() {
     }
   }, [form.progetto_id])
 
-  // Load utenti_cliente (admin only)
+  // Load utenti_cliente (admin only, and NOT when coming from an activity)
   useEffect(() => {
-    if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin') {
+    if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin' && !preAttivita) {
       clients.getUsers(projectDetail.cliente_id).then(users => {
         const clientContacts = (users || []).filter(u => u.attivo && u.email).map(u => ({
           email: u.email, label: u.nome, tipo: 'Utente portale'
@@ -223,7 +223,7 @@ export default function SendMail() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Destinatari * {selectedEmails.length > 0 && <span className="text-blue-600">({selectedEmails.length})</span>}</label>
           {!form.progetto_id ? (
-            <p className="text-sm text-gray-400 italic">Seleziona cliente e progetto per vedere i destinatari disponibili</p>
+            <p className="text-sm text-gray-400 italic">Seleziona cliente e progetto per vedere i destinatari disponibili; <em className="text-gray-500">Solo i Referenti se si arriva da una attività.</em></p>
           ) : contacts.length === 0 ? (
             <p className="text-sm text-gray-400 italic">Nessun contatto trovato per questo progetto</p>
           ) : (

@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.17-0411 — 11 Aprile 2026
+- SendMail da attività: destinatari limitati ai soli Referenti (esclusi utenti portale)
+- Testo descrittivo aggiornato con nota "Solo i Referenti se si arriva da una attività"
+
 ## V5.4.16-0411 — 11 Aprile 2026
 - SendMail: rimossa email cliente dai destinatari, restano solo referenti progetto e utenti portale (admin)
 
