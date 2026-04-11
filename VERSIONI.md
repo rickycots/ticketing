@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.6.04-0411 — 11 Aprile 2026
+- Fix crash ActivityDataBox: residui showDescrizione/showTecnici rinominati in openPanel
+
 ## V5.6.03-0411 — 11 Aprile 2026
 - Tecnico sidebar: ripristinati nomi "Timeline Progetti" e "Elenco Attività"
 

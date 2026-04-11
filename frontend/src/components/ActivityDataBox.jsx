@@ -125,7 +125,7 @@ export default function ActivityDataBox({
             <button onClick={() => setOpenPanel(openPanel === 'descrizione' ? null : 'descrizione')}
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'descrizione' ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
               <ChevronRight size={14} className={`transition-transform ${openPanel === 'descrizione' ? 'rotate-90' : ''}`} />
-              <FileText size={14} className={showDescrizione ? 'text-gray-600' : ''} />
+              <FileText size={14} className={openPanel === 'descrizione' ? 'text-gray-600' : ''} />
               <span className="font-medium">Descrizione</span>
             </button>
           )}
@@ -139,7 +139,7 @@ export default function ActivityDataBox({
             <button onClick={() => setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici')}
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'tecnici' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
               <ChevronRight size={14} className={`transition-transform ${openPanel === 'tecnici' ? 'rotate-90' : ''}`} />
-              <UserCog size={14} className={showTecnici ? 'text-indigo-500' : ''} />
+              <UserCog size={14} className={openPanel === 'tecnici' ? 'text-indigo-500' : ''} />
               <span className="font-medium">Tecnici</span>
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{tecnici.length}</span>
             </button>
