@@ -37,10 +37,10 @@ export default function AllActivities() {
         a.ordine_calcolato = countOpenPredecessors(a) + 1
       })
 
-      // Build user list from activity data
+      // Build user list from activity data (only tecnici, exclude admin)
       const uMap = new Map()
       acts.forEach(a => {
-        if (a.assegnato_a && a.assegnato_nome) uMap.set(a.assegnato_a, { id: a.assegnato_a, nome: a.assegnato_nome })
+        if (a.assegnato_a && a.assegnato_nome && a.assegnato_ruolo !== 'admin') uMap.set(a.assegnato_a, { id: a.assegnato_a, nome: a.assegnato_nome })
       })
       setUserList([...uMap.values()])
       setAllActivities(acts)

@@ -54,7 +54,7 @@ app.get('/api/activities/all', authenticateToken, (req, res) => {
   let acts;
   if (req.user.ruolo === 'admin') {
     acts = db.prepare(`
-      SELECT a.*, u.nome as assegnato_nome, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+      SELECT a.*, u.nome as assegnato_nome, u.ruolo as assegnato_ruolo, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
       FROM attivita a
       JOIN progetti p ON a.progetto_id = p.id
       LEFT JOIN clienti c ON p.cliente_id = c.id
@@ -63,7 +63,7 @@ app.get('/api/activities/all', authenticateToken, (req, res) => {
     `).all();
   } else {
     acts = db.prepare(`
-      SELECT a.*, u.nome as assegnato_nome, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+      SELECT a.*, u.nome as assegnato_nome, u.ruolo as assegnato_ruolo, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
       FROM attivita a
       JOIN progetti p ON a.progetto_id = p.id
       LEFT JOIN clienti c ON p.cliente_id = c.id

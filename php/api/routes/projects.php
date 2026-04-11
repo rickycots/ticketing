@@ -360,7 +360,7 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
     }
 
     $attivitaRaw = Database::fetchAll(
-        "SELECT a.*, u.nome as assegnato_nome
+        "SELECT a.*, u.nome as assegnato_nome, u.ruolo as assegnato_ruolo
          FROM attivita a
          LEFT JOIN utenti u ON a.assegnato_a = u.id
          WHERE a.progetto_id = ?

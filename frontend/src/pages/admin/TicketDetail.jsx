@@ -466,6 +466,9 @@ export default function TicketDetail() {
                   <select value={ticket.assegnato_a || ''} onChange={(e) => handleFieldChange('assegnato_a', e.target.value ? Number(e.target.value) : null)} className={selectCls}>
                     <option value="">Non assegnato</option>
                     {userList.filter(u => u.ruolo === 'tecnico' && u.attivo).map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                    {ticket.assegnato_a && !userList.filter(u => u.ruolo === 'tecnico' && u.attivo).some(u => u.id === ticket.assegnato_a) && (
+                      <option value={ticket.assegnato_a}>{ticket.assegnato_nome || `Utente #${ticket.assegnato_a}`}</option>
+                    )}
                   </select>
                 </div>
               )}

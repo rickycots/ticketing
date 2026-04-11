@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.5.20-0411 — 11 Aprile 2026
+- Pallini filtro tecnici: admin escluso in tutte le pagine (ProjectDetail, AllActivities)
+- Query attività: aggiunto assegnato_ruolo per filtrare admin dai pallini (Node.js + PHP)
+- TicketDetail: assegnazione mostra utente corrente anche se non tecnico (backward compat)
+
 ## V5.5.19-0411 — 11 Aprile 2026
 - Chat progetto: cestino per eliminare singoli messaggi (solo admin, visibile su hover)
 - Endpoint DELETE /api/projects/:id/chat/:messageId (Node.js + PHP, admin only)

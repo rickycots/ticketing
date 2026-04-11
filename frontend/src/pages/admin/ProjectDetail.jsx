@@ -180,7 +180,7 @@ export default function ProjectDetail() {
   const actTecniciMap = new Map()
   if (project) {
     for (const a of (project.attivita || [])) {
-      if (a.assegnato_a && a.assegnato_nome) actTecniciMap.set(a.assegnato_a, a.assegnato_nome)
+      if (a.assegnato_a && a.assegnato_nome && a.assegnato_ruolo !== 'admin') actTecniciMap.set(a.assegnato_a, a.assegnato_nome)
       if (a.tecnici_nomi && a.tecnici_ids) {
         const ids = a.tecnici_ids.split(',').map(Number)
         const nomi = a.tecnici_nomi
@@ -189,7 +189,7 @@ export default function ProjectDetail() {
     }
   }
   const palliniUsers = isAdmin
-    ? userList.filter(u => u.attivo && (u.ruolo === 'tecnico' || u.ruolo === 'admin'))
+    ? userList.filter(u => u.attivo && u.ruolo === 'tecnico')
     : [...actTecniciMap.entries()].map(([id, nome]) => ({ id, nome }))
   const isTecnicoProgetto = !isAdmin && project && (project.tecnici || []).map(Number).includes(Number(currentUser.id))
   const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
