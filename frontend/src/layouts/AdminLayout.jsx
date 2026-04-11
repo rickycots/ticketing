@@ -24,12 +24,31 @@ const bottomNavItems = [
   { to: '/admin/repository', icon: BookOpen, label: 'Repository', adminOnly: true },
 ]
 
+const sidebarThemes = [
+  { id: 'gray', bg: 'bg-gray-900', border: 'border-gray-700', hover: 'hover:bg-gray-800', active: 'bg-blue-600', activeChild: 'bg-blue-600/80', swatch: '#111827' },
+  { id: 'slate', bg: 'bg-slate-800', border: 'border-slate-700', hover: 'hover:bg-slate-700', active: 'bg-blue-600', activeChild: 'bg-blue-600/80', swatch: '#1e293b' },
+  { id: 'zinc', bg: 'bg-zinc-800', border: 'border-zinc-700', hover: 'hover:bg-zinc-700', active: 'bg-emerald-600', activeChild: 'bg-emerald-600/80', swatch: '#27272a' },
+  { id: 'indigo', bg: 'bg-indigo-900', border: 'border-indigo-800', hover: 'hover:bg-indigo-800', active: 'bg-indigo-500', activeChild: 'bg-indigo-500/80', swatch: '#312e81' },
+  { id: 'teal', bg: 'bg-teal-900', border: 'border-teal-800', hover: 'hover:bg-teal-800', active: 'bg-teal-500', activeChild: 'bg-teal-500/80', swatch: '#134e4a' },
+  { id: 'rose', bg: 'bg-rose-900', border: 'border-rose-800', hover: 'hover:bg-rose-800', active: 'bg-rose-500', activeChild: 'bg-rose-500/80', swatch: '#881337' },
+  { id: 'amber', bg: 'bg-amber-900', border: 'border-amber-800', hover: 'hover:bg-amber-800', active: 'bg-amber-500', activeChild: 'bg-amber-500/80', swatch: '#78350f' },
+]
+
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   document.title = `STM-Portal : ${user.ruolo === 'admin' ? 'admin' : 'tecnico'}`
   const isTecnico = user.ruolo === 'tecnico'
+  const themeKey = `admin-sidebar-theme-${user.id || 0}`
+  const [sidebarTheme, setSidebarTheme] = useState(() => {
+    const saved = localStorage.getItem(themeKey)
+    return sidebarThemes.find(t => t.id === saved) || sidebarThemes[0]
+  })
+  function changeTheme(theme) {
+    setSidebarTheme(theme)
+    localStorage.setItem(themeKey, theme.id)
+  }
   const navItems = allNavItems.filter(item => !item.adminOnly || user.ruolo === 'admin').map(item => {
     if (!isTecnico) return item
     // Rename labels for tecnico
@@ -189,7 +208,7 @@ export default function AdminLayout() {
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
       {/* Sidebar */}
-      <aside className={`w-64 bg-gray-900 text-white flex flex-col shrink-0 fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-200 lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`w-64 ${sidebarTheme.bg} text-white flex flex-col shrink-0 fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-200 lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-gray-700">
           <p className="text-[10px] text-gray-500 mb-1">{APP_VERSION}</p>
           <h1 className="text-lg font-bold">Ticketing</h1>
@@ -213,8 +232,8 @@ export default function AdminLayout() {
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                         isActive || isChildActive
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                          ? `${sidebarTheme.active} text-white`
+                          : `text-gray-300 ${sidebarTheme.hover} hover:text-white`
                       }`
                     }
                   >
@@ -240,8 +259,8 @@ export default function AdminLayout() {
                         className={({ isActive }) =>
                           `flex items-center gap-3 pl-9 pr-3 py-1.5 rounded-lg text-xs transition-colors mt-0.5 ${
                             isActive
-                              ? 'bg-blue-600/80 text-white'
-                              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                              ? `${sidebarTheme.activeChild} text-white`
+                              : `text-gray-400 ${sidebarTheme.hover} hover:text-white`
                           }`
                         }
                       >
@@ -305,7 +324,7 @@ export default function AdminLayout() {
 
         {/* Bottom nav items (separated) */}
         {bottomItems.length > 0 && (
-          <div className="px-3 pb-2 border-t border-gray-700 pt-2">
+          <div className={`px-3 pb-2 border-t ${sidebarTheme.border} pt-2`}>
             {bottomItems.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
@@ -327,7 +346,7 @@ export default function AdminLayout() {
 
         {/* Chat notifications */}
         {chatNotifs.length > 0 && (
-          <div className="px-3 pb-2 border-t border-gray-700 pt-2">
+          <div className={`px-3 pb-2 border-t ${sidebarTheme.border} pt-2`}>
             <div className="flex items-center gap-2 px-2 mb-2">
               <MessageCircle size={14} className="text-blue-400" />
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Chat</span>
@@ -349,7 +368,20 @@ export default function AdminLayout() {
           </div>
         )}
 
-        <div className="p-3 border-t border-gray-700">
+        {/* Theme picker */}
+        <div className={`px-3 py-2 border-t ${sidebarTheme.border} flex items-center justify-center gap-2`}>
+          {sidebarThemes.map(theme => (
+            <button
+              key={theme.id}
+              onClick={() => changeTheme(theme)}
+              className={`w-5 h-5 rounded cursor-pointer transition-transform border border-white/40 ${sidebarTheme.id === theme.id ? 'ring-2 ring-white scale-110' : 'hover:scale-110 opacity-80 hover:opacity-100'}`}
+              style={{ backgroundColor: theme.swatch }}
+              title={theme.id}
+            />
+          ))}
+        </div>
+
+        <div className={`p-3 border-t ${sidebarTheme.border}`}>
           <div className="flex items-center justify-between px-3 py-2">
             <div>
               <p className="text-sm font-medium">{user.nome || 'Utente'}</p>

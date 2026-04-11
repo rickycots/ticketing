@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.5.00-0411 — 11 Aprile 2026
+- Admin sidebar: tema colori personalizzabile con 7 colori (gray, slate, zinc, indigo, teal, rose, amber)
+- Riquadri colorati in basso nella sidebar per cambiare tema, salvato per utente in localStorage
+- Colori applicati a sfondo, bordi, link attivi e hover
+
 ## V5.4.28-0411 — 11 Aprile 2026
 - Tecnico Timeline: titolo aggiornato a "Timeline dei Progetti di cui hai visibilità"
 
