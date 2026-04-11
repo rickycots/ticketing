@@ -196,7 +196,7 @@ export default function TimelineList() {
         <div className="flex items-center gap-3">
           <BarChart3 size={24} className="text-blue-600" />
           <h1 className="text-2xl font-bold">
-            {isAdmin ? 'Timeline Progetti' : <>Progetti di cui hai visibilità <HelpTip text="Per ogni progetto l'admin può scegliere i tecnici abilitati; essi potranno averne visibilità generale ma lavorare solo sulle attività a loro assegnate." /></>}
+            {isAdmin ? 'Timeline Progetti' : <>Timeline dei Progetti di cui hai visibilità <HelpTip text="Per ogni progetto l'admin può scegliere i tecnici abilitati; essi potranno averne visibilità generale ma lavorare solo sulle attività a loro assegnate." /></>}
           </h1>
         </div>
         <div className="flex items-center gap-3">

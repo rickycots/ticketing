@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.28-0411 — 11 Aprile 2026
+- Tecnico Timeline: titolo aggiornato a "Timeline dei Progetti di cui hai visibilità"
+
 ## V5.4.27-0411 — 11 Aprile 2026
 - Tecnico sidebar: label rinominate (Ticket assegnati, Progetti visibili, Attività visibili)
 
