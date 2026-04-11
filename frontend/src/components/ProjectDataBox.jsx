@@ -63,9 +63,7 @@ export default function ProjectDataBox({
   // Update project
   onUpdateProject,
 }) {
-  const [showDescrizione, setShowDescrizione] = useState(false)
-  const [showReferenti, setShowReferenti] = useState(false)
-  const [showTecnici, setShowTecnici] = useState(false)
+  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'referenti' | 'tecnici' | null
   const [editingName, setEditingName] = useState(false)
   const [editName, setEditName] = useState('')
   const [showNewActivity, setShowNewActivity] = useState(false)
@@ -155,31 +153,31 @@ export default function ProjectDataBox({
         {/* Toggle buttons row */}
         <div className="flex items-center gap-4">
           {project.descrizione && (
-            <button onClick={() => setShowDescrizione(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showDescrizione ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
-              <ChevronRight size={14} className={`transition-transform ${showDescrizione ? 'rotate-90' : ''}`} />
-              <FileText size={14} className={showDescrizione ? 'text-gray-600' : ''} />
+            <button onClick={() => { setOpenPanel(openPanel === 'descrizione' ? null : 'descrizione') }}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'descrizione' ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${openPanel === 'descrizione' ? 'rotate-90' : ''}`} />
+              <FileText size={14} className={openPanel === 'descrizione' ? 'text-gray-600' : ''} />
               <span className="font-medium">Descrizione</span>
             </button>
           )}
-          <button onClick={onToggleAllegati}
-            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
-            <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+          <button onClick={() => { const opening = openPanel !== 'allegati'; setOpenPanel(opening ? 'allegati' : null); if (opening && onToggleAllegati) onToggleAllegati() }}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'allegati' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <Paperclip size={14} className={openPanel === 'allegati' ? 'text-blue-500' : ''} />
             <span className="font-medium">Allegati Progetto</span>
             {allegati.length > 0 && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>}
           </button>
-          <button onClick={() => setShowReferenti(prev => !prev)}
-            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showReferenti ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}>
-            <ChevronRight size={14} className={`transition-transform ${showReferenti ? 'rotate-90' : ''}`} />
-            <Users size={14} className={showReferenti ? 'text-teal-500' : ''} />
+          <button onClick={() => { setOpenPanel(openPanel === 'referenti' ? null : 'referenti') }}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'referenti' ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <ChevronRight size={14} className={`transition-transform ${openPanel === 'referenti' ? 'rotate-90' : ''}`} />
+            <Users size={14} className={openPanel === 'referenti' ? 'text-teal-500' : ''} />
             <span className="font-medium">Referenti</span>
             <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
           </button>
           {isAdmin && (
-            <button onClick={() => setShowTecnici(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showTecnici ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
-              <ChevronRight size={14} className={`transition-transform ${showTecnici ? 'rotate-90' : ''}`} />
-              <UserCog size={14} className={showTecnici ? 'text-indigo-500' : ''} />
+            <button onClick={() => { setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici') }}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'tecnici' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${openPanel === 'tecnici' ? 'rotate-90' : ''}`} />
+              <UserCog size={14} className={openPanel === 'tecnici' ? 'text-indigo-500' : ''} />
               <span className="font-medium">Tecnici</span>
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.tecnici || []).length}</span>
             </button>
@@ -187,14 +185,14 @@ export default function ProjectDataBox({
         </div>
 
         {/* Expanded descrizione */}
-        {showDescrizione && project.descrizione && (
+        {openPanel === 'descrizione' && project.descrizione && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 px-4 py-3">
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{project.descrizione}</p>
           </div>
         )}
 
         {/* Expanded allegati */}
-        {showAllegati && (
+        {openPanel === 'allegati' && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
             {(isAdmin || canEdit) && onUploadFiles && (
               <div className="p-3 border-b border-gray-200">
@@ -232,7 +230,7 @@ export default function ProjectDataBox({
         )}
 
         {/* Expanded referenti */}
-        {showReferenti && (
+        {openPanel === 'referenti' && (
           <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
             {(!project.referenti || project.referenti.length === 0) ? (
               <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente assegnato</p>
@@ -314,7 +312,7 @@ export default function ProjectDataBox({
         )}
 
         {/* Expanded tecnici */}
-        {showTecnici && isAdmin && (
+        {openPanel === 'tecnici' && isAdmin && (
           <div className="mt-3 bg-indigo-50 rounded-lg border border-indigo-200 overflow-hidden">
             <div className="p-3">
               <p className="text-xs font-medium text-gray-500 mb-2">Seleziona i tecnici abilitati su questo progetto:</p>

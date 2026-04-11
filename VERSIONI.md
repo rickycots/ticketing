@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.6.02-0411 — 11 Aprile 2026
+- ProjectDataBox + ActivityDataBox: pannelli toggle mutuamente esclusivi (clicca uno, gli altri si chiudono)
+
 ## V5.6.01-0411 — 11 Aprile 2026
 - ActivityDataBox redesign stile ProjectDataBox: Box 1 (header + progress + date) + Box 2 (toggle Descrizione, Allegati, Tecnici)
 

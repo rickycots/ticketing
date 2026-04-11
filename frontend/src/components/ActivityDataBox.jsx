@@ -56,9 +56,7 @@ export default function ActivityDataBox({
   overdue = false,
   tecnici = [],
 }) {
-  const [showDescrizione, setShowDescrizione] = useState(false)
-  const [showAllegati, setShowAllegati] = useState(false)
-  const [showTecnici, setShowTecnici] = useState(false)
+  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'tecnici' | null
 
   if (!activity) return null
 
@@ -124,23 +122,23 @@ export default function ActivityDataBox({
         {/* Toggle buttons row */}
         <div className="flex items-center gap-4">
           {activity.descrizione && (
-            <button onClick={() => setShowDescrizione(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showDescrizione ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
-              <ChevronRight size={14} className={`transition-transform ${showDescrizione ? 'rotate-90' : ''}`} />
+            <button onClick={() => setOpenPanel(openPanel === 'descrizione' ? null : 'descrizione')}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'descrizione' ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${openPanel === 'descrizione' ? 'rotate-90' : ''}`} />
               <FileText size={14} className={showDescrizione ? 'text-gray-600' : ''} />
               <span className="font-medium">Descrizione</span>
             </button>
           )}
-          <button onClick={() => setShowAllegati(prev => !prev)}
-            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
-            <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+          <button onClick={() => setOpenPanel(openPanel === 'allegati' ? null : 'allegati')}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'allegati' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <Paperclip size={14} className={openPanel === 'allegati' ? 'text-blue-500' : ''} />
             <span className="font-medium">Allegati Attività</span>
             {allegati.length > 0 && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>}
           </button>
           {tecnici.length > 0 && (
-            <button onClick={() => setShowTecnici(prev => !prev)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showTecnici ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
-              <ChevronRight size={14} className={`transition-transform ${showTecnici ? 'rotate-90' : ''}`} />
+            <button onClick={() => setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici')}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'tecnici' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${openPanel === 'tecnici' ? 'rotate-90' : ''}`} />
               <UserCog size={14} className={showTecnici ? 'text-indigo-500' : ''} />
               <span className="font-medium">Tecnici</span>
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{tecnici.length}</span>
@@ -149,14 +147,14 @@ export default function ActivityDataBox({
         </div>
 
         {/* Expanded descrizione */}
-        {showDescrizione && activity.descrizione && (
+        {openPanel === 'descrizione' && activity.descrizione && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 px-4 py-3">
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{activity.descrizione}</p>
           </div>
         )}
 
         {/* Expanded allegati */}
-        {showAllegati && (
+        {openPanel === 'allegati' && (
           <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
             {onUploadFiles && (
               <div className="p-3 border-b border-gray-200">
@@ -196,7 +194,7 @@ export default function ActivityDataBox({
         )}
 
         {/* Expanded tecnici */}
-        {showTecnici && tecnici.length > 0 && (
+        {openPanel === 'tecnici' && tecnici.length > 0 && (
           <div className="mt-3 bg-indigo-50 rounded-lg border border-indigo-200 overflow-hidden p-3">
             <div className="flex flex-wrap gap-2">
               {tecnici.map((t, i) => {
