@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.7.03-0411 — 11 Aprile 2026
+- Rimosso box "Dipendenze" dalla sidebar destra ActivityDetail (ora nel toggle ActivityDataBox)
+
 ## V5.7.02-0411 — 11 Aprile 2026
 - ActivityDataBox dipendenze: figli mostrano "In Attesa" se padre non completato
 

@@ -480,49 +480,7 @@ export default function ActivityDetail() {
             </div>}
           </div>
 
-          {/* Dependencies */}
-          {(activity.dipendenza || (activity.dipendenti && activity.dipendenti.length > 0)) && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <button
-                onClick={() => setShowDipendenze(prev => !prev)}
-                className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl"
-              >
-                <div className="flex items-center gap-2">
-                  <ArrowRightLeft size={16} className="text-orange-500" />
-                  <h3 className="text-sm font-semibold">Dipendenze</h3>
-                </div>
-                {showDipendenze ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
-              </button>
-              {showDipendenze && (
-                <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-                  {activity.dipendenza && (
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Dipende da</p>
-                      <Link to={`/admin/projects/${projectId}/activities/${activity.dipendenza.id}`}
-                        className="inline-flex items-center gap-2 text-xs text-orange-700 bg-orange-50 rounded-lg px-2.5 py-1.5 hover:bg-orange-100">
-                        {activity.dipendenza.nome}
-                        <span className={`${badgeCls} ${actStatoColors[activity.dipendenza.stato]} text-[10px]`}>{actStatoLabels[activity.dipendenza.stato]}</span>
-                      </Link>
-                    </div>
-                  )}
-                  {activity.dipendenti && activity.dipendenti.length > 0 && (
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Attività dipendenti</p>
-                      <div className="space-y-1">
-                        {activity.dipendenti.map(d => (
-                          <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
-                            className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1.5 hover:bg-blue-100">
-                            {d.nome}
-                            <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Dependencies — now in ActivityDataBox toggle */}
 
           {/* Attività Programmate + Calendar */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
