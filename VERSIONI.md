@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.18-0411 — 11 Aprile 2026
+- SendMail: nota destinatari sempre visibile sopra la lista contatti
+
 ## V5.4.17-0411 — 11 Aprile 2026
 - SendMail da attività: destinatari limitati ai soli Referenti (esclusi utenti portale)
 - Testo descrittivo aggiornato con nota "Solo i Referenti se si arriva da una attività"

@@ -222,8 +222,9 @@ export default function SendMail() {
         {/* Recipients */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Destinatari * {selectedEmails.length > 0 && <span className="text-blue-600">({selectedEmails.length})</span>}</label>
+          <p className="text-xs text-gray-400 italic mb-2">Seleziona cliente e progetto per vedere i destinatari disponibili; <em className="text-gray-500">Solo i Referenti se si arriva da una attività.</em></p>
           {!form.progetto_id ? (
-            <p className="text-sm text-gray-400 italic">Seleziona cliente e progetto per vedere i destinatari disponibili; <em className="text-gray-500">Solo i Referenti se si arriva da una attività.</em></p>
+            <p className="text-sm text-gray-400 italic">Seleziona un progetto per continuare</p>
           ) : contacts.length === 0 ? (
             <p className="text-sm text-gray-400 italic">Nessun contatto trovato per questo progetto</p>
           ) : (
