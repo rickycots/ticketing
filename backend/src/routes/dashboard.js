@@ -82,6 +82,31 @@ router.get('/', authenticateToken, (req, res) => {
   let attivitaProgrammate = [];
   try { attivitaProgrammate = db.prepare("SELECT ap.*, a.nome as attivita_nome, p.nome as progetto_nome FROM attivita_programmate ap LEFT JOIN attivita a ON ap.attivita_id = a.id LEFT JOIN progetti p ON ap.progetto_id = p.id WHERE ap.data_pianificata >= date('now') ORDER BY ap.data_pianificata ASC").all(); } catch(e) {}
 
+  // Tecnico-specific stats
+  let tecnicoStats = {};
+  if (isTecnico) {
+    const ticketChiusi = db.prepare("SELECT COUNT(*) as count FROM ticket WHERE stato IN ('risolto', 'chiuso') AND assegnato_a = ?").get(userId);
+    const attAperte = db.prepare("SELECT COUNT(*) as count FROM attivita a INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ? WHERE a.stato IN ('da_fare', 'in_corso', 'bloccata')").get(userId);
+    const attChiuse = db.prepare("SELECT COUNT(*) as count FROM attivita a INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ? WHERE a.stato = 'completata'").get(userId);
+    const scadenzeTecnico = db.prepare(`
+      SELECT a.id, a.nome, a.data_scadenza, a.stato, a.progetto_id, p.nome as progetto_nome, c.nome_azienda as cliente_nome, 'attivita' as tipo_scadenza
+      FROM attivita a LEFT JOIN progetti p ON a.progetto_id = p.id LEFT JOIN clienti c ON p.cliente_id = c.id
+      INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ?
+      WHERE a.data_scadenza IS NOT NULL AND a.stato != 'completata' AND a.data_scadenza <= date('now', '+30 days')
+      UNION ALL
+      SELECT t.id, t.oggetto as nome, t.data_evasione as data_scadenza, t.stato, NULL as progetto_id, NULL as progetto_nome, c.nome_azienda as cliente_nome, 'ticket' as tipo_scadenza
+      FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id
+      WHERE t.assegnato_a = ? AND t.stato IN ('aperto', 'in_lavorazione', 'in_attesa') AND t.data_evasione IS NOT NULL
+      ORDER BY data_scadenza ASC
+    `).all(userId, userId);
+    tecnicoStats = {
+      ticket_chiusi: ticketChiusi.count,
+      attivita_aperte: attAperte.count,
+      attivita_chiuse: attChiuse.count,
+      scadenze_tecnico: scadenzeTecnico,
+    };
+  }
+
   res.json({
     ticket_aperti: ticketAperti.count,
     ticket_urgenti: ticketUrgenti,
@@ -93,6 +118,7 @@ router.get('/', authenticateToken, (req, res) => {
     ticket_per_stato: ticketPerStato,
     ticket_recenti: ticketRecenti,
     attivita_programmate: attivitaProgrammate,
+    ...tecnicoStats,
   });
 });
 

@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.8.00-0411 — 11 Aprile 2026
+- Dashboard tecnico: 4 stat card (Ticket Aperti, Ticket Chiusi, Attività Aperte, Attività Chiuse)
+- Dashboard tecnico: sezione "Scadenze da rispettare" con lista ordinata per urgenza
+- Scadenze: colori rosso (scaduta/oggi), arancione (3gg), giallo (7gg), grigio (oltre)
+- Scadenze: include attività con data_scadenza + ticket con SLA/data_evasione
+- Ogni riga è un link al ticket o attività, con cliente e progetto
+- Backend: nuovi campi tecnico-specifici in /api/dashboard (Node.js + PHP)
+
 ## V5.7.03-0411 — 11 Aprile 2026
 - Rimosso box "Dipendenze" dalla sidebar destra ActivityDetail (ora nel toggle ActivityDataBox)
 

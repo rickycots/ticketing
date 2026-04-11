@@ -79,7 +79,54 @@ $router->get('/dashboard', [Auth::class, 'authenticateToken'], function($req) {
         $ticketParams
     );
 
-    Response::json([
+    // Tecnico-specific stats
+    $tecnicoStats = [];
+    if ($isTecnico) {
+        $ticketChiusi = Database::fetchOne(
+            "SELECT COUNT(*) as count FROM ticket WHERE stato IN ('risolto', 'chiuso') AND assegnato_a = ?",
+            [$userId]
+        );
+        $attAperte = Database::fetchOne(
+            "SELECT COUNT(*) as count FROM attivita a
+             INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ?
+             WHERE a.stato IN ('da_fare', 'in_corso', 'bloccata')",
+            [$userId]
+        );
+        $attChiuse = Database::fetchOne(
+            "SELECT COUNT(*) as count FROM attivita a
+             INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ?
+             WHERE a.stato = 'completata'",
+            [$userId]
+        );
+        // All deadlines: overdue + upcoming 30 days
+        $scadenzeTecnico = Database::fetchAll(
+            "SELECT a.id, a.nome, a.data_scadenza, a.stato, a.progetto_id, p.nome as progetto_nome, c.nome_azienda as cliente_nome,
+                    'attivita' as tipo_scadenza
+             FROM attivita a
+             LEFT JOIN progetti p ON a.progetto_id = p.id
+             LEFT JOIN clienti c ON p.cliente_id = c.id
+             INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ?
+             WHERE a.data_scadenza IS NOT NULL AND a.stato != 'completata'
+               AND a.data_scadenza <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+             UNION ALL
+             SELECT t.id, t.oggetto as nome, t.data_evasione as data_scadenza, t.stato, NULL as progetto_id, NULL as progetto_nome, c.nome_azienda as cliente_nome,
+                    'ticket' as tipo_scadenza
+             FROM ticket t
+             LEFT JOIN clienti c ON t.cliente_id = c.id
+             WHERE t.assegnato_a = ? AND t.stato IN ('aperto', 'in_lavorazione', 'in_attesa')
+               AND t.data_evasione IS NOT NULL
+             ORDER BY data_scadenza ASC",
+            [$userId, $userId]
+        );
+        $tecnicoStats = [
+            'ticket_chiusi' => (int)$ticketChiusi['count'],
+            'attivita_aperte' => (int)$attAperte['count'],
+            'attivita_chiuse' => (int)$attChiuse['count'],
+            'scadenze_tecnico' => $scadenzeTecnico,
+        ];
+    }
+
+    Response::json(array_merge([
         'ticket_aperti' => (int)$ticketAperti['count'],
         'ticket_urgenti' => $ticketUrgenti,
         'progetti_attivi' => (int)$progettiAttivi['count'],
@@ -90,7 +137,7 @@ $router->get('/dashboard', [Auth::class, 'authenticateToken'], function($req) {
         'ticket_per_stato' => $ticketPerStato,
         'ticket_recenti' => $ticketRecenti,
         'attivita_programmate' => Database::fetchAll("SELECT ap.*, a.nome as attivita_nome, p.nome as progetto_nome FROM attivita_programmate ap LEFT JOIN attivita a ON ap.attivita_id = a.id LEFT JOIN progetti p ON ap.progetto_id = p.id WHERE ap.data_pianificata >= CURDATE() ORDER BY ap.data_pianificata ASC"),
-    ]);
+    ], $tecnicoStats));
 });
 
 // GET /api/dashboard/client/:clienteId — client-specific dashboard stats (admin only)

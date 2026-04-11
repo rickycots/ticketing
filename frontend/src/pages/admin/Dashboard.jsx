@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Ticket, FolderKanban, Mail, Clock, Users, Calendar, ChevronDown, ChevronRight, ChevronLeft, X } from 'lucide-react'
+import { Ticket, FolderKanban, Mail, Clock, Users, Calendar, ChevronDown, ChevronRight, ChevronLeft, X, AlertTriangle, CheckCircle2, ListChecks } from 'lucide-react'
 import { dashboard } from '../../api/client'
 import { APP_VERSION } from '../../version'
 import HelpTip from '../../components/HelpTip'
@@ -65,15 +65,74 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">Dashboard <HelpTip text="Panoramica generale: ticket aperti, progetti attivi, email da leggere e clienti. Il calendario mostra le attività programmate (pallini rossi). Clicca sulle card per navigare alla sezione corrispondente." /></h1>
 
       {/* Stats Grid */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-4 mb-8`}>
-        <StatCard icon={Ticket} label="Ticket Aperti" value={data.ticket_aperti} color="bg-blue-500" to="/admin/tickets" />
-        {isAdmin && (
+      {isAdmin ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <StatCard icon={Ticket} label="Ticket Aperti" value={data.ticket_aperti} color="bg-blue-500" to="/admin/tickets" />
           <StatCard icon={FolderKanban} label="Progetti Attivi" value={data.progetti_attivi} sub={`${data.progetti_blocco_cliente} bloccati lato cliente`} color="bg-purple-500" to="/admin/projects" />
-        )}
-        {isAdmin && (
           <StatCard icon={Mail} label="Email Non Lette" value={data.email_non_lette} color="bg-green-500" to="/admin/emails" />
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard icon={Ticket} label="Ticket Aperti" value={data.ticket_aperti} color="bg-blue-500" to="/admin/tickets" />
+            <StatCard icon={CheckCircle2} label="Ticket Chiusi" value={data.ticket_chiusi || 0} color="bg-gray-400" />
+            <StatCard icon={ListChecks} label="Attività Aperte" value={data.attivita_aperte || 0} color="bg-orange-500" to="/admin/all-activities" />
+            <StatCard icon={CheckCircle2} label="Attività Chiuse" value={data.attivita_chiuse || 0} color="bg-green-500" />
+          </div>
+
+          {/* Scadenze Tecnico */}
+          {data.scadenze_tecnico && data.scadenze_tecnico.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
+              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                <AlertTriangle size={18} className="text-red-500" />
+                <h2 className="text-lg font-semibold">Scadenze da rispettare</h2>
+                <span className="bg-red-100 text-red-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{data.scadenze_tecnico.length}</span>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {data.scadenze_tecnico.map((s, i) => {
+                  const scadenza = new Date(s.data_scadenza)
+                  const oggi = new Date()
+                  oggi.setHours(0,0,0,0)
+                  scadenza.setHours(0,0,0,0)
+                  const diffDays = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24))
+                  const urgencyColor = diffDays < 0 ? 'bg-red-50 border-l-4 border-l-red-500'
+                    : diffDays === 0 ? 'bg-red-50 border-l-4 border-l-red-400'
+                    : diffDays <= 3 ? 'bg-orange-50 border-l-4 border-l-orange-400'
+                    : diffDays <= 7 ? 'bg-yellow-50 border-l-4 border-l-yellow-400'
+                    : 'border-l-4 border-l-gray-200'
+                  const urgencyText = diffDays < 0 ? `SCADUTA da ${Math.abs(diffDays)}g`
+                    : diffDays === 0 ? 'OGGI'
+                    : diffDays === 1 ? 'DOMANI'
+                    : `tra ${diffDays}g`
+                  const urgencyTextColor = diffDays < 0 ? 'text-red-700 font-bold'
+                    : diffDays === 0 ? 'text-red-600 font-bold'
+                    : diffDays <= 3 ? 'text-orange-600 font-semibold'
+                    : diffDays <= 7 ? 'text-yellow-700'
+                    : 'text-gray-500'
+                  const isTicket = s.tipo_scadenza === 'ticket'
+                  const linkTo = isTicket ? `/admin/tickets/${s.id}` : `/admin/projects/${s.progetto_id}/activities/${s.id}`
+
+                  return (
+                    <Link key={`${s.tipo_scadenza}-${s.id}-${i}`} to={linkTo} className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${urgencyColor}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {isTicket ? <Ticket size={14} className="text-blue-500 shrink-0" /> : <ListChecks size={14} className="text-orange-500 shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{s.nome}</p>
+                          <p className="text-xs text-gray-400">{s.cliente_nome}{s.progetto_nome ? ` · ${s.progetto_nome}` : ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs text-gray-500">{scadenza.toLocaleDateString('it-IT')}</span>
+                        <span className={`text-xs ${urgencyTextColor}`}>{urgencyText}</span>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Calendar with scheduled activities */}
