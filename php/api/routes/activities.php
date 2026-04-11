@@ -22,18 +22,20 @@ function checkProjectAccess($req) {
 $router->get('/activities/all', [Auth::class, 'authenticateToken'], function($req) {
     if ($req->user['ruolo'] === 'admin') {
         $activities = Database::fetchAll(
-            "SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+            "SELECT a.*, u.nome as assegnato_nome, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
              FROM attivita a
              JOIN progetti p ON a.progetto_id = p.id
              LEFT JOIN clienti c ON p.cliente_id = c.id
+             LEFT JOIN utenti u ON a.assegnato_a = u.id
              ORDER BY a.created_at DESC"
         );
     } else {
         $activities = Database::fetchAll(
-            "SELECT a.*, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
+            "SELECT a.*, u.nome as assegnato_nome, p.nome as progetto_nome, p.id as progetto_id, c.nome_azienda as cliente_nome
              FROM attivita a
              JOIN progetti p ON a.progetto_id = p.id
              LEFT JOIN clienti c ON p.cliente_id = c.id
+             LEFT JOIN utenti u ON a.assegnato_a = u.id
              INNER JOIN progetto_tecnici pt ON pt.progetto_id = p.id AND pt.utente_id = ?
              ORDER BY a.created_at DESC",
             [$req->user['id']]

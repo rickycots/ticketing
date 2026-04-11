@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.12-0411 — 11 Aprile 2026
+- Fix AllActivities pallino tecnico: aggiunto LEFT JOIN utenti per assegnato_nome nella query /activities/all (Node.js + PHP)
+
 ## V5.4.11-0411 — 11 Aprile 2026
 - Fix pallino tecnico in AllActivities: Number() cast per compatibilità PHP string IDs
 
