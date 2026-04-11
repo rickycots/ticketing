@@ -388,6 +388,26 @@ export default function ProjectDataBox({
                   </select>
                 </div>
               </div>
+              {(project.attivita || []).length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dipende da</label>
+                  <select value={newAct.dipende_da} onChange={e => {
+                    const depId = e.target.value
+                    const update = { dipende_da: depId }
+                    if (depId) {
+                      const parentAct = (project.attivita || []).find(a => String(a.id) === String(depId))
+                      if (parentAct && parentAct.data_scadenza) {
+                        update.data_inizio = parentAct.data_scadenza
+                      }
+                    }
+                    setNewAct(f => ({ ...f, ...update }))
+                  }}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="">Nessuna dipendenza</option>
+                    {(project.attivita || []).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
@@ -400,16 +420,6 @@ export default function ProjectDataBox({
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
               </div>
-              {(project.attivita || []).length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Dipende da</label>
-                  <select value={newAct.dipende_da} onChange={e => setNewAct(f => ({ ...f, dipende_da: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <option value="">Nessuna dipendenza</option>
-                    {(project.attivita || []).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-                  </select>
-                </div>
-              )}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowNewActivity(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Annulla</button>
