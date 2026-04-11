@@ -338,7 +338,7 @@ export default function ActivityDetail() {
                 <span className="text-xs text-gray-400">({(activity.emails || []).length})</span>
                 {showEmails ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
               </button>
-              <Link to={`/admin/send-mail?progetto_id=${projectId}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+              <Link to={`/admin/send-mail?cliente_id=${prog.cliente_id || ''}&progetto_id=${projectId}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
                 <Send size={14} /> Invia Mail
               </Link>
             </div>

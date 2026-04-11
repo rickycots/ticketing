@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.4.14-0411 — 11 Aprile 2026
+- SendMail: tendine cliente/progetto/attività pre-compilate e bloccate quando si arriva con parametri URL
+- SendMail: fix race condition che resettava i campi pre-compilati
+- Link "Invia Mail" da ActivityDetail e ProjectDetail ora passa anche cliente_id
+
 ## V5.4.13-0411 — 11 Aprile 2026
 - ActivityDetail: link "torna" dinamico — se arrivi da AllActivities torna lì, altrimenti torna al progetto
 - AllActivities: passa state from:'all-activities' nel Link ad ActivityDetail

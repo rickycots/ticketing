@@ -23,27 +23,60 @@ export default function SendMail() {
   const [files, setFiles] = useState([])
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
+
+  // Pre-filled params from URL — these selects will be locked
+  const preCliente = searchParams.get('cliente_id') || ''
+  const preProgetto = searchParams.get('progetto_id') || ''
+  const preAttivita = searchParams.get('attivita_id') || ''
+  const isPreFilled = !!(preCliente || preProgetto)
 
   useEffect(() => {
     clients.list({ limit: 999 }).then(res => setClientList(res.data || [])).catch(console.error)
     projectsApi.list({ limit: 999 }).then(res => setAllProjects(res.data || [])).catch(console.error)
   }, [])
 
-  // Filter projects by selected client
+  // Initialize form from URL params once projects are loaded
   useEffect(() => {
+    if (initialized || allProjects.length === 0) return
+
+    let clienteId = preCliente
+    const progettoId = preProgetto
+    const attivitaId = preAttivita
+
+    // If no cliente_id but we have progetto_id, find it from projects
+    if (!clienteId && progettoId) {
+      const p = allProjects.find(p => String(p.id) === progettoId)
+      if (p) clienteId = String(p.cliente_id)
+    }
+
+    if (clienteId) {
+      setProjectList(allProjects.filter(p => String(p.cliente_id) === String(clienteId)))
+      setForm(f => ({ ...f, cliente_id: clienteId, progetto_id: progettoId, attivita_id: attivitaId }))
+    }
+
+    setInitialized(true)
+  }, [allProjects])
+
+  // Filter projects by selected client (only for manual changes, not initial)
+  useEffect(() => {
+    if (!initialized) return
     if (form.cliente_id) {
       setProjectList(allProjects.filter(p => String(p.cliente_id) === String(form.cliente_id)))
     } else {
       setProjectList([])
     }
-    setForm(f => ({ ...f, progetto_id: '', attivita_id: '' }))
-    setProjectDetail(null)
-    setActivities([])
-    setContacts([])
-    setSelectedEmails([])
-  }, [form.cliente_id, allProjects])
+    // Only reset if user manually changed the client (not pre-filled)
+    if (!isPreFilled) {
+      setForm(f => ({ ...f, progetto_id: '', attivita_id: '' }))
+      setProjectDetail(null)
+      setActivities([])
+      setContacts([])
+      setSelectedEmails([])
+    }
+  }, [form.cliente_id, allProjects, initialized])
 
   // When project changes, load detail
   useEffect(() => {
@@ -73,7 +106,6 @@ export default function SendMail() {
       setContacts([])
       setSelectedEmails([])
     }
-    if (!searchParams.get('attivita_id')) setForm(f => ({ ...f, attivita_id: '' }))
   }, [form.progetto_id])
 
   // Load utenti_cliente (admin only)
@@ -91,14 +123,6 @@ export default function SendMail() {
       }).catch(() => {})
     }
   }, [projectDetail?.cliente_id])
-
-  // Auto-select cliente_id from searchParams progetto_id
-  useEffect(() => {
-    if (searchParams.get('progetto_id') && allProjects.length > 0 && !form.cliente_id) {
-      const p = allProjects.find(p => String(p.id) === searchParams.get('progetto_id'))
-      if (p) setForm(f => ({ ...f, cliente_id: String(p.cliente_id), progetto_id: String(p.id) }))
-    }
-  }, [allProjects])
 
   function toggleEmail(email) {
     setSelectedEmails(prev =>
@@ -164,21 +188,21 @@ export default function SendMail() {
         <div className="space-y-3 max-w-[50%]">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
-            <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} required className={selectCls}>
+            <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} required disabled={!!preCliente} className={`${selectCls} ${preCliente ? 'bg-gray-100' : ''}`}>
               <option value="">— Seleziona cliente —</option>
               {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Progetto *</label>
-            <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required disabled={!form.cliente_id} className={`${selectCls} ${!form.cliente_id ? 'opacity-50' : ''}`}>
+            <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required disabled={!!preProgetto || !form.cliente_id} className={`${selectCls} ${preProgetto ? 'bg-gray-100' : !form.cliente_id ? 'opacity-50' : ''}`}>
               <option value="">— Seleziona progetto —</option>
               {projectList.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Attività *</label>
-            <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} required disabled={!form.progetto_id} className={`${selectCls} ${!form.progetto_id ? 'opacity-50' : ''}`}>
+            <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} required disabled={!!preAttivita || !form.progetto_id} className={`${selectCls} ${preAttivita ? 'bg-gray-100' : !form.progetto_id ? 'opacity-50' : ''}`}>
               <option value="">— Seleziona attività —</option>
               {activities.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
             </select>

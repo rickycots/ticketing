@@ -368,7 +368,7 @@ export default function ProjectDetail() {
               <div className="flex items-center gap-2 mr-4">
                 {(mainTab === 'email' || mainTab === 'email_attivita') && (
                   <Link
-                    to={`/admin/send-mail?progetto_id=${project.id}`}
+                    to={`/admin/send-mail?cliente_id=${project.cliente_id || ''}&progetto_id=${project.id}`}
                     className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
                   >
                     <Send size={14} /> Invia Mail
