@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.3.01-0411 — 11 Aprile 2026
+- Aggiornamento completo README.md locale: allineato da V4.3.03 a V5.3.00 (nuove sezioni, funzionalità, schema DB, componenti)
+
 ## V5.3.00-0411 — 11 Aprile 2026
 - Fix eliminazione cliente: riordinato cascade (email NULL prima di delete progetti/attività), tutti try/catch con Throwable, messaggio errore se fallisce
 
