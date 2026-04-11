@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Paperclip, Upload, Download, ChevronRight, FileText, UserCog, X } from 'lucide-react'
+import { Pencil, Trash2, Paperclip, Upload, Download, ChevronRight, FileText, UserCog, X, AlertTriangle, GitBranch } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import HelpTip from './HelpTip'
 
 const actStatoColors = {
@@ -55,10 +56,19 @@ export default function ActivityDataBox({
   uploadingFiles = false,
   overdue = false,
   tecnici = [],
+  // Dipendenze
+  dipendenza = null,       // { id, nome, stato } — attività padre
+  dipendenti = [],         // [{ id, nome, stato }] — attività figlie
+  projectId = null,        // per link alle attività
 }) {
-  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'tecnici' | null
+  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'tecnici' | 'dipendenze' | null
 
   if (!activity) return null
+
+  const hasDipendenza = !!dipendenza
+  const hasDipendenti = dipendenti && dipendenti.length > 0
+  const showDipToggle = hasDipendenza || hasDipendenti
+  const dipLabel = hasDipendenza ? 'Attenzione Dipendenze' : 'Attività Padre'
 
   const isCompleted = activity.stato === 'completata'
 
@@ -144,6 +154,14 @@ export default function ActivityDataBox({
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{tecnici.length}</span>
             </button>
           )}
+          {showDipToggle && (
+            <button onClick={() => setOpenPanel(openPanel === 'dipendenze' ? null : 'dipendenze')}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ml-auto ${openPanel === 'dipendenze' ? 'text-orange-600' : 'text-orange-500 hover:text-orange-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${openPanel === 'dipendenze' ? 'rotate-90' : ''}`} />
+              {hasDipendenza ? <AlertTriangle size={14} className={openPanel === 'dipendenze' ? 'text-orange-500' : ''} /> : <GitBranch size={14} className={openPanel === 'dipendenze' ? 'text-orange-500' : ''} />}
+              <span className="font-medium">{dipLabel}</span>
+            </button>
+          )}
         </div>
 
         {/* Expanded descrizione */}
@@ -206,6 +224,36 @@ export default function ActivityDataBox({
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* Expanded dipendenze */}
+        {openPanel === 'dipendenze' && showDipToggle && (
+          <div className="mt-3 bg-orange-50 rounded-lg border border-orange-200 overflow-hidden p-4 space-y-3">
+            {hasDipendenza && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Dipende da</p>
+                <Link to={`/admin/projects/${projectId}/activities/${dipendenza.id}`}
+                  className="inline-flex items-center gap-2 text-xs text-orange-700 bg-white border border-orange-200 rounded-lg px-2.5 py-1.5 hover:bg-orange-100 transition-colors">
+                  {dipendenza.nome}
+                  <span className={`${badgeCls} ${actStatoColors[dipendenza.stato]} text-[10px]`}>{actStatoLabels[dipendenza.stato]}</span>
+                </Link>
+              </div>
+            )}
+            {hasDipendenti && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Attività dipendenti</p>
+                <div className="space-y-1">
+                  {dipendenti.map(d => (
+                    <Link key={d.id} to={`/admin/projects/${projectId}/activities/${d.id}`}
+                      className="flex items-center gap-2 text-xs text-blue-700 bg-white border border-blue-200 rounded-lg px-2.5 py-1.5 hover:bg-blue-100 transition-colors">
+                      {d.nome}
+                      <span className={`${badgeCls} ${actStatoColors[d.stato]} text-[10px]`}>{actStatoLabels[d.stato]}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

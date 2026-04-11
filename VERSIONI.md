@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.7.01-0411 — 11 Aprile 2026
+- ActivityDataBox: toggle "Attenzione Dipendenze" (se ha padre) o "Attività Padre" (se ha solo figli), allineato a destra
+- Pannello dipendenze: mostra padre (link arancione) e figli (link blu) con badge stato
+
 ## V5.7.00-0411 — 11 Aprile 2026
 - Email threading progetto/attività: tag [PRJ-{id} ACT-{id}] aggiunto al subject in uscita
 - IMAP poller: auto-match reply con tag PRJ/ACT, assegna automaticamente cliente/progetto/attività

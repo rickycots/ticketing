@@ -237,6 +237,9 @@ export default function ActivityDetail() {
             downloadUrl={(allegatoId) => `/api/projects/${projectId}/activities/${activityId}/allegati/${allegatoId}`}
             uploadingFiles={uploadingFiles}
             tecnici={activity.tecnici_nomi || (activity.assegnato_nome ? [activity.assegnato_nome] : [])}
+            dipendenza={activity.dipendenza || null}
+            dipendenti={activity.dipendenti || []}
+            projectId={projectId}
           />
 
           {/* Blocking email warning */}
