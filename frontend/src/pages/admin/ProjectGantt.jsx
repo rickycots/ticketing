@@ -187,7 +187,7 @@ export default function ProjectGantt() {
   if (!project) return <div className="text-center text-gray-400 py-12">Progetto non trovato</div>
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
-  const isTecnicoProgetto = !isAdmin && (project.tecnici || []).includes(currentUser.id)
+  const isTecnicoProgetto = !isAdmin && (project.tecnici || []).map(Number).includes(Number(currentUser.id))
   const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
   const computedStatus = computeProjectStatus(project.attivita)
   const statusCfg = projectStatusConfig[computedStatus]

@@ -155,7 +155,7 @@ export default function ActivityDetail() {
       <Lock size={48} className="text-gray-300" />
       <p className="text-lg font-semibold text-gray-500">Utente non abilitato</p>
       <p className="text-sm text-gray-400">Non hai i permessi per accedere a questa attività</p>
-      <Link to={`/admin/projects/${projectId}/gantt`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+      <Link to={`/admin/projects/${projectId}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
         <ArrowLeft size={14} /> Torna al progetto
       </Link>
     </div>
@@ -187,8 +187,8 @@ export default function ActivityDetail() {
 
   return (
     <div>
-      <Link to={`/admin/projects/${projectId}/gantt`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
-        <ArrowLeft size={16} /> Torna alla timeline
+      <Link to={`/admin/projects/${projectId}`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <ArrowLeft size={16} /> Torna al progetto
       </Link>
 
       {/* Page title */}
@@ -226,7 +226,7 @@ export default function ActivityDetail() {
                       if (!confirm('Eliminare questa attività? Questa azione è irreversibile.')) return
                       try {
                         await activities.delete(projectId, activityId)
-                        navigate(`/admin/projects/${projectId}/gantt`)
+                        navigate(`/admin/projects/${projectId}`)
                       } catch (err) { alert(err.message) }
                     }} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors" title="Elimina attività">
                       <Trash2 size={15} />

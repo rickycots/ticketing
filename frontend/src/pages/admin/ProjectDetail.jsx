@@ -123,7 +123,7 @@ export default function ProjectDetail() {
   }, [project?.chat?.length])
 
   const tecnici = userList.filter(u => u.ruolo === 'tecnico' && u.attivo)
-  const isTecnicoProgetto = !isAdmin && project && (project.tecnici || []).includes(currentUser.id)
+  const isTecnicoProgetto = !isAdmin && project && (project.tecnici || []).map(Number).includes(Number(currentUser.id))
   const canEdit = isAdmin || (isTecnicoProgetto && !!currentUser.gestione_avanzata)
 
   async function handleCreateActivity(e) {

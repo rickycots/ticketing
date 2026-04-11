@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.02-0411 — 11 Aprile 2026
+- Fix gestione avanzata: confronto tecnici IDs con Number() per compatibilità PHP string vs JS number
+- Fix link "Torna al progetto" in ActivityDetail: ora punta a /admin/projects/:id (dettaglio) invece di /gantt
+
 ## V5.4.01-0411 — 11 Aprile 2026
 - Fix gestione avanzata progetti: tecnico con flag gestione_avanzata ora può caricare allegati e gestire referenti nel ProjectDataBox
 - Nuova prop canEdit in ProjectDataBox, passata da ProjectDetail e ProjectGantt
