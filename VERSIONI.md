@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.01-0411 — 11 Aprile 2026
+- Fix rientri dipendenze in ProjectDetail: Number() cast su id/dipende_da per compatibilità PHP string IDs con Set.has()
+
 ## V5.5.00-0411 — 11 Aprile 2026
 - Admin sidebar: tema colori personalizzabile con 7 colori (gray, slate, zinc, indigo, teal, rose, amber)
 - Riquadri colorati in basso nella sidebar per cambiare tema, salvato per utente in localStorage

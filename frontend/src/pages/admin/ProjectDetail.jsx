@@ -441,18 +441,18 @@ export default function ProjectDetail() {
                     )
                     // Build tree: roots sorted by ordine, dependents nested under parent
                     function buildTree(list) {
-                      const ids = new Set(list.map(a => a.id))
+                      const ids = new Set(list.map(a => Number(a.id)))
                       // Root = no dependency OR parent not in filtered list
-                      const roots = list.filter(a => !a.dipende_da || !ids.has(a.dipende_da)).sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
+                      const roots = list.filter(a => !a.dipende_da || !ids.has(Number(a.dipende_da))).sort((a, b) => (a.ordine || 0) - (b.ordine || 0))
                       const result = []
                       function addWithChildren(parent, depth) {
                         result.push({ ...parent, _depth: depth })
-                        list.filter(a => a.dipende_da == parent.id).forEach(c => addWithChildren(c, depth + 1))
+                        list.filter(a => Number(a.dipende_da) === Number(parent.id)).forEach(c => addWithChildren(c, depth + 1))
                       }
                       roots.forEach(r => addWithChildren(r, 0))
                       // Safety: any remaining orphans
-                      const added = new Set(result.map(r => r.id))
-                      list.filter(a => !added.has(a.id)).forEach(a => result.push({ ...a, _depth: 0 }))
+                      const added = new Set(result.map(r => Number(r.id)))
+                      list.filter(a => !added.has(Number(a.id))).forEach(a => result.push({ ...a, _depth: 0 }))
                       return result
                     }
                     const treeAtt = buildTree(filteredAtt)
