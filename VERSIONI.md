@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.17-0411 — 11 Aprile 2026
+- TicketDetail: tendina "Assegna a" mostra solo tecnici attivi (escluso admin)
+
 ## V5.5.16-0411 — 11 Aprile 2026
 - Cambio dipendenza attività esistente: data inizio aggiornata automaticamente alla data fine del padre
 

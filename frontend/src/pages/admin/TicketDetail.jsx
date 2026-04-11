@@ -465,7 +465,7 @@ export default function TicketDetail() {
                   <label className="block text-xs font-medium text-gray-500 mb-1">Assegna a</label>
                   <select value={ticket.assegnato_a || ''} onChange={(e) => handleFieldChange('assegnato_a', e.target.value ? Number(e.target.value) : null)} className={selectCls}>
                     <option value="">Non assegnato</option>
-                    {userList.map(u => <option key={u.id} value={u.id}>{u.nome} ({u.ruolo})</option>)}
+                    {userList.filter(u => u.ruolo === 'tecnico' && u.attivo).map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
                   </select>
                 </div>
               )}
