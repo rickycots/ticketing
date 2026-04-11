@@ -11,6 +11,7 @@ export default function AllActivities() {
   const [sortCol, setSortCol] = useState('cliente_nome')
   const [sortDir, setSortDir] = useState('asc')
   const [filterCliente, setFilterCliente] = useState('')
+  const [filterTecnico, setFilterTecnico] = useState(null)
   const PAGE_SIZE = 7
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function AllActivities() {
   // Filter
   let filtered = allActivities
   if (filterCliente) filtered = filtered.filter(a => a.cliente_nome === filterCliente)
+  if (filterTecnico) filtered = filtered.filter(a => Number(a.assegnato_a) === filterTecnico)
 
   // Sort
   const sorted = [...filtered].sort((a, b) => {
@@ -95,11 +97,30 @@ export default function AllActivities() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Elenco Attività</h1>
-        <select value={filterCliente} onChange={e => { setFilterCliente(e.target.value); setPage(1) }}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <option value="">Tutte le aziende</option>
-          {clienti.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            {userList.map(u => (
+              <button key={u.id} onClick={() => { setFilterTecnico(filterTecnico === u.id ? null : u.id); setPage(1) }}
+                className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold cursor-pointer transition-all ${
+                  filterTecnico === u.id
+                    ? 'bg-blue-600 text-white ring-2 ring-blue-300 scale-110'
+                    : 'bg-blue-100 text-blue-700 hover:scale-105'
+                }`}
+                title={u.nome}
+              >
+                {u.nome.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+              </button>
+            ))}
+            {filterTecnico && (
+              <button onClick={() => { setFilterTecnico(null); setPage(1) }} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer ml-1">tutti</button>
+            )}
+          </div>
+          <select value={filterCliente} onChange={e => { setFilterCliente(e.target.value); setPage(1) }}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="">Tutte le aziende</option>
+            {clienti.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.20-0411 — 11 Aprile 2026
+- AllActivities: filtro per tecnico con pallini cliccabili (stesso stile ProjectDetail)
+
 ## V5.4.19-0411 — 11 Aprile 2026
 - SendMail: tecnico senza parametri URL vede messaggio "Non autorizzato — parti da una attività"
 
