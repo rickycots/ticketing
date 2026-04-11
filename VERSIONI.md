@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.4.00-0411 — 11 Aprile 2026
+- Security: fix XSS in EmailInbox — sanitizeHtml() rimuove script/style/iframe/event handlers prima del rendering HTML email
+- Security: fix_referenti.php ora usa MIGRATE_KEY dedicata + flag file _ENABLE_MIGRATE (come migrate.php)
+- Security: CORS backend Node.js ristretto a localhost:5173/3000 (configurabile via ALLOWED_ORIGINS)
+- Security: config.enc rimosso dal tracking git + aggiunto a .gitignore
+- Pulizia: 214 file asset obsoleti rimossi da locale (119MB) e dal server Aruba
+- Script deploy/cleanup-assets.js per pulizia FTP automatica asset vecchi
+
 ## V5.3.01-0411 — 11 Aprile 2026
 - Aggiornamento completo README.md locale: allineato da V4.3.03 a V5.3.00 (nuove sezioni, funzionalità, schema DB, componenti)
 

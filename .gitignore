@@ -47,6 +47,7 @@ deploy/
 # PHP vendor
 php/api/vendor/
 php/api/config.env
+php/api/config.enc
 php/api/composer.phar
 
 # Documentazione privata (solo locale)

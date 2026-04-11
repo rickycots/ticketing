@@ -5,6 +5,21 @@ import { emails, projects, activities, clients as clientsApi } from '../../api/c
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
 
+// Sanitize HTML to prevent XSS — strips script/style/event handlers
+function sanitizeHtml(html) {
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  doc.querySelectorAll('script, style, iframe, object, embed, form, link').forEach(el => el.remove())
+  doc.querySelectorAll('*').forEach(el => {
+    for (const attr of [...el.attributes]) {
+      if (attr.name.startsWith('on') || attr.value.trim().toLowerCase().startsWith('javascript:')) {
+        el.removeAttribute(attr.name)
+      }
+    }
+  })
+  return doc.body.innerHTML
+}
+
 function getDirLabel(e) {
   return e.direzione === 'inviata' ? 'Inviata' : 'Ricevuta'
 }
@@ -755,7 +770,7 @@ export default function EmailInbox() {
                       />
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: selected.corpo }} />
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.corpo) }} />
                   )}
                 </div>
 

@@ -1,14 +1,21 @@
 <?php
 /**
  * Quick fix: create referenti tables if missing
- * Run via: /api/migrations/fix_referenti.php?key=YOUR_JWT_SECRET
+ * Run via: /api/migrations/fix_referenti.php?key=MIGRATE_KEY
+ * Requires _ENABLE_MIGRATE flag file (same as migrate.php)
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/Database.php';
 
+define('MIGRATE_KEY', hash('sha256', JWT_SECRET . '-migrate-stm-2026'));
+
 if (php_sapi_name() !== 'cli') {
+    if (!file_exists(__DIR__ . '/_ENABLE_MIGRATE')) {
+        http_response_code(403);
+        die('Migrations disabled. Create _ENABLE_MIGRATE file to enable temporarily.');
+    }
     $key = $_GET['key'] ?? '';
-    if ($key !== JWT_SECRET) {
+    if (!hash_equals(MIGRATE_KEY, $key)) {
         http_response_code(403);
         die('Access denied');
     }
