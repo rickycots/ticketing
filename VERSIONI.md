@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.6.00-0411 — 11 Aprile 2026
+- Nuovo componente ActivityDataBox: box header attività riutilizzabile (titolo, descrizione, priorità, stato, avanzamento, date, allegati)
+- ActivityDetail refactored per usare ActivityDataBox
+
 ## V5.5.24-0411 — 11 Aprile 2026
 - ActivityDetail: HelpTip su "Assegna a" — "Una attività può avere più tecnici abilitati"
 
