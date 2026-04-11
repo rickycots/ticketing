@@ -134,7 +134,7 @@ export default function ActivityDetail() {
   useEffect(() => {
     loadActivity()
     loadScheduled()
-    if (isAdmin) users.list().then(setUserList).catch(() => {})
+    if (isAdmin) users.list().then(list => setUserList(list.filter(u => u.ruolo === 'tecnico' && u.attivo))).catch(() => {})
   }, [projectId, activityId])
 
   async function handleFieldChange(field, value) {

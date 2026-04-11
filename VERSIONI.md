@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.22-0411 — 11 Aprile 2026
+- ActivityDetail: tendina "Assegna a" filtrata per soli tecnici attivi (admin escluso)
+
 ## V5.5.21-0411 — 11 Aprile 2026
 - Fix invio email tecnico: colonna errata tecnico_id → utente_id nella query progetto_tecnici (emails.php)
 
