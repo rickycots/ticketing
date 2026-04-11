@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.6.01-0411 — 11 Aprile 2026
+- ActivityDataBox redesign stile ProjectDataBox: Box 1 (header + progress + date) + Box 2 (toggle Descrizione, Allegati, Tecnici)
+
 ## V5.6.00-0411 — 11 Aprile 2026
 - Nuovo componente ActivityDataBox: box header attività riutilizzabile (titolo, descrizione, priorità, stato, avanzamento, date, allegati)
 - ActivityDetail refactored per usare ActivityDataBox

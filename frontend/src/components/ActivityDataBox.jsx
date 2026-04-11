@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Paperclip, Upload, Download, X } from 'lucide-react'
+import { Pencil, Trash2, Paperclip, Upload, Download, ChevronRight, FileText, UserCog, X } from 'lucide-react'
 import HelpTip from './HelpTip'
 
 const actStatoColors = {
@@ -28,7 +28,7 @@ const statoBorder = {
 const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium'
 
 /**
- * ActivityDataBox — Box header attività riutilizzabile
+ * ActivityDataBox — Box header attività riutilizzabile (design stile ProjectDataBox)
  *
  * Props:
  * - activity: oggetto attività
@@ -40,7 +40,8 @@ const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs fo
  * - onDeleteAllegato: callback delete allegato (opzionale)
  * - downloadUrl: function(allegatoId) => url
  * - uploadingFiles: boolean
- * - overdue: boolean — data scadenza/inizio in rosso
+ * - overdue: boolean — date in rosso
+ * - tecnici: array nomi tecnici assegnati
  */
 export default function ActivityDataBox({
   activity,
@@ -53,126 +54,163 @@ export default function ActivityDataBox({
   downloadUrl,
   uploadingFiles = false,
   overdue = false,
+  tecnici = [],
 }) {
+  const [showDescrizione, setShowDescrizione] = useState(false)
   const [showAllegati, setShowAllegati] = useState(false)
+  const [showTecnici, setShowTecnici] = useState(false)
 
   if (!activity) return null
 
   const isCompleted = activity.stato === 'completata'
-  const tecNomi = activity.tecnici_nomi?.length > 0
-    ? activity.tecnici_nomi.map(t => typeof t === 'string' ? t : t.nome).join(', ')
-    : activity.assegnato_nome || null
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-5 ${statoBorder[activity.stato] || ''}`}>
-      {/* Header row */}
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{activity.nome}</h1>
-            <HelpTip text="Dettaglio attività con stato avanzamento, email associate, note e attività programmate. Lo slider percentuale indica l'avanzamento. Le email bloccanti mettono l'attività in stato 'bloccata'." />
-            {isAdmin && onEdit && (
-              <button onClick={onEdit} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
-                <Pencil size={15} />
-              </button>
-            )}
-            {isAdmin && onDelete && (
-              <button onClick={onDelete} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors" title="Elimina attività">
-                <Trash2 size={15} />
-              </button>
-            )}
+    <>
+      {/* Box 1: Header */}
+      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-5 ${statoBorder[activity.stato] || ''}`}>
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{activity.nome}</h1>
+              <HelpTip text="Dettaglio attività con stato avanzamento, email associate, note e attività programmate." />
+              {isAdmin && onEdit && (
+                <button onClick={onEdit} className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors" title="Modifica attività">
+                  <Pencil size={15} />
+                </button>
+              )}
+              {isAdmin && onDelete && (
+                <button onClick={onDelete} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors" title="Elimina attività">
+                  <Trash2 size={15} />
+                </button>
+              )}
+            </div>
           </div>
+          <div className="flex gap-2 shrink-0">
+            <span className={`${badgeCls} ${prioritaColors[activity.priorita]}`}>{activity.priorita}</span>
+            <span className={`${badgeCls} ${actStatoColors[activity.stato]}`}>{actStatoLabels[activity.stato]}</span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex-1">
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${activity.avanzamento}%` }} />
+            </div>
+          </div>
+          <span className="text-sm font-semibold text-gray-700">{activity.avanzamento}%</span>
+        </div>
+
+        {/* Dates */}
+        <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
+          {activity.data_inizio && (
+            <span className={overdue ? 'text-red-600 font-semibold' : ''}>
+              Inizio: <b className={overdue ? 'text-red-700' : 'text-gray-700'}>{new Date(activity.data_inizio).toLocaleDateString('it-IT')}</b>
+            </span>
+          )}
+          {activity.data_scadenza && (
+            <span className={overdue ? 'text-red-600 font-semibold' : ''}>
+              Scadenza: <b className={overdue ? 'text-red-700' : 'text-gray-700'}>{new Date(activity.data_scadenza).toLocaleDateString('it-IT')}</b>
+            </span>
+          )}
+          {isCompleted && activity.data_completamento && (
+            <span>Completata: <b className="text-green-600">{new Date(activity.data_completamento).toLocaleDateString('it-IT')}</b></span>
+          )}
+        </div>
+      </div>
+
+      {/* Box 2: Toggles (Descrizione, Allegati, Tecnici) */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        {/* Toggle buttons row */}
+        <div className="flex items-center gap-4">
           {activity.descrizione && (
-            <p className="text-sm text-gray-500 mt-1"><span className="italic text-gray-400">Descrizione:</span> {activity.descrizione}</p>
+            <button onClick={() => setShowDescrizione(prev => !prev)}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showDescrizione ? 'text-gray-700' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${showDescrizione ? 'rotate-90' : ''}`} />
+              <FileText size={14} className={showDescrizione ? 'text-gray-600' : ''} />
+              <span className="font-medium">Descrizione</span>
+            </button>
+          )}
+          <button onClick={() => setShowAllegati(prev => !prev)}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
+            <span className="font-medium">Allegati Attività</span>
+            {allegati.length > 0 && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>}
+          </button>
+          {tecnici.length > 0 && (
+            <button onClick={() => setShowTecnici(prev => !prev)}
+              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showTecnici ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              <ChevronRight size={14} className={`transition-transform ${showTecnici ? 'rotate-90' : ''}`} />
+              <UserCog size={14} className={showTecnici ? 'text-indigo-500' : ''} />
+              <span className="font-medium">Tecnici</span>
+              <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{tecnici.length}</span>
+            </button>
           )}
         </div>
-        <div className="flex gap-2 shrink-0">
-          <span className={`${badgeCls} ${prioritaColors[activity.priorita]}`}>{activity.priorita}</span>
-          <span className={`${badgeCls} ${actStatoColors[activity.stato]}`}>{actStatoLabels[activity.stato]}</span>
-        </div>
-      </div>
 
-      {/* Progress bar */}
-      <div className="flex items-center gap-4 mt-3">
-        <div className="flex-1">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${activity.avanzamento}%` }} />
+        {/* Expanded descrizione */}
+        {showDescrizione && activity.descrizione && (
+          <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 px-4 py-3">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{activity.descrizione}</p>
           </div>
-        </div>
-        <span className="text-sm font-semibold text-gray-700">{activity.avanzamento}%</span>
-        {tecNomi && <span className="text-sm text-gray-400">{tecNomi}</span>}
-      </div>
-
-      {/* Dates */}
-      <div className="flex items-center gap-6 mt-3 text-sm text-gray-500">
-        {activity.data_inizio && (
-          <span className={overdue ? 'text-red-600 font-semibold' : ''}>
-            Inizio: <b className={overdue ? 'text-red-700' : 'text-gray-700'}>{new Date(activity.data_inizio).toLocaleDateString('it-IT')}</b>
-          </span>
         )}
-        {activity.data_scadenza && (
-          <span className={overdue ? 'text-red-600 font-semibold' : ''}>
-            Scadenza: <b className={overdue ? 'text-red-700' : 'text-gray-700'}>{new Date(activity.data_scadenza).toLocaleDateString('it-IT')}</b>
-          </span>
-        )}
-        {isCompleted && activity.data_completamento && (
-          <span>Completata: <b className="text-green-600">{new Date(activity.data_completamento).toLocaleDateString('it-IT')}</b></span>
-        )}
-      </div>
 
-      {/* Allegati toggle */}
-      <div className="flex items-center gap-4 mt-3">
-        <button
-          onClick={() => setShowAllegati(prev => !prev)}
-          className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${showAllegati ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Paperclip size={14} className={showAllegati ? 'text-blue-500' : ''} />
-          <span className="font-medium">Allegati Attività</span>
-          {allegati.length > 0 && (
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{allegati.length}</span>
-          )}
-        </button>
-      </div>
-
-      {/* Allegati panel */}
-      {showAllegati && (
-        <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-          {onUploadFiles && (
-            <div className="p-3 border-b border-gray-200">
-              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
-                <Upload size={16} className="text-gray-400" />
-                <span className="text-sm text-gray-500">{uploadingFiles ? 'Caricamento...' : 'Carica allegati (clicca o trascina)'}</span>
-                <input type="file" multiple className="hidden" disabled={uploadingFiles} onChange={e => onUploadFiles(e.target.files)} />
-              </label>
-            </div>
-          )}
-          {allegati.length > 0 ? (
-            <div className="divide-y divide-gray-200">
-              {allegati.map(a => (
-                <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Paperclip size={14} className="text-gray-400 shrink-0" />
-                    <span className="truncate text-gray-700">{a.nome_originale}</span>
-                    <span className="text-xs text-gray-400 shrink-0">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+        {/* Expanded allegati */}
+        {showAllegati && (
+          <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+            {onUploadFiles && (
+              <div className="p-3 border-b border-gray-200">
+                <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer">
+                  <Upload size={16} className="text-gray-400" />
+                  <span className="text-sm text-gray-500">{uploadingFiles ? 'Caricamento...' : 'Carica allegati (clicca o trascina)'}</span>
+                  <input type="file" multiple className="hidden" disabled={uploadingFiles} onChange={e => onUploadFiles(e.target.files)} />
+                </label>
+              </div>
+            )}
+            {allegati.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {allegati.map(a => (
+                  <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Paperclip size={14} className="text-gray-400 shrink-0" />
+                      <span className="truncate text-gray-700">{a.nome_originale}</span>
+                      <span className="text-xs text-gray-400 shrink-0">({(a.dimensione / 1024).toFixed(0)} KB)</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {downloadUrl && (
+                        <a href={downloadUrl(a.id)} target="_blank" rel="noopener noreferrer"
+                          className="p-1 rounded text-gray-400 hover:text-blue-600 cursor-pointer"><Download size={14} /></a>
+                      )}
+                      {onDeleteAllegato && (
+                        <button onClick={() => onDeleteAllegato(a.id)}
+                          className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {downloadUrl && (
-                      <a href={downloadUrl(a.id)} target="_blank" rel="noopener noreferrer"
-                        className="p-1 rounded text-gray-400 hover:text-blue-600 cursor-pointer"><Download size={14} /></a>
-                    )}
-                    {onDeleteAllegato && (
-                      <button onClick={() => onDeleteAllegato(a.id)}
-                        className="p-1 rounded text-gray-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <p className="p-3 text-sm text-gray-400 text-center">Nessun allegato</p>
+            )}
+          </div>
+        )}
+
+        {/* Expanded tecnici */}
+        {showTecnici && tecnici.length > 0 && (
+          <div className="mt-3 bg-indigo-50 rounded-lg border border-indigo-200 overflow-hidden p-3">
+            <div className="flex flex-wrap gap-2">
+              {tecnici.map((t, i) => {
+                const nome = typeof t === 'string' ? t : t.nome
+                return (
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white">
+                    <UserCog size={13} /> {nome}
+                  </span>
+                )
+              })}
             </div>
-          ) : (
-            <p className="p-3 text-sm text-gray-400 text-center">Nessun allegato</p>
-          )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

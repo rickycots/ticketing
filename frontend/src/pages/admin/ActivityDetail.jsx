@@ -236,6 +236,7 @@ export default function ActivityDetail() {
             onDeleteAllegato={handleDeleteAllegato}
             downloadUrl={(allegatoId) => `/api/projects/${projectId}/activities/${activityId}/allegati/${allegatoId}`}
             uploadingFiles={uploadingFiles}
+            tecnici={activity.tecnici_nomi || (activity.assegnato_nome ? [activity.assegnato_nome] : [])}
           />
 
           {/* Blocking email warning */}
