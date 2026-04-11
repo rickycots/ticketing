@@ -36,6 +36,9 @@ define('TICKET_CODE_RE', '/\[TICKET\s*#(TK-\d{4}-\d{4})\]/i');
 // Communication tag pattern: [COMM slug]
 define('COMM_TAG_RE', '/\[COMM\s+([a-z0-9-]+)\]/i');
 
+// Project/Activity tag pattern: [PRJ-123 ACT-456] or [PRJ-123]
+define('PRJ_TAG_RE', '/\[PRJ-(\d+)(?:\s+ACT-(\d+))?\]/i');
+
 function logMsg(string $msg): void {
     $ts = date('Y-m-d H:i:s');
     echo "[{$ts}] {$msg}\n";
@@ -312,6 +315,36 @@ function handleAssistenzaMessage(array $msg): void {
             return;
         } else {
             logMsg("[IMAP assistenza@] [COMM] slug non trovato: \"{$slug}\" — trattata come email normale");
+        }
+    }
+
+    // Check for [PRJ-123 ACT-456] tag (project/activity reply)
+    if (preg_match(PRJ_TAG_RE, $msg['subject'], $pm)) {
+        if (messageExists($msg['messageId'])) {
+            logMsg("[IMAP assistenza@] Skip duplicato PRJ: {$msg['messageId']}");
+            return;
+        }
+
+        $prjId = (int)$pm[1];
+        $actId = !empty($pm[2]) ? (int)$pm[2] : null;
+
+        // Verify project exists
+        $prj = Database::fetchOne('SELECT id, cliente_id FROM progetti WHERE id = ?', [$prjId]);
+        if ($prj) {
+            $clienteId = $prj['cliente_id'];
+            $oggettoClean = trim(preg_replace(PRJ_TAG_RE, '', $msg['subject']));
+            // Remove Re:/Fwd: prefixes
+            $oggettoClean = trim(preg_replace('/^(Re|Fwd|Fw)\s*:\s*/i', '', $oggettoClean));
+
+            Database::execute(
+                "INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, progetto_id, attivita_id, message_id, letta) VALUES ('email_cliente', ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+                [$msg['from'], $msg['to'], $oggettoClean, $msg['body'], $clienteId, $prjId, $actId, $msg['messageId']]
+            );
+
+            logMsg("[IMAP assistenza@] Reply progetto PRJ-{$prjId}" . ($actId ? " ACT-{$actId}" : '') . ": {$oggettoClean}");
+            return;
+        } else {
+            logMsg("[IMAP assistenza@] [PRJ] progetto non trovato: PRJ-{$prjId} — trattata come email normale");
         }
     }
 

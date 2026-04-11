@@ -18,6 +18,9 @@ const TICKET_CODE_RE = /\[TICKET\s*#(TK-\d{4}-\d{4})\]/i;
 // Communication tag pattern: [COMM slug]
 const COMM_TAG_RE = /\[COMM\s+([a-z0-9-]+)\]/i;
 
+// Project/Activity tag pattern: [PRJ-123 ACT-456] or [PRJ-123]
+const PRJ_TAG_RE = /\[PRJ-(\d+)(?:\s+ACT-(\d+))?\]/i;
+
 // Security: max body length stored in DB (prevent DoS via huge emails)
 const MAX_BODY_LENGTH = 50000; // ~50KB of text
 
@@ -354,6 +357,31 @@ function handleAssistenzaMessage(msg) {
       } else {
         console.warn(`[IMAP assistenza@] [COMM] slug non trovato: "${slug}" — trattata come email normale`);
       }
+    }
+  }
+
+  // Check for [PRJ-123 ACT-456] tag (project/activity reply)
+  const prjMatch = msg.subject.match(PRJ_TAG_RE);
+  if (prjMatch) {
+    if (messageExists(msg.messageId)) {
+      console.log(`[IMAP] Skip duplicato PRJ: ${msg.messageId}`);
+      return;
+    }
+    const prjId = parseInt(prjMatch[1]);
+    const actId = prjMatch[2] ? parseInt(prjMatch[2]) : null;
+    const prj = db.prepare('SELECT id, cliente_id FROM progetti WHERE id = ?').get(prjId);
+    if (prj) {
+      let oggettoClean = msg.subject.replace(PRJ_TAG_RE, '').trim();
+      oggettoClean = oggettoClean.replace(/^(Re|Fwd|Fw)\s*:\s*/i, '').trim();
+      const body = truncateBody(msg.body);
+      db.prepare(`
+        INSERT INTO email (tipo, mittente, destinatario, oggetto, corpo, cliente_id, progetto_id, attivita_id, message_id, letta)
+        VALUES ('email_cliente', ?, ?, ?, ?, ?, ?, ?, ?, 0)
+      `).run(msg.from, msg.to, oggettoClean, body, prj.cliente_id, prjId, actId, msg.messageId);
+      console.log(`[IMAP assistenza@] Reply progetto PRJ-${prjId}${actId ? ` ACT-${actId}` : ''}: ${oggettoClean}`);
+      return;
+    } else {
+      console.warn(`[IMAP assistenza@] [PRJ] progetto non trovato: PRJ-${prjId} — trattata come email normale`);
     }
   }
 

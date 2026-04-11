@@ -234,6 +234,11 @@ router.post('/', authenticateToken, emailUpload, validateUploadedFiles, async (r
 <br><br>
 <p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>`);
     } else {
+      // Add project/activity tag for auto-matching on reply
+      if (progetto_id) {
+        const tag = attivita_id ? `[PRJ-${progetto_id} ACT-${attivita_id}]` : `[PRJ-${progetto_id}]`;
+        emailSubject = `${tag} ${emailSubject}`;
+      }
       emailHtml = wrapEmailTemplate(`<div>${htmlCorpo}</div>`);
     }
 

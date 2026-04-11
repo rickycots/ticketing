@@ -161,7 +161,12 @@ $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
 <div style=\"margin:12px 0;padding:12px;background:#f7f7f7;border-left:3px solid #0066cc;border-radius:4px\">{$htmlCorpo}</div>
 <br><br><p>Puoi proseguire la discussione facendo reply a questa mail o dal portale.</p>");
         } else {
-            $emailSubject = $oggetto;
+            // Add project/activity tag for auto-matching on reply
+            $tag = '';
+            if ($progettoId) {
+                $tag = $attivitaId ? "[PRJ-{$progettoId} ACT-{$attivitaId}]" : "[PRJ-{$progettoId}]";
+            }
+            $emailSubject = $tag ? "{$tag} {$oggetto}" : $oggetto;
             $emailHtml = Mailer::wrapEmailTemplate("<div>{$htmlCorpo}</div>");
         }
 

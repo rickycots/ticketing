@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.7.00-0411 — 11 Aprile 2026
+- Email threading progetto/attività: tag [PRJ-{id} ACT-{id}] aggiunto al subject in uscita
+- IMAP poller: auto-match reply con tag PRJ/ACT, assegna automaticamente cliente/progetto/attività
+- Implementato su entrambi i backend (Node.js + PHP) e su entrambi gli IMAP poller
+
 ## V5.6.04-0411 — 11 Aprile 2026
 - Fix crash ActivityDataBox: residui showDescrizione/showTecnici rinominati in openPanel
 
