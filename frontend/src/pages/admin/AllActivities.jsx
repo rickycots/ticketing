@@ -107,7 +107,7 @@ export default function AllActivities() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{isTecnico ? 'Elenco Attività di cui hai visibilità' : 'Elenco Attività'}</h1>
+        <h1 className="text-2xl font-bold">{isTecnico ? 'Elenco Tutte le Attività dei Progetti di cui hai visibilità' : 'Elenco Attività'}</h1>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             <button onClick={() => { setFilterAperte(true); setPage(1) }}
