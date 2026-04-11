@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.19-0411 — 11 Aprile 2026
+- SendMail: tecnico senza parametri URL vede messaggio "Non autorizzato — parti da una attività"
+
 ## V5.4.18-0411 — 11 Aprile 2026
 - SendMail: nota destinatari sempre visibile sopra la lista contatti
 

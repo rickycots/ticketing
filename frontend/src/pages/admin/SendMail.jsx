@@ -162,6 +162,22 @@ export default function SendMail() {
   const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
   const selectCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
 
+  // Tecnico without pre-filled params: show access denied
+  if (user.ruolo === 'tecnico' && !isPreFilled) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Send size={22} className="text-blue-600" />
+          <h1 className="text-xl font-bold">Invia Mail</h1>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 text-center">
+          <p className="text-orange-700 font-medium mb-2">Non autorizzato</p>
+          <p className="text-sm text-orange-600">Parti da una attività per mandare una mail ai suoi referenti.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-baseline gap-3 mb-6">
