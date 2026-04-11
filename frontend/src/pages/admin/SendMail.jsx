@@ -53,9 +53,6 @@ export default function SendMail() {
           if (r.email) contactsList.push({ email: r.email, label: `${r.nome} ${r.cognome || ''}`.trim(), tipo: 'Referente' })
         })
       }
-      if (p.cliente_email) {
-        contactsList.push({ email: p.cliente_email, label: p.cliente_nome || p.cliente_email, tipo: 'Cliente' })
-      }
       setContacts(contactsList)
       const clienteId = preCliente || String(p.cliente_id)
       setForm(f => ({ ...f, cliente_id: clienteId, progetto_id: preProgetto, attivita_id: preAttivita }))
@@ -93,9 +90,6 @@ export default function SendMail() {
           p.referenti.forEach(r => {
             if (r.email) contactsList.push({ email: r.email, label: `${r.nome} ${r.cognome || ''}`.trim(), tipo: 'Referente' })
           })
-        }
-        if (p.cliente_email) {
-          contactsList.push({ email: p.cliente_email, label: p.cliente_nome || p.cliente_email, tipo: 'Cliente' })
         }
         setContacts(contactsList)
         setSelectedEmails([])

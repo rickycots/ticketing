@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.16-0411 — 11 Aprile 2026
+- SendMail: rimossa email cliente dai destinatari, restano solo referenti progetto e utenti portale (admin)
+
 ## V5.4.15-0411 — 11 Aprile 2026
 - Fix SendMail per tecnico: carica progetto direttamente via API (non serve clients.list admin-only)
 - Tendine pre-compilate mostrate come testo readonly (non select), con nomi da projectDetail
