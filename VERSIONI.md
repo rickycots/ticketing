@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.4.04-0411 — 11 Aprile 2026
+- Attività completata: avanzamento automatico a 100% quando stato diventa "completata" (Node.js + PHP, tecnico + admin)
+
 ## V5.4.03-0411 — 11 Aprile 2026
 - Fix referenti ProjectDetail: loadProject() non esisteva, rinominato in load() — ora assegna/rimuovi/crea referente aggiorna la vista immediatamente
 

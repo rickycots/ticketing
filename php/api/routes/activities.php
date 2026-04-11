@@ -297,10 +297,12 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
         $allowedStato = $stato ?: $activity['stato'];
         $allowedNote = array_key_exists('note', $body) ? $body['note'] : $activity['note'];
 
-        // Auto-manage data_completamento
+        // Auto-manage data_completamento + avanzamento
         $dataCompletamento = $activity['data_completamento'];
+        $allowedAvanzamento = $activity['avanzamento'];
         if ($allowedStato === 'completata' && $activity['stato'] !== 'completata') {
             $dataCompletamento = date('Y-m-d H:i:s');
+            $allowedAvanzamento = 100;
         } elseif ($allowedStato !== 'completata' && $activity['stato'] === 'completata') {
             $dataCompletamento = null;
         }
@@ -309,19 +311,21 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
             "UPDATE attivita SET
                 stato = ?,
                 note = ?,
+                avanzamento = ?,
                 data_completamento = ?,
                 updated_at = NOW()
              WHERE id = ?",
-            [$allowedStato, $allowedNote, $dataCompletamento, $activityId]
+            [$allowedStato, $allowedNote, $allowedAvanzamento, $dataCompletamento, $activityId]
         );
     } else {
         // Admin: full update
         $newStato = $stato ?: $activity['stato'];
 
-        // Auto-manage data_completamento
+        // Auto-manage data_completamento + avanzamento
         $dataCompletamento = $activity['data_completamento'];
         if ($newStato === 'completata' && $activity['stato'] !== 'completata') {
             $dataCompletamento = date('Y-m-d H:i:s');
+            if ($avanzamento === null) $avanzamento = 100;
         } elseif ($newStato !== 'completata' && $activity['stato'] === 'completata') {
             $dataCompletamento = null;
         }

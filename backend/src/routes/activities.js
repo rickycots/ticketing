@@ -236,10 +236,12 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     const allowedStato = stato || activity.stato;
     const allowedNote = note !== undefined ? note : activity.note;
 
-    // Auto-manage data_completamento
+    // Auto-manage data_completamento + avanzamento
     let dataCompletamento = activity.data_completamento;
+    let allowedAvanzamento = activity.avanzamento;
     if (allowedStato === 'completata' && activity.stato !== 'completata') {
       dataCompletamento = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      allowedAvanzamento = 100;
     } else if (allowedStato !== 'completata' && activity.stato === 'completata') {
       dataCompletamento = null;
     }
@@ -248,17 +250,19 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
       UPDATE attivita SET
         stato = ?,
         note = ?,
+        avanzamento = ?,
         data_completamento = ?,
         updated_at = datetime('now')
       WHERE id = ?
-    `).run(allowedStato, allowedNote, dataCompletamento, req.params.activityId);
+    `).run(allowedStato, allowedNote, allowedAvanzamento, dataCompletamento, req.params.activityId);
   } else {
     // Admin: full update
-    // Auto-manage data_completamento
+    // Auto-manage data_completamento + avanzamento
     const newStato = stato || activity.stato;
     let dataCompletamento = activity.data_completamento;
     if (newStato === 'completata' && activity.stato !== 'completata') {
       dataCompletamento = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      if (avanzamento === undefined || avanzamento === null) avanzamento = 100;
     } else if (newStato !== 'completata' && activity.stato === 'completata') {
       dataCompletamento = null;
     }
