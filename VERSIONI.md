@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.03-0411 — 11 Aprile 2026
+- ProjectDetail: riga separatrice tra filtri attività e lista attività
+
 ## V5.5.02-0411 — 11 Aprile 2026
 - Fix rientri dipendenze: gestione dipendenze circolari in buildTree (spezza il ciclo al nodo con ordine più basso)
 

@@ -420,8 +420,8 @@ export default function ProjectDetail() {
                     )}
                   </div>
                 </div>
+                <div className="border-b border-gray-200" />
 
-                {/* New Activity Form */}
                 {/* Activity List */}
                 <div className="divide-y-2 divide-gray-200">
                   {(() => {
