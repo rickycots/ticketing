@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.5.06-0411 — 11 Aprile 2026
+- Attività con dipendenza non completata: stato "In Attesa" grigio, non modificabile, bordo grigio, sfondo grigio chiaro
+- Select stato e avanzamento nascosti quando attività è in attesa della dipendenza
+
 ## V5.5.05-0411 — 11 Aprile 2026
 - ProjectDetail: HelpTip su Dipendenza attività (admin e tecnico)
 

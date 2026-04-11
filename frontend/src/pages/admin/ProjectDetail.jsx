@@ -491,15 +491,20 @@ export default function ProjectDetail() {
                       const isCompleted = a.stato === 'completata'
                       const noteList = a.note_attivita || []
                       const noteCount = noteList.length
+                      // Check if waiting on parent dependency
+                      const parentAct = a.dipende_da ? project.attivita.find(x => Number(x.id) === Number(a.dipende_da)) : null
+                      const isWaitingDep = parentAct && parentAct.stato !== 'completata'
+                      const displayStato = isWaitingDep ? 'in_attesa_dep' : a.stato
                       const statoBorder = {
                         da_fare: 'border-l-4 border-l-yellow-400',
                         in_corso: 'border-l-4 border-l-blue-500',
                         completata: 'border-l-4 border-l-green-400',
                         bloccata: 'border-l-4 border-l-red-400',
+                        in_attesa_dep: 'border-l-4 border-l-gray-300',
                       }
 
                       return (
-                        <div key={a.id} className={`p-4 ${statoBorder[a.stato] || ''} ${isCompleted ? 'bg-green-50/40' : ''}`} style={a._depth ? { marginLeft: `${a._depth * 2}rem` } : undefined}>
+                        <div key={a.id} className={`p-4 ${statoBorder[displayStato] || ''} ${isCompleted ? 'bg-green-50/40' : isWaitingDep ? 'bg-gray-50/40' : ''}`} style={a._depth ? { marginLeft: `${a._depth * 2}rem` } : undefined}>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                               {!a.dipende_da ? (
@@ -513,12 +518,18 @@ export default function ProjectDetail() {
                               <Link to={`/admin/projects/${id}/activities/${a.id}`} className="text-xs text-blue-500 hover:text-blue-700 hover:underline whitespace-nowrap">
                                 Dettaglio attività
                               </Link>
-                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actStatoColors[a.stato]}`}>
-                                {actStatoLabels[a.stato]}
-                              </span>
+                              {isWaitingDep ? (
+                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-500">
+                                  In Attesa
+                                </span>
+                              ) : (
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actStatoColors[a.stato]}`}>
+                                  {actStatoLabels[a.stato]}
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {canEdit && !a.email_bloccante && (
+                              {canEdit && !a.email_bloccante && !isWaitingDep && (
                                 <select
                                   value={a.stato}
                                   onChange={(e) => handleUpdateActivity(a.id, { stato: e.target.value })}
