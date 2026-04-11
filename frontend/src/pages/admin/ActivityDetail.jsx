@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send, Paperclip, Upload, Download } from 'lucide-react'
 import { activities, users, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
@@ -34,6 +34,10 @@ const badgeCls = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs fo
 export default function ActivityDetail() {
   const { id: projectId, activityId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const fromAllActivities = location.state?.from === 'all-activities'
+  const backTo = fromAllActivities ? '/admin/all-activities' : `/admin/projects/${projectId}`
+  const backLabel = fromAllActivities ? 'Torna a Tutte le Attività' : 'Torna al progetto'
   const [activity, setActivity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -155,8 +159,8 @@ export default function ActivityDetail() {
       <Lock size={48} className="text-gray-300" />
       <p className="text-lg font-semibold text-gray-500">Utente non abilitato</p>
       <p className="text-sm text-gray-400">Non hai i permessi per accedere a questa attività</p>
-      <Link to={`/admin/projects/${projectId}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-        <ArrowLeft size={14} /> Torna al progetto
+      <Link to={backTo} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+        <ArrowLeft size={14} /> {backLabel}
       </Link>
     </div>
   )
@@ -187,8 +191,8 @@ export default function ActivityDetail() {
 
   return (
     <div>
-      <Link to={`/admin/projects/${projectId}`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
-        <ArrowLeft size={16} /> Torna al progetto
+      <Link to={backTo} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <ArrowLeft size={16} /> {backLabel}
       </Link>
 
       {/* Page title */}
@@ -226,7 +230,7 @@ export default function ActivityDetail() {
                       if (!confirm('Eliminare questa attività? Questa azione è irreversibile.')) return
                       try {
                         await activities.delete(projectId, activityId)
-                        navigate(`/admin/projects/${projectId}`)
+                        navigate(backTo)
                       } catch (err) { alert(err.message) }
                     }} className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors" title="Elimina attività">
                       <Trash2 size={15} />

@@ -126,7 +126,7 @@ export default function AllActivities() {
                 <tr key={`${a.progetto_id}-${a.id}`} className={`hover:bg-gray-50 transition-colors ${a.stato === 'completata' ? 'bg-green-50/50' : ''}`}>
                   <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{a.cliente_nome || '—'}</td>
                   <td className="px-4 py-2.5">
-                    <Link to={`/admin/projects/${a.progetto_id}/activities/${a.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
+                    <Link to={`/admin/projects/${a.progetto_id}/activities/${a.id}`} state={{ from: 'all-activities' }} className="text-sm font-medium text-gray-900 hover:text-blue-600">
                       {a.nome}
                     </Link>
                     <p className="text-xs text-gray-400">{a.progetto_nome}</p>

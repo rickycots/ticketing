@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.13-0411 — 11 Aprile 2026
+- ActivityDetail: link "torna" dinamico — se arrivi da AllActivities torna lì, altrimenti torna al progetto
+- AllActivities: passa state from:'all-activities' nel Link ad ActivityDetail
+
 ## V5.4.12-0411 — 11 Aprile 2026
 - Fix AllActivities pallino tecnico: aggiunto LEFT JOIN utenti per assegnato_nome nella query /activities/all (Node.js + PHP)
 
