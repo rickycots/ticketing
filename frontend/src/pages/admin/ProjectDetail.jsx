@@ -717,7 +717,17 @@ export default function ProjectDetail() {
                                 Dipendenza:
                                 <select
                                   value={a.dipende_da || ''}
-                                  onChange={(e) => handleUpdateActivity(a.id, { dipende_da: e.target.value ? Number(e.target.value) : null })}
+                                  onChange={(e) => {
+                                    const depId = e.target.value ? Number(e.target.value) : null
+                                    const update = { dipende_da: depId }
+                                    if (depId) {
+                                      const parentAct = project.attivita.find(x => Number(x.id) === depId)
+                                      if (parentAct && parentAct.data_scadenza) {
+                                        update.data_inizio = parentAct.data_scadenza
+                                      }
+                                    }
+                                    handleUpdateActivity(a.id, update)
+                                  }}
                                   className="rounded border border-gray-200 px-1.5 py-0.5 text-xs max-w-[180px]"
                                 >
                                   <option value="">Nessuna</option>

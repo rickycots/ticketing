@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.16-0411 — 11 Aprile 2026
+- Cambio dipendenza attività esistente: data inizio aggiornata automaticamente alla data fine del padre
+
 ## V5.5.15-0411 — 11 Aprile 2026
 - Tendina dipendenza: mostra #n con numero d'ordine Gantt (per data_inizio) al posto dell'ID o ordine DB
 
