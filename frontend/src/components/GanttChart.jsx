@@ -288,7 +288,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                   {projectId ? (
                     <a
                       href={`/admin/projects/${projectId}/activities/${bar.id}`}
-                      onClick={(e) => { e.preventDefault(); navigate(`/admin/projects/${projectId}/activities/${bar.id}`) }}
+                      onClick={(e) => { e.preventDefault(); navigate(`/admin/projects/${projectId}/activities/${bar.id}`, { state: { from: 'gantt' } }) }}
                       className="block truncate text-gray-700 text-xs font-medium hover:text-blue-600 hover:underline"
                       title={bar.nome}
                     >{bar.nome}</a>
@@ -420,7 +420,7 @@ export default function GanttChart({ attivita, projectStart, projectEnd, project
                     onMouseEnter={(e) => !dragRef.current && handleMouseEnter(e, bar)}
                     onMouseMove={(e) => !dragRef.current && handleMouseEnter(e, bar)}
                     onMouseLeave={handleMouseLeave}
-                    onClick={() => !dragRef.current && projectId && navigate(`/admin/projects/${projectId}/activities/${bar.id}`)}
+                    onClick={() => !dragRef.current && projectId && navigate(`/admin/projects/${projectId}/activities/${bar.id}`, { state: { from: 'gantt' } })}
                     className={isDragging ? '' : 'cursor-pointer'}
                     opacity={isDragging ? 0.7 : 1}
                   >

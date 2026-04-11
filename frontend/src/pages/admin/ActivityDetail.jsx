@@ -35,9 +35,13 @@ export default function ActivityDetail() {
   const { id: projectId, activityId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const fromAllActivities = location.state?.from === 'all-activities'
-  const backTo = fromAllActivities ? '/admin/all-activities' : `/admin/projects/${projectId}`
-  const backLabel = fromAllActivities ? 'Torna a Tutte le Attività' : 'Torna al progetto'
+  const fromPage = location.state?.from
+  const backTo = fromPage === 'all-activities' ? '/admin/all-activities'
+    : fromPage === 'gantt' ? `/admin/projects/${projectId}/gantt`
+    : `/admin/projects/${projectId}`
+  const backLabel = fromPage === 'all-activities' ? 'Torna a Tutte le Attività'
+    : fromPage === 'gantt' ? 'Torna al Gantt'
+    : 'Torna al progetto'
   const [activity, setActivity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)

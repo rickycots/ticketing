@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.22-0411 — 11 Aprile 2026
+- ActivityDetail: link "torna" gestisce anche provenienza Gantt (state from:'gantt')
+- GanttChart: click su attività passa state from:'gantt' per navigazione di ritorno
+
 ## V5.4.21-0411 — 11 Aprile 2026
 - AllActivities: filtro "Solo Aperte" / "Tutte" con bottoni toggle
 - Tecnico: pagina si apre con filtro automatico per sé stesso + solo aperte
