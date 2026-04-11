@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.4.15-0411 — 11 Aprile 2026
+- Fix SendMail per tecnico: carica progetto direttamente via API (non serve clients.list admin-only)
+- Tendine pre-compilate mostrate come testo readonly (non select), con nomi da projectDetail
+
 ## V5.4.14-0411 — 11 Aprile 2026
 - SendMail: tendine cliente/progetto/attività pre-compilate e bloccate quando si arriva con parametri URL
 - SendMail: fix race condition che resettava i campi pre-compilati

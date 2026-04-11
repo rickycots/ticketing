@@ -34,31 +34,34 @@ export default function SendMail() {
   const isPreFilled = !!(preCliente || preProgetto)
 
   useEffect(() => {
-    clients.list({ limit: 999 }).then(res => setClientList(res.data || [])).catch(console.error)
-    projectsApi.list({ limit: 999 }).then(res => setAllProjects(res.data || [])).catch(console.error)
+    clients.list({ limit: 999 }).then(res => setClientList(res.data || [])).catch(() => {})
+    projectsApi.list({ limit: 999 }).then(res => setAllProjects(res.data || [])).catch(() => {})
   }, [])
 
-  // Initialize form from URL params once projects are loaded
+  // Initialize form from URL params — load project directly if pre-filled
   useEffect(() => {
-    if (initialized || allProjects.length === 0) return
+    if (initialized) return
+    if (!preProgetto) { setInitialized(true); return }
 
-    let clienteId = preCliente
-    const progettoId = preProgetto
-    const attivitaId = preAttivita
-
-    // If no cliente_id but we have progetto_id, find it from projects
-    if (!clienteId && progettoId) {
-      const p = allProjects.find(p => String(p.id) === progettoId)
-      if (p) clienteId = String(p.cliente_id)
-    }
-
-    if (clienteId) {
-      setProjectList(allProjects.filter(p => String(p.cliente_id) === String(clienteId)))
-      setForm(f => ({ ...f, cliente_id: clienteId, progetto_id: progettoId, attivita_id: attivitaId }))
-    }
-
-    setInitialized(true)
-  }, [allProjects])
+    // Load the project directly to get all data (works for both admin and tecnico)
+    projectsApi.get(preProgetto).then(p => {
+      setProjectDetail(p)
+      setActivities(p.attivita || [])
+      const contactsList = []
+      if (p.referenti && p.referenti.length > 0) {
+        p.referenti.forEach(r => {
+          if (r.email) contactsList.push({ email: r.email, label: `${r.nome} ${r.cognome || ''}`.trim(), tipo: 'Referente' })
+        })
+      }
+      if (p.cliente_email) {
+        contactsList.push({ email: p.cliente_email, label: p.cliente_nome || p.cliente_email, tipo: 'Cliente' })
+      }
+      setContacts(contactsList)
+      const clienteId = preCliente || String(p.cliente_id)
+      setForm(f => ({ ...f, cliente_id: clienteId, progetto_id: preProgetto, attivita_id: preAttivita }))
+      setInitialized(true)
+    }).catch(() => { setInitialized(true) })
+  }, [])
 
   // Filter projects by selected client (only for manual changes, not initial)
   useEffect(() => {
@@ -78,8 +81,9 @@ export default function SendMail() {
     }
   }, [form.cliente_id, allProjects, initialized])
 
-  // When project changes, load detail
+  // When project changes, load detail (skip if already loaded by initialization)
   useEffect(() => {
+    if (!initialized) return
     if (form.progetto_id) {
       projectsApi.get(form.progetto_id).then(p => {
         setProjectDetail(p)
@@ -188,24 +192,36 @@ export default function SendMail() {
         <div className="space-y-3 max-w-[50%]">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
-            <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} required disabled={!!preCliente} className={`${selectCls} ${preCliente ? 'bg-gray-100' : ''}`}>
-              <option value="">— Seleziona cliente —</option>
-              {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
-            </select>
+            {isPreFilled && projectDetail ? (
+              <div className={`${selectCls} bg-gray-100 text-gray-700`}>{projectDetail.cliente_nome || '—'}</div>
+            ) : (
+              <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} required className={selectCls}>
+                <option value="">— Seleziona cliente —</option>
+                {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Progetto *</label>
-            <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required disabled={!!preProgetto || !form.cliente_id} className={`${selectCls} ${preProgetto ? 'bg-gray-100' : !form.cliente_id ? 'opacity-50' : ''}`}>
-              <option value="">— Seleziona progetto —</option>
-              {projectList.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-            </select>
+            {isPreFilled && projectDetail ? (
+              <div className={`${selectCls} bg-gray-100 text-gray-700`}>{projectDetail.nome || '—'}</div>
+            ) : (
+              <select value={form.progetto_id} onChange={e => setForm(f => ({ ...f, progetto_id: e.target.value }))} required disabled={!form.cliente_id} className={`${selectCls} ${!form.cliente_id ? 'opacity-50' : ''}`}>
+                <option value="">— Seleziona progetto —</option>
+                {projectList.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Attività *</label>
-            <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} required disabled={!!preAttivita || !form.progetto_id} className={`${selectCls} ${preAttivita ? 'bg-gray-100' : !form.progetto_id ? 'opacity-50' : ''}`}>
-              <option value="">— Seleziona attività —</option>
-              {activities.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
-            </select>
+            {isPreFilled && preAttivita && activities.length > 0 ? (
+              <div className={`${selectCls} bg-gray-100 text-gray-700`}>{activities.find(a => String(a.id) === String(preAttivita))?.nome || '—'}</div>
+            ) : (
+              <select value={form.attivita_id} onChange={e => setForm(f => ({ ...f, attivita_id: e.target.value }))} required disabled={!form.progetto_id} className={`${selectCls} ${!form.progetto_id ? 'opacity-50' : ''}`}>
+                <option value="">— Seleziona attività —</option>
+                {activities.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+              </select>
+            )}
           </div>
         </div>
 
