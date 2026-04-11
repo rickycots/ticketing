@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.5.21-0411 — 11 Aprile 2026
+- Fix invio email tecnico: colonna errata tecnico_id → utente_id nella query progetto_tecnici (emails.php)
+
 ## V5.5.20-0411 — 11 Aprile 2026
 - Pallini filtro tecnici: admin escluso in tutte le pagine (ProjectDetail, AllActivities)
 - Query attività: aggiunto assegnato_ruolo per filtrare admin dai pallini (Node.js + PHP)

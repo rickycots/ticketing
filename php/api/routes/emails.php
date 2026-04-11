@@ -93,7 +93,7 @@ $router->post('/emails', [Auth::class, 'authenticateToken'], function($req) {
                 Response::error('Non sei assegnato a questo ticket', 403);
             }
         } elseif ($pjId) {
-            $pt = Database::fetchOne('SELECT id FROM progetto_tecnici WHERE progetto_id = ? AND tecnico_id = ?', [$pjId, $req->user['id']]);
+            $pt = Database::fetchOne('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?', [$pjId, $req->user['id']]);
             if (!$pt) Response::error('Non sei assegnato a questo progetto', 403);
         } else {
             Response::error('Tecnico deve specificare un ticket o progetto', 403);
