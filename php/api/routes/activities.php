@@ -293,13 +293,13 @@ $router->put('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
             Response::error('Puoi modificare solo le attività assegnate a te', 403);
         }
 
-        // Only allow stato and note updates
+        // Only allow stato, note and avanzamento updates
         $allowedStato = $stato ?: $activity['stato'];
         $allowedNote = array_key_exists('note', $body) ? $body['note'] : $activity['note'];
 
         // Auto-manage data_completamento + avanzamento
         $dataCompletamento = $activity['data_completamento'];
-        $allowedAvanzamento = $activity['avanzamento'];
+        $allowedAvanzamento = $avanzamento !== null ? $avanzamento : $activity['avanzamento'];
         if ($allowedStato === 'completata' && $activity['stato'] !== 'completata') {
             $dataCompletamento = date('Y-m-d H:i:s');
             $allowedAvanzamento = 100;

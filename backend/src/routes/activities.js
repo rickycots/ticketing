@@ -232,13 +232,13 @@ router.put('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     if (!isAssigned) {
       return res.status(403).json({ error: 'Puoi modificare solo le attività assegnate a te' });
     }
-    // Only allow stato and note updates
+    // Only allow stato, note and avanzamento updates
     const allowedStato = stato || activity.stato;
     const allowedNote = note !== undefined ? note : activity.note;
 
     // Auto-manage data_completamento + avanzamento
     let dataCompletamento = activity.data_completamento;
-    let allowedAvanzamento = activity.avanzamento;
+    let allowedAvanzamento = avanzamento !== undefined ? avanzamento : activity.avanzamento;
     if (allowedStato === 'completata' && activity.stato !== 'completata') {
       dataCompletamento = new Date().toISOString().slice(0, 19).replace('T', ' ');
       allowedAvanzamento = 100;

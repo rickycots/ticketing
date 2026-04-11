@@ -115,7 +115,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     load()
-    if (isAdmin) users.list().then(setUserList).catch(() => {})
+    users.list().then(setUserList).catch(() => {})
   }, [id])
 
   useEffect(() => {
@@ -511,7 +511,7 @@ export default function ProjectDetail() {
                                 <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${a.avanzamento}%` }} />
                               </div>
                             </div>
-                            {isAdmin ? (
+                            {(isAdmin || canEdit) ? (
                               <>
                                 <input
                                   type="number"

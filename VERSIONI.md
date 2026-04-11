@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.4.05-0411 — 11 Aprile 2026
+- Tecnico ProjectDetail: pallini filtro tecnici ora visibili (userList caricata per tutti, non solo admin)
+- Tecnico ProjectDetail: input avanzamento % editabile sulle attività assegnate (non solo testo readonly)
+- Backend: tecnico può aggiornare avanzamento attività assegnate (Node.js + PHP)
+
 ## V5.4.04-0411 — 11 Aprile 2026
 - Attività completata: avanzamento automatico a 100% quando stato diventa "completata" (Node.js + PHP, tecnico + admin)
 
