@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.01-0411 — 15 Aprile 2026
+- ProjectDataBox: toggle Tecnici sempre visibile per admin (anche con 0 tecnici, per assegnarli)
+
 ## V5.10.00-0411 — 15 Aprile 2026
 - Nuova tabella attivita_referenti (junction many-to-many) — DB Node.js + PHP
 - Endpoint PUT /projects/:id/activities/:activityId/referenti per assegnare referenti specifici dell'attività

@@ -173,7 +173,7 @@ export default function ProjectDataBox({
             <span className="font-medium">Referenti</span>
             <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
           </button>
-          {(project.tecnici || []).length > 0 && (
+          {(isAdmin || (project.tecnici || []).length > 0) && (
             <button onClick={() => { setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici') }}
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'tecnici' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
               <ChevronRight size={14} className={`transition-transform ${openPanel === 'tecnici' ? 'rotate-90' : ''}`} />
