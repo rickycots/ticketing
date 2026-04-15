@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.9.04-0411 — 15 Aprile 2026
+- ActivityDetail "Email Attività": redesign stile ProjectDetail con direction tabs (In arrivo/Inviate), sub-filtri (Tutte/Rilevanti/Di contesto/Bloccanti), bottone "Invia Mail" sull'header, righe espandibili
+
 ## V5.9.03-0411 — 11 Aprile 2026
 - Client TicketForm: bottoni Invia e Annulla affiancati a metà larghezza, Annulla torna a /client/tickets
 
