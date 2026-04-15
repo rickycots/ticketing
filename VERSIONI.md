@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.9.02-0411 — 11 Aprile 2026
+- Client portal: banner "Progetto/Attività bloccata" nascosti agli utenti senza accesso ai progetti
+
 ## V5.9.01-0411 — 11 Aprile 2026
 - EmailInbox layout: Modifica sulla stessa riga dell'oggetto, Rispondi/Rispondi a tutti su riga 2, marcature (Bloccante/Rilevante/Di contesto) su riga 3
 
