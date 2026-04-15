@@ -196,6 +196,16 @@ function runMigrations() {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_chat_ticket_interna ON chat_ticket_interna(ticket_id)');
 
+  // Create attivita_referenti junction table (activity-level referenti)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS attivita_referenti (
+      attivita_id INTEGER NOT NULL,
+      referente_id INTEGER NOT NULL,
+      PRIMARY KEY (attivita_id, referente_id)
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_attivita_referenti_act ON attivita_referenti(attivita_id)');
+
   // Create impostazioni table (key-value settings store)
   db.exec(`
     CREATE TABLE IF NOT EXISTS impostazioni (

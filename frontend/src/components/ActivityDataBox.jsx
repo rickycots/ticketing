@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Paperclip, Upload, Download, ChevronRight, FileText, UserCog, X, AlertTriangle, GitBranch } from 'lucide-react'
+import { Pencil, Trash2, Paperclip, Upload, Download, ChevronRight, FileText, UserCog, X, AlertTriangle, GitBranch, Users, Plus, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import HelpTip from './HelpTip'
 
@@ -60,8 +60,18 @@ export default function ActivityDataBox({
   dipendenza = null,       // { id, nome, stato } — attività padre
   dipendenti = [],         // [{ id, nome, stato }] — attività figlie
   projectId = null,        // per link alle attività
+  // Referenti
+  referenti = [],
+  clientReferenti = [],    // referenti del cliente (anagrafica)
+  onAssignReferente,       // callback (refId) => add to activity
+  onRemoveReferente,       // callback (refId) => remove from activity
+  onCreateAndAssignReferente, // callback (form) => create new and assign
+  canEditReferenti = false,
 }) {
-  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'tecnici' | 'dipendenze' | null
+  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'tecnici' | 'dipendenze' | 'referenti' | null
+  const [showAddRef, setShowAddRef] = useState(false)
+  const [showNewRefForm, setShowNewRefForm] = useState(false)
+  const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
 
   if (!activity) return null
 
@@ -154,6 +164,13 @@ export default function ActivityDataBox({
               <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{tecnici.length}</span>
             </button>
           )}
+          <button onClick={() => setOpenPanel(openPanel === 'referenti' ? null : 'referenti')}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'referenti' ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <ChevronRight size={14} className={`transition-transform ${openPanel === 'referenti' ? 'rotate-90' : ''}`} />
+            <Users size={14} className={openPanel === 'referenti' ? 'text-teal-500' : ''} />
+            <span className="font-medium">Referenti</span>
+            <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{referenti.length}</span>
+          </button>
           {showDipToggle && (
             <button onClick={() => setOpenPanel(openPanel === 'dipendenze' ? null : 'dipendenze')}
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ml-auto ${openPanel === 'dipendenze' ? 'text-orange-600' : 'text-orange-500 hover:text-orange-700'}`}>
@@ -224,6 +241,93 @@ export default function ActivityDataBox({
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* Expanded referenti */}
+        {openPanel === 'referenti' && (
+          <div className="mt-3 bg-teal-50 rounded-lg border border-teal-200 overflow-hidden">
+            {referenti.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente assegnato a questa attività</p>
+            ) : (
+              <div className="divide-y divide-teal-100">
+                {referenti.map(r => (
+                  <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-teal-700">{(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
+                      <p className="text-xs text-gray-500">{r.email}{r.telefono ? ` · ${r.telefono}` : ''}</p>
+                    </div>
+                    {r.ruolo && <span className="text-xs text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>}
+                    {canEditReferenti && onRemoveReferente && (
+                      <button onClick={() => onRemoveReferente(r.id)} className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {canEditReferenti && (
+              <div className="border-t border-teal-200 p-3">
+                {!showAddRef ? (
+                  <button onClick={() => setShowAddRef(true)} className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer">
+                    <Plus size={14} /> Aggiungi referente
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {(() => {
+                      const assignedIds = referenti.map(r => Number(r.id))
+                      const available = (clientReferenti || []).filter(r => !assignedIds.includes(Number(r.id)))
+                      return available.length > 0 ? (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Referenti esistenti del cliente:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {available.map(r => (
+                              <button key={r.id} onClick={() => { onAssignReferente && onAssignReferente(r.id); setShowAddRef(false) }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-teal-300 text-teal-700 hover:bg-teal-100 cursor-pointer transition-colors">
+                                <Plus size={12} /> {r.nome} {r.cognome}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : <p className="text-xs text-gray-400 italic">Nessun altro referente disponibile</p>
+                    })()}
+                    {!showNewRefForm ? (
+                      <button onClick={() => setShowNewRefForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 cursor-pointer mt-2">
+                        <User size={14} /> Crea nuovo referente
+                      </button>
+                    ) : (
+                      <form onSubmit={e => {
+                        e.preventDefault()
+                        if (onCreateAndAssignReferente) onCreateAndAssignReferente(newRefForm)
+                        setNewRefForm({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
+                        setShowNewRefForm(false)
+                        setShowAddRef(false)
+                      }} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2 mt-2">
+                        <p className="text-xs font-semibold text-gray-700">Nuovo referente</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" placeholder="Nome *" value={newRefForm.nome} onChange={e => setNewRefForm(f => ({ ...f, nome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" required />
+                          <input type="text" placeholder="Cognome" value={newRefForm.cognome} onChange={e => setNewRefForm(f => ({ ...f, cognome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                          <input type="email" placeholder="Email *" value={newRefForm.email} onChange={e => setNewRefForm(f => ({ ...f, email: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" required />
+                          <input type="text" placeholder="Telefono" value={newRefForm.telefono} onChange={e => setNewRefForm(f => ({ ...f, telefono: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                        </div>
+                        <input type="text" placeholder="Ruolo (opzionale)" value={newRefForm.ruolo} onChange={e => setNewRefForm(f => ({ ...f, ruolo: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                        <div className="flex gap-2">
+                          <button type="submit" className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 cursor-pointer">Crea e assegna</button>
+                          <button type="button" onClick={() => setShowNewRefForm(false)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
+                        </div>
+                      </form>
+                    )}
+                    <div className="flex justify-end mt-1">
+                      <button onClick={() => setShowAddRef(false)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">Chiudi</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

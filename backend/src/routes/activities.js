@@ -9,6 +9,24 @@ const { createFileFilter, validateUploadedFiles } = require('../middleware/uploa
 
 const router = express.Router({ mergeParams: true });
 
+// Helpers for activity referenti (separate from project referenti, but auto-add to project)
+function getActivityReferenti(activityId) {
+  return db.prepare(`
+    SELECT rp.* FROM referenti_progetto rp
+    INNER JOIN attivita_referenti ar ON rp.id = ar.referente_id
+    WHERE ar.attivita_id = ?
+  `).all(activityId);
+}
+function setActivityReferenti(activityId, projectId, referentiIds) {
+  db.prepare('DELETE FROM attivita_referenti WHERE attivita_id = ?').run(activityId);
+  const insertAct = db.prepare('INSERT OR IGNORE INTO attivita_referenti (attivita_id, referente_id) VALUES (?, ?)');
+  const insertPrj = db.prepare('INSERT OR IGNORE INTO progetto_referenti (progetto_id, referente_id) VALUES (?, ?)');
+  for (const refId of referentiIds) {
+    insertAct.run(activityId, Number(refId));
+    insertPrj.run(projectId, Number(refId));
+  }
+}
+
 // Multer for activity attachments
 const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'activities');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -122,6 +140,8 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     'SELECT id, nome_originale, dimensione, tipo_mime, created_at FROM allegati_attivita WHERE attivita_id = ? ORDER BY created_at DESC'
   ).all(req.params.activityId);
 
+  const referenti = getActivityReferenti(req.params.activityId);
+
   res.json({
     ...activity,
     progetto: project,
@@ -131,8 +151,35 @@ router.get('/:activityId', authenticateToken, checkProjectAccess, (req, res) => 
     email_bloccante: email_bloccante || null,
     emails,
     tecnici_nomi,
-    allegati
+    allegati,
+    referenti
   });
+});
+
+// PUT /api/projects/:id/activities/:activityId/referenti — update activity referenti
+router.put('/:activityId/referenti', authenticateToken, (req, res) => {
+  const projectId = Number(req.params.id);
+  const activityId = Number(req.params.activityId);
+  if (req.user.ruolo !== 'admin') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(projectId, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Non sei assegnato a questo progetto' });
+  }
+  const activity = db.prepare('SELECT id FROM attivita WHERE id = ? AND progetto_id = ?').get(activityId, projectId);
+  if (!activity) return res.status(404).json({ error: 'Attività non trovata' });
+
+  const { referenti, nuovi_referenti } = req.body || {};
+  let allIds = Array.isArray(referenti) ? referenti.map(Number) : [];
+  const project = db.prepare('SELECT cliente_id FROM progetti WHERE id = ?').get(projectId);
+  if (Array.isArray(nuovi_referenti)) {
+    const insertNew = db.prepare('INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)');
+    for (const nr of nuovi_referenti) {
+      if (!nr.nome || !nr.email) continue;
+      const result = insertNew.run(project.cliente_id, nr.nome, nr.cognome || '', nr.email, nr.telefono || null);
+      allIds.push(result.lastInsertRowid);
+    }
+  }
+  setActivityReferenti(activityId, projectId, allIds);
+  res.json({ referenti: getActivityReferenti(activityId) });
 });
 
 // POST /api/projects/:id/activities — create activity (admin only)

@@ -86,6 +86,15 @@ $sqls = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE INDEX idx_referenti_progetto_cliente ON referenti_progetto(cliente_id)",
+
+    "CREATE TABLE IF NOT EXISTS attivita_referenti (
+        attivita_id INT NOT NULL,
+        referente_id INT NOT NULL,
+        PRIMARY KEY (attivita_id, referente_id),
+        FOREIGN KEY (attivita_id) REFERENCES attivita(id),
+        FOREIGN KEY (referente_id) REFERENCES referenti_progetto(id),
+        INDEX idx_attivita_referenti_act (attivita_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 ];
 
 foreach ($sqls as $sql) {

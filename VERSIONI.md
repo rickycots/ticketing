@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.10.00-0411 — 15 Aprile 2026
+- Nuova tabella attivita_referenti (junction many-to-many) — DB Node.js + PHP
+- Endpoint PUT /projects/:id/activities/:activityId/referenti per assegnare referenti specifici dell'attività
+- I referenti aggiunti all'attività diventano automaticamente anche referenti del progetto
+- ActivityDataBox: nuovo toggle "Referenti" stile ProjectDataBox con assegnazione/rimozione/creazione
+- Lista referenti attività indipendente da quella di progetto
+
 ## V5.9.04-0411 — 15 Aprile 2026
 - ActivityDetail "Email Attività": redesign stile ProjectDetail con direction tabs (In arrivo/Inviate), sub-filtri (Tutte/Rilevanti/Di contesto/Bloccanti), bottone "Invia Mail" sull'header, righe espandibili
 

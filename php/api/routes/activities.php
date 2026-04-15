@@ -18,6 +18,43 @@ function checkProjectAccess($req) {
     }
 }
 
+// Ensure attivita_referenti table exists (lazy migration)
+function ensureAttivitaReferentiTable() {
+    static $checked = false;
+    if ($checked) return;
+    try {
+        Database::execute("CREATE TABLE IF NOT EXISTS attivita_referenti (
+            attivita_id INT NOT NULL,
+            referente_id INT NOT NULL,
+            PRIMARY KEY (attivita_id, referente_id),
+            INDEX idx_attivita_referenti_act (attivita_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (\Throwable $e) {}
+    $checked = true;
+}
+
+// Get referenti for an activity
+function getActivityReferenti($activityId) {
+    ensureAttivitaReferentiTable();
+    return Database::fetchAll(
+        "SELECT rp.* FROM referenti_progetto rp
+         INNER JOIN attivita_referenti ar ON rp.id = ar.referente_id
+         WHERE ar.attivita_id = ?",
+        [$activityId]
+    );
+}
+
+// Set referenti for activity (replace all). Also adds them to project_referenti.
+function setActivityReferenti($activityId, $projectId, $referentiIds) {
+    ensureAttivitaReferentiTable();
+    Database::execute('DELETE FROM attivita_referenti WHERE attivita_id = ?', [$activityId]);
+    foreach ($referentiIds as $refId) {
+        Database::execute('INSERT IGNORE INTO attivita_referenti (attivita_id, referente_id) VALUES (?, ?)', [$activityId, (int)$refId]);
+        // Also ensure it exists in progetto_referenti
+        Database::execute('INSERT IGNORE INTO progetto_referenti (progetto_id, referente_id) VALUES (?, ?)', [$projectId, (int)$refId]);
+    }
+}
+
 // GET /activities/all — all activities (admin: all, tecnico: assigned projects only)
 $router->get('/activities/all', [Auth::class, 'authenticateToken'], function($req) {
     if ($req->user['ruolo'] === 'admin') {
@@ -150,6 +187,7 @@ $router->get('/projects/:id/activities/:activityId', [Auth::class, 'authenticate
     $activity['email_bloccante'] = $emailBloccante ?: null;
     $activity['emails'] = $emails;
     $activity['tecnici_nomi'] = $tecniciNomi;
+    $activity['referenti'] = getActivityReferenti($req->params['activityId']);
 
     // Allegati
     try {
@@ -552,6 +590,42 @@ $router->post('/projects/:id/activities/:activityId/scheduled', [Auth::class, 'a
 $router->delete('/projects/:id/activities/:activityId/scheduled/:scheduledId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     Database::execute('DELETE FROM attivita_programmate WHERE id = ? AND attivita_id = ?', [$req->params['scheduledId'], $req->params['activityId']]);
     Response::success();
+});
+
+// PUT /projects/:id/activities/:activityId/referenti — update activity referenti (admin + assigned tecnico)
+$router->put('/projects/:id/activities/:activityId/referenti', [Auth::class, 'authenticateToken'], function($req) {
+    $projectId = (int)$req->params['id'];
+    $activityId = (int)$req->params['activityId'];
+
+    if (($req->user['ruolo'] ?? '') !== 'admin') {
+        $assigned = Database::fetchOne('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?', [$projectId, $req->user['id']]);
+        if (!$assigned) Response::error('Non sei assegnato a questo progetto', 403);
+    }
+
+    $activity = Database::fetchOne('SELECT id, progetto_id FROM attivita WHERE id = ? AND progetto_id = ?', [$activityId, $projectId]);
+    if (!$activity) Response::error('Attività non trovata', 404);
+
+    $body = $req->body;
+    $referenti = $body['referenti'] ?? [];
+    $nuoviReferenti = $body['nuovi_referenti'] ?? [];
+
+    $allIds = is_array($referenti) ? array_map('intval', $referenti) : [];
+
+    // Get cliente_id from project
+    $project = Database::fetchOne('SELECT cliente_id FROM progetti WHERE id = ?', [$projectId]);
+    if (is_array($nuoviReferenti)) {
+        foreach ($nuoviReferenti as $nr) {
+            if (empty($nr['nome']) || empty($nr['email'])) continue;
+            Database::execute(
+                'INSERT INTO referenti_progetto (cliente_id, nome, cognome, email, telefono) VALUES (?, ?, ?, ?, ?)',
+                [$project['cliente_id'], $nr['nome'], $nr['cognome'] ?? '', $nr['email'], $nr['telefono'] ?? null]
+            );
+            $allIds[] = (int)Database::lastInsertId();
+        }
+    }
+
+    setActivityReferenti($activityId, $projectId, $allIds);
+    Response::json(['referenti' => getActivityReferenti($activityId)]);
 });
 
 // POST /projects/:id/activities/:activityId/allegati — upload attachments

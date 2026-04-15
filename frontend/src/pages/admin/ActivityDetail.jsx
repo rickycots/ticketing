@@ -147,6 +147,34 @@ export default function ActivityDetail() {
     } catch (err) { console.error(err); alert(err.message) }
   }
 
+  async function handleAssignReferenteAct(refId) {
+    const currentIds = (activity.referenti || []).map(r => Number(r.id))
+    if (currentIds.includes(Number(refId))) return
+    try {
+      const res = await activities.updateReferenti(projectId, activityId, { referenti: [...currentIds, Number(refId)] })
+      setActivity(prev => ({ ...prev, referenti: res.referenti }))
+    } catch (err) { alert(err.message) }
+  }
+  async function handleRemoveReferenteAct(refId) {
+    const newIds = (activity.referenti || []).map(r => Number(r.id)).filter(id => id !== Number(refId))
+    try {
+      const res = await activities.updateReferenti(projectId, activityId, { referenti: newIds })
+      setActivity(prev => ({ ...prev, referenti: res.referenti }))
+    } catch (err) { alert(err.message) }
+  }
+  async function handleCreateAndAssignReferenteAct(form) {
+    if (!form.nome || !form.email) return
+    const currentIds = (activity.referenti || []).map(r => Number(r.id))
+    try {
+      const res = await activities.updateReferenti(projectId, activityId, { referenti: currentIds, nuovi_referenti: [form] })
+      setActivity(prev => ({ ...prev, referenti: res.referenti }))
+      // Refresh client referenti so it appears in the list
+      if (activity.progetto?.cliente_id) {
+        clientsApi.getReferenti(activity.progetto.cliente_id).then(r => setProjectReferenti(Array.isArray(r) ? r : [])).catch(() => {})
+      }
+    } catch (err) { alert(err.message) }
+  }
+
   async function handleAddNote(e) {
     e.preventDefault()
     if (!noteText.trim()) return
@@ -242,6 +270,12 @@ export default function ActivityDetail() {
             dipendenza={activity.dipendenza || null}
             dipendenti={activity.dipendenti || []}
             projectId={projectId}
+            referenti={activity.referenti || []}
+            clientReferenti={projectReferenti || []}
+            onAssignReferente={handleAssignReferenteAct}
+            onRemoveReferente={handleRemoveReferenteAct}
+            onCreateAndAssignReferente={handleCreateAndAssignReferenteAct}
+            canEditReferenti={isAdmin}
           />
 
           {/* Blocking email warning */}
