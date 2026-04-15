@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.9.03-0411 — 11 Aprile 2026
+- Client TicketForm: bottoni Invia e Annulla affiancati a metà larghezza, Annulla torna a /client/tickets
+
 ## V5.9.02-0411 — 11 Aprile 2026
 - Client portal: banner "Progetto/Attività bloccata" nascosti agli utenti senza accesso ai progetti
 

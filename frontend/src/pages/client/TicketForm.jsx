@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Paperclip, X } from 'lucide-react'
 import { clientTickets } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import { t } from '../../i18n/clientTranslations'
 
 export default function TicketForm() {
+  const navigate = useNavigate()
   const categorie = [
     { value: 'assistenza', label: t('catAssistance') },
     { value: 'bug', label: t('catBug') },
@@ -197,13 +199,21 @@ export default function TicketForm() {
             <HelpTip size={13} text="Se spunti questa casella, il ticket sarà visibile solo a te e all'assistenza tecnica. Se non la spunti, tutti i colleghi della tua azienda potranno vedere questo ticket nella lista e volendo parteciparvi." />
           </label>
 
-          <div className="pt-2">
+          <div className="pt-2 flex gap-2">
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
+              className="flex-1 bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
             >
               {submitting ? t('submitting') : t('submitTicket')}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/client/tickets')}
+              disabled={submitting}
+              className="flex-1 bg-gray-100 text-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              Annulla
             </button>
           </div>
         </form>
