@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.9.01-0411 — 11 Aprile 2026
+- EmailInbox layout: Modifica sulla stessa riga dell'oggetto, Rispondi/Rispondi a tutti su riga 2, marcature (Bloccante/Rilevante/Di contesto) su riga 3
+
 ## V5.9.00-0411 — 11 Aprile 2026
 - EmailInbox: IMAP estrae TUTTI i destinatari TO + CC (non solo il primo) — Node.js + PHP
 - EmailInbox: layout ristrutturato con oggetto su riga dedicata e bottoni su righe sotto

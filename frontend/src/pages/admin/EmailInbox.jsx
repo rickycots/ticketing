@@ -561,39 +561,17 @@ export default function EmailInbox() {
           {selected ? (
             <div className="overflow-y-auto flex-1">
               <div className="p-6">
-                {/* Subject row — full width */}
-                <div className="mb-3">
-                  {editingEmail ? (
-                    <input type="text" value={editOggetto} onChange={e => setEditOggetto(e.target.value)}
-                      className="w-full text-lg font-semibold border border-blue-300 rounded-lg px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                  ) : (
-                    <h2 className="text-lg font-semibold break-words">{selected.oggetto}</h2>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
-                      {getDirLabel(selected)}
-                    </span>
-                    {!!selected.is_bloccante && (
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
-                        Bloccante
-                      </span>
-                    )}
-                    {selected.rilevanza === 'rilevante' && (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
-                        <Star size={12} /> Rilevante
-                      </span>
-                    )}
-                    {selected.rilevanza === 'di_contesto' && (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                        <Info size={12} /> Di contesto
-                      </span>
+                {/* Row 1: Subject + Modifica */}
+                <div className="flex items-start gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    {editingEmail ? (
+                      <input type="text" value={editOggetto} onChange={e => setEditOggetto(e.target.value)}
+                        className="w-full text-lg font-semibold border border-blue-300 rounded-lg px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    ) : (
+                      <h2 className="text-lg font-semibold break-words">{selected.oggetto}</h2>
                     )}
                   </div>
-                </div>
-
-                {/* Action buttons row */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex gap-2 flex-wrap flex-1">
+                  <div className="flex gap-2 shrink-0">
                     {editingEmail ? (
                       <>
                         <button onClick={async () => {
@@ -615,49 +593,79 @@ export default function EmailInbox() {
                         <Pencil size={14} /> Modifica
                       </button>
                     )}
-                    <button
-                      onClick={() => { setShowReply(showReply === 'single' ? false : 'single'); setReplyText('') }}
-                      className="text-xs px-3 py-1.5 rounded-lg border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <Reply size={14} /> Rispondi
-                    </button>
-                    <button
-                      onClick={() => { setShowReply(showReply === 'all' ? false : 'all'); setReplyText('') }}
-                      className="text-xs px-3 py-1.5 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <Reply size={14} /> Rispondi a tutti
-                    </button>
-                    <button
-                      onClick={() => handleToggleBloccante(selected.id, selected.is_bloccante)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${
-                        selected.is_bloccante
-                          ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      {selected.is_bloccante ? 'Rimuovi blocco' : 'Marca bloccante'}
-                    </button>
-                    <button
-                      onClick={() => handleSetRilevanza(selected.id, 'rilevante')}
-                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer inline-flex items-center gap-1 ${
-                        selected.rilevanza === 'rilevante'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Star size={14} /> Rilevante
-                    </button>
-                    <button
-                      onClick={() => handleSetRilevanza(selected.id, 'di_contesto')}
-                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer inline-flex items-center gap-1 ${
-                        selected.rilevanza === 'di_contesto'
-                          ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Info size={14} /> Di contesto
-                    </button>
                   </div>
+                </div>
+
+                {/* Status badges row */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
+                    {getDirLabel(selected)}
+                  </span>
+                  {!!selected.is_bloccante && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                      Bloccante
+                    </span>
+                  )}
+                  {selected.rilevanza === 'rilevante' && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
+                      <Star size={12} /> Rilevante
+                    </span>
+                  )}
+                  {selected.rilevanza === 'di_contesto' && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                      <Info size={12} /> Di contesto
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 2: Reply buttons */}
+                <div className="flex gap-2 flex-wrap mb-2">
+                  <button
+                    onClick={() => { setShowReply(showReply === 'single' ? false : 'single'); setReplyText('') }}
+                    className="text-xs px-3 py-1.5 rounded-lg border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Reply size={14} /> Rispondi
+                  </button>
+                  <button
+                    onClick={() => { setShowReply(showReply === 'all' ? false : 'all'); setReplyText('') }}
+                    className="text-xs px-3 py-1.5 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Reply size={14} /> Rispondi a tutti
+                  </button>
+                </div>
+
+                {/* Row 3: Marking buttons */}
+                <div className="flex gap-2 flex-wrap mb-4">
+                  <button
+                    onClick={() => handleToggleBloccante(selected.id, selected.is_bloccante)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${
+                      selected.is_bloccante
+                        ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {selected.is_bloccante ? 'Rimuovi blocco' : 'Marca bloccante'}
+                  </button>
+                  <button
+                    onClick={() => handleSetRilevanza(selected.id, 'rilevante')}
+                    className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer inline-flex items-center gap-1 ${
+                      selected.rilevanza === 'rilevante'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Star size={14} /> Rilevante
+                  </button>
+                  <button
+                    onClick={() => handleSetRilevanza(selected.id, 'di_contesto')}
+                    className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer inline-flex items-center gap-1 ${
+                      selected.rilevanza === 'di_contesto'
+                        ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Info size={14} /> Di contesto
+                  </button>
                 </div>
 
                 <div className="border-t border-gray-100 pt-4 mb-4">
