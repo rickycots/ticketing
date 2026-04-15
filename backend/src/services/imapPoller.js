@@ -217,7 +217,15 @@ async function pollMailbox(user, pass, handler) {
         const envelope = msg.envelope;
         const messageId = envelope.messageId || null;
         const fromAddr = envelope.from && envelope.from[0] ? extractEmail(envelope.from[0]) : '';
-        const toAddr = envelope.to && envelope.to[0] ? extractEmail(envelope.to[0]) : user;
+        // Extract ALL TO + CC recipients
+        const allRecipients = [];
+        if (envelope.to && Array.isArray(envelope.to)) {
+          envelope.to.forEach(t => { const e = extractEmail(t); if (e) allRecipients.push(e.toLowerCase()); });
+        }
+        if (envelope.cc && Array.isArray(envelope.cc)) {
+          envelope.cc.forEach(c => { const e = extractEmail(c); if (e) allRecipients.push(e.toLowerCase()); });
+        }
+        const toAddr = allRecipients.length > 0 ? [...new Set(allRecipients)].join(', ') : user;
         const subject = envelope.subject || '(nessun oggetto)';
         const date = envelope.date || new Date();
         const inReplyTo = envelope.inReplyTo || null;

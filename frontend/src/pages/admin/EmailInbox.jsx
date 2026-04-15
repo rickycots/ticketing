@@ -230,19 +230,30 @@ export default function EmailInbox() {
     finally { setSending(false) }
   }
 
-  async function handleReply(e) {
+  async function handleReply(e, replyAll = false) {
     e.preventDefault()
     if (!replyText.trim() || !selected) return
     setSendingReply(true)
     try {
       const threadId = selected.thread_id || `thread-email-${selected.id}`
+      // Build recipient list
+      let destinatario = selected.mittente
+      if (replyAll) {
+        const all = new Set()
+        all.add(selected.mittente)
+        ;(selected.destinatario || '').split(/[,;]/).map(s => s.trim()).filter(Boolean).forEach(e => all.add(e.toLowerCase()))
+        // Remove our own addresses
+        ;['assistenzatecnica@stmdomotica.it', 'ticketing@stmdomotica.it', 'noreply@stmdomotica.it'].forEach(a => all.delete(a))
+        destinatario = [...all].join(', ')
+      }
       await emails.create({
         tipo: selected.tipo,
-        destinatario: selected.mittente,
+        destinatario,
         oggetto: selected.oggetto.startsWith('Re:') ? selected.oggetto : `Re: ${selected.oggetto}`,
         corpo: replyText.trim(),
         cliente_id: selected.cliente_id || null,
         progetto_id: selected.progetto_id || null,
+        attivita_id: selected.attivita_id || null,
         thread_id: threadId,
       })
       // If original didn't have a thread_id, assign one now
@@ -550,36 +561,39 @@ export default function EmailInbox() {
           {selected ? (
             <div className="overflow-y-auto flex-1">
               <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0 mr-3">
-                    {editingEmail ? (
-                      <input type="text" value={editOggetto} onChange={e => setEditOggetto(e.target.value)}
-                        className="w-full text-lg font-semibold border border-blue-300 rounded-lg px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    ) : (
-                      <h2 className="text-lg font-semibold">{selected.oggetto}</h2>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
-                        {getDirLabel(selected)}
+                {/* Subject row — full width */}
+                <div className="mb-3">
+                  {editingEmail ? (
+                    <input type="text" value={editOggetto} onChange={e => setEditOggetto(e.target.value)}
+                      className="w-full text-lg font-semibold border border-blue-300 rounded-lg px-2 py-1 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                  ) : (
+                    <h2 className="text-lg font-semibold break-words">{selected.oggetto}</h2>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getDirColor(selected)}`}>
+                      {getDirLabel(selected)}
+                    </span>
+                    {!!selected.is_bloccante && (
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                        Bloccante
                       </span>
-                      {!!selected.is_bloccante && (
-                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
-                          Bloccante
-                        </span>
-                      )}
-                      {selected.rilevanza === 'rilevante' && (
-                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
-                          <Star size={12} /> Rilevante
-                        </span>
-                      )}
-                      {selected.rilevanza === 'di_contesto' && (
-                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
-                          <Info size={12} /> Di contesto
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    {selected.rilevanza === 'rilevante' && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">
+                        <Star size={12} /> Rilevante
+                      </span>
+                    )}
+                    {selected.rilevanza === 'di_contesto' && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700">
+                        <Info size={12} /> Di contesto
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                </div>
+
+                {/* Action buttons row */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex gap-2 flex-wrap flex-1">
                     {editingEmail ? (
                       <>
                         <button onClick={async () => {
@@ -602,10 +616,16 @@ export default function EmailInbox() {
                       </button>
                     )}
                     <button
-                      onClick={() => { setShowReply(!showReply); setReplyText('') }}
+                      onClick={() => { setShowReply(showReply === 'single' ? false : 'single'); setReplyText('') }}
                       className="text-xs px-3 py-1.5 rounded-lg border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 cursor-pointer inline-flex items-center gap-1"
                     >
                       <Reply size={14} /> Rispondi
+                    </button>
+                    <button
+                      onClick={() => { setShowReply(showReply === 'all' ? false : 'all'); setReplyText('') }}
+                      className="text-xs px-3 py-1.5 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <Reply size={14} /> Rispondi a tutti
                     </button>
                     <button
                       onClick={() => handleToggleBloccante(selected.id, selected.is_bloccante)}
@@ -793,12 +813,24 @@ export default function EmailInbox() {
                 )}
 
                 {/* Reply Form */}
-                {showReply && (
+                {showReply && (() => {
+                  const isReplyAll = showReply === 'all'
+                  const allRecipients = (() => {
+                    const all = new Set()
+                    all.add(selected.mittente)
+                    ;(selected.destinatario || '').split(/[,;]/).map(s => s.trim()).filter(Boolean).forEach(e => all.add(e.toLowerCase()))
+                    ;['assistenzatecnica@stmdomotica.it', 'ticketing@stmdomotica.it', 'noreply@stmdomotica.it'].forEach(a => all.delete(a))
+                    return [...all]
+                  })()
+                  const displayTo = isReplyAll ? allRecipients.join(', ') : selected.mittente
+                  return (
                   <div className="border-t border-gray-100 mt-6 pt-4">
-                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                      <Reply size={16} className="text-blue-500" /> Rispondi a {selected.mittente}
+                    <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Reply size={16} className={isReplyAll ? 'text-indigo-500' : 'text-blue-500'} />
+                      {isReplyAll ? 'Rispondi a tutti' : 'Rispondi a'}
                     </h3>
-                    <form onSubmit={handleReply} className="space-y-3">
+                    <p className="text-xs text-gray-500 mb-3 break-words"><span className="font-medium">A:</span> {displayTo}</p>
+                    <form onSubmit={(e) => handleReply(e, isReplyAll)} className="space-y-3">
                       <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
@@ -808,7 +840,7 @@ export default function EmailInbox() {
                       />
                       <div className="flex gap-2">
                         <button type="submit" disabled={sendingReply || !replyText.trim()}
-                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${isReplyAll ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
                           <Send size={16} /> {sendingReply ? 'Invio...' : 'Invia Risposta'}
                         </button>
                         <button type="button" onClick={() => setShowReply(false)}
@@ -818,7 +850,8 @@ export default function EmailInbox() {
                       </div>
                     </form>
                   </div>
-                )}
+                  )
+                })()}
               </div>
             </div>
           ) : (

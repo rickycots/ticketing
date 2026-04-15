@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.9.00-0411 — 11 Aprile 2026
+- EmailInbox: IMAP estrae TUTTI i destinatari TO + CC (non solo il primo) — Node.js + PHP
+- EmailInbox: layout ristrutturato con oggetto su riga dedicata e bottoni su righe sotto
+- EmailInbox: nuovo bottone "Rispondi a tutti" (indigo) accanto a "Rispondi"
+- EmailInbox: fix reply — attivita_id ora preservata nella risposta
+- EmailInbox: reply mostra "A:" con lista destinatari effettivi
+
 ## V5.8.02-0411 — 11 Aprile 2026
 - ProjectDataBox: toggle Tecnici visibile anche per tecnico (readonly, nomi da attività come fallback)
 

@@ -128,11 +128,20 @@ function pollMailbox(string $user, string $pass, callable $handler): void {
             $from = isset($f->mailbox, $f->host) ? $f->mailbox . '@' . $f->host : '';
         }
 
-        $to = $user;
-        if (isset($header->to[0])) {
-            $t = $header->to[0];
-            $to = isset($t->mailbox, $t->host) ? $t->mailbox . '@' . $t->host : $user;
+        // Extract ALL TO recipients
+        $toList = [];
+        if (isset($header->to) && is_array($header->to)) {
+            foreach ($header->to as $t) {
+                if (isset($t->mailbox, $t->host)) $toList[] = strtolower($t->mailbox . '@' . $t->host);
+            }
         }
+        // Extract ALL CC recipients
+        if (isset($header->cc) && is_array($header->cc)) {
+            foreach ($header->cc as $c) {
+                if (isset($c->mailbox, $c->host)) $toList[] = strtolower($c->mailbox . '@' . $c->host);
+            }
+        }
+        $to = !empty($toList) ? implode(', ', array_unique($toList)) : $user;
 
         $subject = '';
         if (isset($overview[0]->subject)) {
