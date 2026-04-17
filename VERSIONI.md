@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.02-0417 — 17 Aprile 2026
+- ProjectDataBox: mostra stato blocco progetto (lato_cliente arancione, lato_admin rosso) nel badge stato
+
 ## V5.10.01-0411 — 15 Aprile 2026
 - ProjectDataBox: toggle Tecnici sempre visibile per admin (anche con 0 tecnici, per assegnarli)
 

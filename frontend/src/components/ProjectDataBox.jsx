@@ -5,6 +5,8 @@ const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
   attivo: { label: 'Attivo', classes: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' },
   bloccato: { label: 'Bloccato', classes: 'bg-red-100 text-red-800', dot: 'bg-red-500' },
+  bloccato_cliente: { label: 'Bloccato lato cliente', classes: 'bg-orange-100 text-orange-800', dot: 'bg-orange-500' },
+  bloccato_admin: { label: 'Bloccato lato admin', classes: 'bg-red-100 text-red-800', dot: 'bg-red-500' },
   senza_attivita: { label: 'Senza attività', classes: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
 }
 
@@ -76,6 +78,8 @@ export default function ProjectDataBox({
   if (!project) return null
 
   const stato = (() => {
+    if (project.blocco === 'lato_cliente') return 'bloccato_cliente'
+    if (project.blocco === 'lato_admin') return 'bloccato_admin'
     const atts = project.attivita || []
     if (atts.length === 0) return 'senza_attivita'
     if (atts.every(a => a.stato === 'completata')) return 'chiuso'
