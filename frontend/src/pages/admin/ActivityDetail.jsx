@@ -121,7 +121,12 @@ export default function ActivityDetail() {
     try {
       const data = await activities.get(projectId, activityId)
       setActivity(data)
-      if (data.emails?.some(e => e.is_bloccante)) setShowEmails(true)
+      const bloccante = (data.emails || []).find(e => e.is_bloccante)
+      if (bloccante) {
+        setShowEmails(true)
+        setEmailTab('bloccanti')
+        setEmailDir(bloccante.direzione === 'inviata' ? 'inviate' : 'ricevute')
+      }
       if (data.progetto?.cliente_id) {
         clientsApi.getReferenti(data.progetto.cliente_id).then(r => setProjectReferenti(Array.isArray(r) ? r : [])).catch(() => {})
       }

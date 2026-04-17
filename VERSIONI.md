@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.03-0417 — 17 Aprile 2026
+- ActivityDetail: se attività bloccata da email, apre automaticamente il filtro "Bloccanti" con la direzione corretta (In arrivo/Inviate)
+
 ## V5.10.02-0417 — 17 Aprile 2026
 - ProjectDataBox: mostra stato blocco progetto (lato_cliente arancione, lato_admin rosso) nel badge stato
 
