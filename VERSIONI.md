@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.10.04-0417 — 17 Aprile 2026
+- Stato attività auto-calcolato: "bloccata" da email o nota bloccante, solo "Completata" selezionabile manualmente
+- Nuova colonna is_bloccante su note_attivita (Node.js + PHP, lazy migration)
+- Checkbox "Questa nota è bloccante" nel form note attività
+- Tendina stato sostituita con bottoni "Completa"/"Riapri" in ProjectDetail e ActivityDetail
+- Stato "Bloccata" mostra indicazione "da email" o "da nota"
+
 ## V5.10.03-0417 — 17 Aprile 2026
 - ActivityDetail: se attività bloccata da email, apre automaticamente il filtro "Bloccanti" con la direzione corretta (In arrivo/Inviate)
 

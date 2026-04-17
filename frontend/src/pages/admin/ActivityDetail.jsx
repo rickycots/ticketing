@@ -63,6 +63,7 @@ export default function ActivityDetail() {
   const [noteText, setNoteText] = useState('')
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
+  const [noteBloccante, setNoteBloccante] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [emailTab, setEmailTab] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
@@ -185,10 +186,11 @@ export default function ActivityDetail() {
     if (!noteText.trim()) return
     setSendingNote(true)
     try {
-      await activities.addNote(projectId, activityId, noteText.trim(), noteToKB)
+      await activities.addNote(projectId, activityId, noteText.trim(), noteToKB, noteBloccante)
       await loadActivity()
       setNoteText('')
       setNoteToKB(false)
+      setNoteBloccante(false)
     } catch (err) { console.error(err) }
     finally { setSendingNote(false) }
   }
@@ -408,18 +410,27 @@ export default function ActivityDetail() {
                   <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Aggiungi una nota..." rows={2}
                     className={`${selectCls} resize-none`} />
-                  <div className="flex items-center justify-between">
-                    {(isAdmin || currentUser.abilitato_ai) ? (
-                      <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
-                        <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                        Salva in Knowledge Base (disponibile per AI cliente)
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-xs text-orange-600 cursor-pointer select-none font-medium">
+                        <input type="checkbox" checked={noteBloccante} onChange={(e) => setNoteBloccante(e.target.checked)}
+                          className="rounded border-orange-300 text-orange-600 focus:ring-orange-500" />
+                        Questa nota è bloccante
                       </label>
-                    ) : <span />}
+                      {(isAdmin || currentUser.abilitato_ai) && (
+                        <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+                          <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          Salva in KB
+                        </label>
+                      )}
+                    </div>
+                    <div className="flex justify-end">
                     <button type="submit" disabled={sendingNote || !noteText.trim()}
                       className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
                       <StickyNote size={14} /> {sendingNote ? 'Salvataggio...' : 'Aggiungi Nota'}
                     </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -438,14 +449,20 @@ export default function ActivityDetail() {
             {showAzioni && <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Stato</label>
-                {activity.email_bloccante ? (
+                {activity.stato === 'bloccata' ? (
                   <p className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
-                    <Lock size={12} className="inline mr-1" /> Bloccata da email
+                    <Lock size={12} className="inline mr-1" /> Bloccata {activity.email_bloccante ? 'da email' : 'da nota'}
                   </p>
+                ) : activity.stato === 'completata' ? (
+                  <button onClick={() => handleFieldChange('stato', 'in_corso')}
+                    className="w-full text-xs px-3 py-2 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 cursor-pointer text-left">
+                    Riapri attività
+                  </button>
                 ) : (
-                  <select value={activity.stato} onChange={(e) => handleFieldChange('stato', e.target.value)} className={selectCls}>
-                    {Object.entries(actStatoLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
+                  <button onClick={() => handleFieldChange('stato', 'completata')}
+                    className="w-full text-xs px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer text-left">
+                    Segna come completata
+                  </button>
                 )}
               </div>
               <div>

@@ -605,16 +605,18 @@ export default function ProjectDetail() {
                                 <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-500">
                                   In Attesa
                                 </span>
-                              ) : canEdit && !a.email_bloccante && (
-                                <select
-                                  value={a.stato}
-                                  onChange={(e) => handleUpdateActivity(a.id, { stato: e.target.value })}
-                                  className="rounded border border-gray-200 px-2 py-1 text-xs"
-                                >
-                                  {Object.entries(actStatoLabels).map(([v, l]) => (
-                                    <option key={v} value={v}>{l}</option>
-                                  ))}
-                                </select>
+                              ) : canEdit && a.stato !== 'bloccata' && (
+                                a.stato === 'completata' ? (
+                                  <button onClick={() => handleUpdateActivity(a.id, { stato: 'in_corso' })}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 cursor-pointer">
+                                    Riapri
+                                  </button>
+                                ) : (
+                                  <button onClick={() => handleUpdateActivity(a.id, { stato: 'completata' })}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer">
+                                    Completa
+                                  </button>
+                                )
                               )}
                               {a.email_bloccante && (
                                 <span

@@ -429,10 +429,16 @@ router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, r
     }
   }
 
+  const is_bloccante = req.body.is_bloccante ? 1 : 0;
   const result = db.prepare(`
-    INSERT INTO note_attivita (attivita_id, utente_id, testo)
-    VALUES (?, ?, ?)
-  `).run(req.params.activityId, req.user.id, testo.trim());
+    INSERT INTO note_attivita (attivita_id, utente_id, testo, is_bloccante)
+    VALUES (?, ?, ?, ?)
+  `).run(req.params.activityId, req.user.id, testo.trim(), is_bloccante);
+
+  // Auto-update activity stato based on blocking notes/emails
+  if (is_bloccante) {
+    db.prepare("UPDATE attivita SET stato = 'bloccata' WHERE id = ?").run(req.params.activityId);
+  }
 
   // Save to KB if flag is set
   if (salva_in_kb && activity.cliente_id) {

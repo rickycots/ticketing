@@ -514,10 +514,20 @@ $router->post('/projects/:id/activities/:activityId/notes', [Auth::class, 'authe
         }
     }
 
+    $isBloccante = !empty($req->body['is_bloccante']) ? 1 : 0;
+
+    // Ensure is_bloccante column exists (lazy migration)
+    try { Database::execute('ALTER TABLE note_attivita ADD COLUMN is_bloccante TINYINT(1) NOT NULL DEFAULT 0'); } catch (\Throwable $e) {}
+
     Database::execute(
-        'INSERT INTO note_attivita (attivita_id, utente_id, testo) VALUES (?, ?, ?)',
-        [$req->params['activityId'], $req->user['id'], trim($testo)]
+        'INSERT INTO note_attivita (attivita_id, utente_id, testo, is_bloccante) VALUES (?, ?, ?, ?)',
+        [$req->params['activityId'], $req->user['id'], trim($testo), $isBloccante]
     );
+
+    // Auto-update activity stato if note is blocking
+    if ($isBloccante) {
+        Database::execute("UPDATE attivita SET stato = 'bloccata' WHERE id = ?", [$req->params['activityId']]);
+    }
 
     // Save to KB if flag is set
     if ($salvaInKb && $activity['cliente_id']) {

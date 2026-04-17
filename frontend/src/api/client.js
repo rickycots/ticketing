@@ -151,8 +151,8 @@ export const activities = {
     request(`/projects/${projectId}/activities/${activityId}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (projectId, activityId) =>
     request(`/projects/${projectId}/activities/${activityId}`, { method: 'DELETE' }),
-  addNote: (projectId, activityId, testo, salva_in_kb = false) =>
-    request(`/projects/${projectId}/activities/${activityId}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb }) }),
+  addNote: (projectId, activityId, testo, salva_in_kb = false, is_bloccante = false) =>
+    request(`/projects/${projectId}/activities/${activityId}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb, is_bloccante }) }),
   getScheduled: (projectId, activityId) =>
     request(`/projects/${projectId}/activities/${activityId}/scheduled`),
   createScheduled: (projectId, activityId, data) =>

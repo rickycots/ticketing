@@ -232,6 +232,9 @@ function runMigrations() {
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_azione ON audit_log(azione)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_log(admin_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at)');
+
+  // Add is_bloccante to note_attivita
+  try { db.exec('ALTER TABLE note_attivita ADD COLUMN is_bloccante INTEGER NOT NULL DEFAULT 0'); } catch(e) {}
 }
 runMigrations();
 
