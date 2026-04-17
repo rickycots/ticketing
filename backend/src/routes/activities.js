@@ -438,6 +438,10 @@ router.post('/:activityId/notes', authenticateToken, checkProjectAccess, (req, r
   // Auto-update activity stato based on blocking notes/emails
   if (is_bloccante) {
     db.prepare("UPDATE attivita SET stato = 'bloccata' WHERE id = ?").run(req.params.activityId);
+  } else if (req.body.sblocca) {
+    // Unblock: set all blocking notes to non-blocking and change stato to in_corso
+    db.prepare("UPDATE note_attivita SET is_bloccante = 0 WHERE attivita_id = ? AND is_bloccante = 1").run(req.params.activityId);
+    db.prepare("UPDATE attivita SET stato = 'in_corso' WHERE id = ? AND stato = 'bloccata'").run(req.params.activityId);
   }
 
   // Save to KB if flag is set

@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.10.05-0417 — 17 Aprile 2026
+- Checkbox "Sblocca nota" nel form note attività (verde, visibile solo se attività bloccata)
+- Mutuamente esclusiva con "Nota bloccante"
+- Sblocco: rimuove is_bloccante da tutte le note bloccanti e riporta stato a in_corso (Node.js + PHP)
+
 ## V5.10.04-0417 — 17 Aprile 2026
 - Stato attività auto-calcolato: "bloccata" da email o nota bloccante, solo "Completata" selezionabile manualmente
 - Nuova colonna is_bloccante su note_attivita (Node.js + PHP, lazy migration)

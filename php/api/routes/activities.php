@@ -527,6 +527,10 @@ $router->post('/projects/:id/activities/:activityId/notes', [Auth::class, 'authe
     // Auto-update activity stato if note is blocking
     if ($isBloccante) {
         Database::execute("UPDATE attivita SET stato = 'bloccata' WHERE id = ?", [$req->params['activityId']]);
+    } elseif (!empty($req->body['sblocca'])) {
+        // Unblock: set all blocking notes to non-blocking and change stato to in_corso
+        Database::execute("UPDATE note_attivita SET is_bloccante = 0 WHERE attivita_id = ? AND is_bloccante = 1", [$req->params['activityId']]);
+        Database::execute("UPDATE attivita SET stato = 'in_corso' WHERE id = ? AND stato = 'bloccata'", [$req->params['activityId']]);
     }
 
     // Save to KB if flag is set

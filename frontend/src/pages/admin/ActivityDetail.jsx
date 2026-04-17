@@ -64,6 +64,7 @@ export default function ActivityDetail() {
   const [sendingNote, setSendingNote] = useState(false)
   const [noteToKB, setNoteToKB] = useState(false)
   const [noteBloccante, setNoteBloccante] = useState(false)
+  const [noteSblocca, setNoteSblocca] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [emailTab, setEmailTab] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
@@ -186,11 +187,12 @@ export default function ActivityDetail() {
     if (!noteText.trim()) return
     setSendingNote(true)
     try {
-      await activities.addNote(projectId, activityId, noteText.trim(), noteToKB, noteBloccante)
+      await activities.addNote(projectId, activityId, noteText.trim(), noteToKB, noteBloccante, noteSblocca)
       await loadActivity()
       setNoteText('')
       setNoteToKB(false)
       setNoteBloccante(false)
+      setNoteSblocca(false)
     } catch (err) { console.error(err) }
     finally { setSendingNote(false) }
   }
@@ -413,10 +415,17 @@ export default function ActivityDetail() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 text-xs text-orange-600 cursor-pointer select-none font-medium">
-                        <input type="checkbox" checked={noteBloccante} onChange={(e) => setNoteBloccante(e.target.checked)}
+                        <input type="checkbox" checked={noteBloccante} onChange={(e) => { setNoteBloccante(e.target.checked); if (e.target.checked) setNoteSblocca(false) }}
                           className="rounded border-orange-300 text-orange-600 focus:ring-orange-500" />
-                        Questa nota è bloccante
+                        Nota bloccante
                       </label>
+                      {activity.stato === 'bloccata' && (
+                        <label className="flex items-center gap-2 text-xs text-green-600 cursor-pointer select-none font-medium">
+                          <input type="checkbox" checked={noteSblocca} onChange={(e) => { setNoteSblocca(e.target.checked); if (e.target.checked) setNoteBloccante(false) }}
+                            className="rounded border-green-300 text-green-600 focus:ring-green-500" />
+                          Sblocca nota
+                        </label>
+                      )}
                       {(isAdmin || currentUser.abilitato_ai) && (
                         <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
                           <input type="checkbox" checked={noteToKB} onChange={(e) => setNoteToKB(e.target.checked)}
