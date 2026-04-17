@@ -66,6 +66,7 @@ export default function ActivityDetail() {
   const [noteBloccante, setNoteBloccante] = useState(false)
   const [noteSblocca, setNoteSblocca] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
+  const [notesOrder, setNotesOrder] = useState('vecchi')
   const [emailTab, setEmailTab] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
   const [showEmails, setShowEmails] = useState(false)
@@ -384,20 +385,26 @@ export default function ActivityDetail() {
 
           {/* Notes */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <button onClick={() => setNotesOpen(!notesOpen)}
-              className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-t-xl">
-              <div className="flex items-center gap-2">
+            <div className="p-4 flex items-center justify-between">
+              <button onClick={() => setNotesOpen(!notesOpen)}
+                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 -ml-2">
                 <StickyNote size={18} className="text-yellow-500" />
                 <h2 className="text-lg font-semibold">Note Attività</h2>
                 <span className="text-xs text-gray-400">({noteList.length})</span>
-              </div>
-              {notesOpen ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
-            </button>
+                {notesOpen ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+              </button>
+              {notesOpen && noteList.length > 1 && (
+                <button onClick={() => setNotesOrder(o => o === 'vecchi' ? 'nuovi' : 'vecchi')}
+                  className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer font-medium">
+                  {notesOrder === 'vecchi' ? 'Vecchi → Nuovi' : 'Nuovi → Vecchi'}
+                </button>
+              )}
+            </div>
             {notesOpen && (
               <div className="border-t border-gray-100">
                 {noteList.length > 0 && (
                   <div className="divide-y divide-gray-100">
-                    {noteList.map(n => (
+                    {(notesOrder === 'nuovi' ? [...noteList].reverse() : noteList).map(n => (
                       <div key={n.id} className={`p-4 ${n.is_bloccante ? 'bg-red-50/50 border-l-4 border-l-red-400' : ''}`}>
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">

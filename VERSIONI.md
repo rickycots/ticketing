@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.08-0417 — 17 Aprile 2026
+- Note Attività: toggle "Vecchi → Nuovi" / "Nuovi → Vecchi" per ordinamento cronologico
+
 ## V5.10.07-0417 — 17 Aprile 2026
 - Note attività: badge rosso "NOTA BLOCCANTE" accanto al nome mittente + bordo sinistro rosso e sfondo rosso chiaro
 - Badge scompare quando l'attività viene sbloccata (is_bloccante = 0)
