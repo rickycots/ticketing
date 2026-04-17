@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.06-0417 — 17 Aprile 2026
+- Fix slider avanzamento in ActivityDetail: rimosso disabled per tecnico (era bloccato a !isAdmin)
+
 ## V5.10.05-0417 — 17 Aprile 2026
 - Checkbox "Sblocca nota" nel form note attività (verde, visibile solo se attività bloccata)
 - Mutuamente esclusiva con "Nota bloccante"

@@ -486,7 +486,7 @@ export default function ActivityDetail() {
                 <div className="flex items-center gap-2">
                   <input type="range" min="0" max="100" step="5" value={activity.avanzamento}
                     onChange={(e) => handleFieldChange('avanzamento', parseInt(e.target.value))}
-                    className="flex-1 accent-blue-500" disabled={!isAdmin} />
+                    className="flex-1 accent-blue-500" />
                   <span className="text-sm font-bold text-blue-600 w-10 text-right">{activity.avanzamento}%</span>
                 </div>
               </div>
