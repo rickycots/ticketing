@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.10.07-0417 — 17 Aprile 2026
+- Note attività: badge rosso "NOTA BLOCCANTE" accanto al nome mittente + bordo sinistro rosso e sfondo rosso chiaro
+- Badge scompare quando l'attività viene sbloccata (is_bloccante = 0)
+
 ## V5.10.06-0417 — 17 Aprile 2026
 - Fix slider avanzamento in ActivityDetail: rimosso disabled per tecnico (era bloccato a !isAdmin)
 

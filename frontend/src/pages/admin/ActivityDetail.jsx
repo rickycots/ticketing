@@ -398,9 +398,12 @@ export default function ActivityDetail() {
                 {noteList.length > 0 && (
                   <div className="divide-y divide-gray-100">
                     {noteList.map(n => (
-                      <div key={n.id} className="p-4">
+                      <div key={n.id} className={`p-4 ${n.is_bloccante ? 'bg-red-50/50 border-l-4 border-l-red-400' : ''}`}>
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-700">{n.utente_nome}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-700">{n.utente_nome}</p>
+                            {!!n.is_bloccante && <span className="text-xs font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">NOTA BLOCCANTE</span>}
+                          </div>
                           <p className="text-xs text-gray-400">{new Date(n.created_at).toLocaleString('it-IT')}</p>
                         </div>
                         <p className="text-sm text-gray-600 whitespace-pre-wrap">{n.testo}</p>
