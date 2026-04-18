@@ -203,8 +203,11 @@ export default function ClientDetail() {
     if (!confirm('Eliminare questo utente?')) return
     try {
       await clients.deleteUser(id, userId)
-      loadUsers()
-    } catch (err) { console.error(err) }
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch (err) {
+      alert('Errore durante l\'eliminazione: ' + err.message)
+      console.error(err)
+    }
   }
 
   async function handleToggleActive(user) {

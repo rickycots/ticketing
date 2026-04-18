@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.10.09-0418 — 18 Aprile 2026
+- Fix eliminazione utenti portale in ClientDetail: optimistic update (rimozione immediata dallo state senza refetch)
+- Alert di errore visibile all'utente invece del silenzioso console.error
+
 ## V5.10.08-0417 — 17 Aprile 2026
 - Note Attività: toggle "Vecchi → Nuovi" / "Nuovi → Vecchi" per ordinamento cronologico
 
