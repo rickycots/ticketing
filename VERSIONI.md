@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.10.10-0418 — 18 Aprile 2026
+- Fix DELETE utente portale: rimozione preventiva righe in comunicazioni_lette (FK constraint) prima della DELETE su utenti_cliente
+- Applicato su entrambi i backend (Node.js + PHP)
+
 ## V5.10.09-0418 — 18 Aprile 2026
 - Fix eliminazione utenti portale in ClientDetail: optimistic update (rimozione immediata dallo state senza refetch)
 - Alert di errore visibile all'utente invece del silenzioso console.error

@@ -349,6 +349,7 @@ router.delete('/:id/users/:userId', authenticateToken, requireAdmin, (req, res) 
   const user = db.prepare('SELECT id FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(req.params.userId, req.params.id);
   if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
+  try { db.prepare('DELETE FROM comunicazioni_lette WHERE utente_cliente_id = ?').run(req.params.userId); } catch (e) {}
   db.prepare('DELETE FROM utenti_cliente WHERE id = ?').run(req.params.userId);
   res.json({ success: true });
 });

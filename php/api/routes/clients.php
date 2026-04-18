@@ -297,6 +297,7 @@ $router->put('/clients/:id/users/:userId', [Auth::class, 'authenticateToken'], [
 $router->delete('/clients/:id/users/:userId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     $user = Database::fetchOne('SELECT id FROM utenti_cliente WHERE id = ? AND cliente_id = ?', [$req->params['userId'], $req->params['id']]);
     if (!$user) Response::error('Utente non trovato', 404);
+    try { Database::execute('DELETE FROM comunicazioni_lette WHERE utente_cliente_id = ?', [$req->params['userId']]); } catch (\Throwable $e) {}
     Database::execute('DELETE FROM utenti_cliente WHERE id = ?', [$req->params['userId']]);
     Response::success();
 });
