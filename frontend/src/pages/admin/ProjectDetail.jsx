@@ -73,7 +73,18 @@ export default function ProjectDetail() {
   const isAdmin = currentUser.ruolo === 'admin'
 
   function load() {
-    projects.get(id).then(p => { setProject(p); setEditDescrizione(p.descrizione || '') }).catch(console.error).finally(() => setLoading(false))
+    projects.get(id).then(p => {
+      setProject(p)
+      setEditDescrizione(p.descrizione || '')
+      if (p.email_bloccante_id) {
+        const bloccante = (p.emails || []).find(e => Number(e.id) === Number(p.email_bloccante_id) && !e.attivita_id)
+        if (bloccante) {
+          setMainTab('email')
+          setEmailFilter('bloccanti')
+          setEmailDir(bloccante.direzione === 'inviata' ? 'inviate' : 'ricevute')
+        }
+      }
+    }).catch(console.error).finally(() => setLoading(false))
   }
 
   // Check for overdue activities and auto-fix dates

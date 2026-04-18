@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.14-0418 — 18 Aprile 2026
+- ProjectDetail: se progetto bloccato da email (email_bloccante_id), apre automaticamente tab "Email Progetto" + filtro "Bloccanti" + direzione corretta
+
 ## V5.10.13-0418 — 18 Aprile 2026
 - ProjectMiniBox: "Attività Bloccata" spostato nella riga in basso (stessa posizione dei label blocco cliente/admin), stile rosso full-width
 
