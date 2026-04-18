@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.13-0418 — 18 Aprile 2026
+- ProjectMiniBox: "Attività Bloccata" spostato nella riga in basso (stessa posizione dei label blocco cliente/admin), stile rosso full-width
+
 ## V5.10.12-0418 — 18 Aprile 2026
 - ProjectMiniBox: badge "Attività Bloccata" (rosso) quando stato_calcolato === 'bloccato' (lista progetti /admin/projects)
 

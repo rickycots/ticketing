@@ -41,15 +41,9 @@ export default function ProjectMiniBox({ project: p, to, isAdmin = false, getTec
             </span>
           )}
         </div>
-        {p.stato_calcolato === 'bloccato' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800">
-            Attività Bloccata
-          </span>
-        ) : (
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[p.stato] || 'bg-gray-100 text-gray-600'}`}>
-            {(p.stato || '').replace('_', ' ')}
-          </span>
-        )}
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[p.stato] || 'bg-gray-100 text-gray-600'}`}>
+          {(p.stato || '').replace('_', ' ')}
+        </span>
       </div>
 
       {p.cliente_nome && <p className="text-sm text-gray-500 mb-1">Cliente: {p.cliente_nome}</p>}
@@ -101,6 +95,12 @@ export default function ProjectMiniBox({ project: p, to, isAdmin = false, getTec
           {!!p.manutenzione_ordinaria && (
             <span className="ml-auto text-xs font-bold text-blue-600">STM Domotica</span>
           )}
+        </div>
+      )}
+
+      {p.stato_calcolato === 'bloccato' && !bloccoLabels[p.blocco] && (
+        <div className="mt-3 rounded-lg px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+          🚫 Attività Bloccata
         </div>
       )}
 
