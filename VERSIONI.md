@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.12-0418 — 18 Aprile 2026
+- ProjectMiniBox: badge "Attività Bloccata" (rosso) quando stato_calcolato === 'bloccato' (lista progetti /admin/projects)
+
 ## V5.10.11-0418 — 18 Aprile 2026
 - ProjectDataBox: badge stato "Bloccato" rinominato "Attività Bloccata" quando deriva da un'attività bloccata (gli stati bloccato_cliente/bloccato_admin restano invariati)
 

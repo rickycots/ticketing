@@ -41,9 +41,15 @@ export default function ProjectMiniBox({ project: p, to, isAdmin = false, getTec
             </span>
           )}
         </div>
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[p.stato] || 'bg-gray-100 text-gray-600'}`}>
-          {(p.stato || '').replace('_', ' ')}
-        </span>
+        {p.stato_calcolato === 'bloccato' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+            Attività Bloccata
+          </span>
+        ) : (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statoColors[p.stato] || 'bg-gray-100 text-gray-600'}`}>
+            {(p.stato || '').replace('_', ' ')}
+          </span>
+        )}
       </div>
 
       {p.cliente_nome && <p className="text-sm text-gray-500 mb-1">Cliente: {p.cliente_nome}</p>}
