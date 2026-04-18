@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.10.11-0418 — 18 Aprile 2026
+- ProjectDataBox: badge stato "Bloccato" rinominato "Attività Bloccata" quando deriva da un'attività bloccata (gli stati bloccato_cliente/bloccato_admin restano invariati)
+
 ## V5.10.10-0418 — 18 Aprile 2026
 - Fix DELETE utente portale: rimozione preventiva righe in comunicazioni_lette (FK constraint) prima della DELETE su utenti_cliente
 - Applicato su entrambi i backend (Node.js + PHP)
