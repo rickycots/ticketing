@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.10.15-0418 — 18 Aprile 2026
+- Nuovo componente condiviso `components/EmailBox.jsx`: estratto box email da ProjectDetail (Email Progetto + Email Attività) e ActivityDetail per ridurre duplicazione
+- Corpo email ora renderizzato come HTML sanitizzato (DOMPurify) se contiene tag HTML, altrimenti come testo; aggiunte regole CSS `.email-body-html` per formattazione (liste, mark/evidenziazione, link, blockquote, table)
+- ActivityDetail: rinominato `emailTab` → `emailFilter`, allineata chiave `contesto` → `di_contesto`
+
 ## V5.10.14-0418 — 18 Aprile 2026
 - ProjectDetail: se progetto bloccato da email (email_bloccante_id), apre automaticamente tab "Email Progetto" + filtro "Bloccanti" + direzione corretta
 

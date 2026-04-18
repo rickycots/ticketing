@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, Chevron
 import { projects, activities, users, clients } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ProjectDataBox from '../../components/ProjectDataBox'
+import EmailBox from '../../components/EmailBox'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -816,177 +817,33 @@ export default function ProjectDetail() {
             )}
 
             {/* ===== TAB EMAIL PROGETTO ===== */}
-            {mainTab === 'email' && (() => {
-              const ricevute = emailsProgetto.filter(e => e.direzione !== 'inviata')
-              const inviate = emailsProgetto.filter(e => e.direzione === 'inviata')
-              const dirEmails = emailDir === 'inviate' ? inviate : ricevute
-              return (
-              <>
-                {/* Direction tabs */}
-                <div className="flex border-b border-gray-100">
-                  {[
-                    { key: 'ricevute', label: 'In arrivo', count: ricevute.length },
-                    { key: 'inviate', label: 'Inviate', count: inviate.length },
-                  ].map(d => (
-                    <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailFilter('tutte') }}
-                      className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
-                        emailDir === d.key ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                      }`}>
-                      {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
-                    </button>
-                  ))}
-                </div>
-                {/* Sub-filters */}
-                <div className="flex gap-1 px-4 pt-3 pb-2">
-                  {[
-                    { key: 'tutte', label: 'Tutte', count: dirEmails.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
-                    { key: 'rilevanti', label: 'Rilevanti', count: dirEmails.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
-                    { key: 'di_contesto', label: 'Di contesto', count: dirEmails.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
-                    { key: 'bloccanti', label: 'Bloccanti', count: dirEmails.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
-                  ].map(f => (
-                    <button
-                      key={f.key}
-                      onClick={() => setEmailFilter(f.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        emailFilter === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
-                    </button>
-                  ))}
-                </div>
-                {(() => {
-                  const filtered = emailFilter === 'rilevanti' ? dirEmails.filter(e => e.rilevanza === 'rilevante')
-                    : emailFilter === 'di_contesto' ? dirEmails.filter(e => e.rilevanza === 'di_contesto')
-                    : emailFilter === 'bloccanti' ? dirEmails.filter(e => e.is_bloccante)
-                    : dirEmails
-                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email in questa categoria</p>
-                  return (
-                    <div className="divide-y divide-gray-100">
-                      {filtered.map(e => (
-                        <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-orange-50/50 border-l-4 border-l-orange-400' : ''}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => toggleEmail(e.id)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                {expandedEmails[e.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                              </button>
-                              <p className="text-sm font-medium">
-                                {e.oggetto}
-                                {e.is_bloccante && <span className="ml-2 text-xs text-orange-600 font-medium">BLOCCANTE</span>}
-                                {e.rilevanza === 'rilevante' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-purple-600 font-medium"><Star size={11} /> RILEVANTE</span>}
-                                {e.rilevanza === 'di_contesto' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-slate-500 font-medium"><Info size={11} /> DI CONTESTO</span>}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                          </div>
-                          <p className="text-xs text-gray-500 ml-6">{e.mittente} → {e.destinatario}</p>
-                          {e.thread_count > 1 && (
-                            <Link
-                              to={`/admin/emails?cliente_id=${project.cliente_id || ''}&progetto_id=${project.id}`}
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 ml-6 mt-1"
-                            >
-                              <ExternalLink size={12} /> Vai al thread ({e.thread_count} messaggi)
-                            </Link>
-                          )}
-                          {expandedEmails[e.id] && e.corpo && (
-                            <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-              </>
-              )
-            })()}
+            {mainTab === 'email' && (
+              <EmailBox
+                emails={emailsProgetto}
+                direction={emailDir}
+                onDirectionChange={setEmailDir}
+                filter={emailFilter}
+                onFilterChange={setEmailFilter}
+                expandedEmails={expandedEmails}
+                onToggleExpand={toggleEmail}
+                threadUrl={() => `/admin/emails?cliente_id=${project.cliente_id || ''}&progetto_id=${project.id}`}
+              />
+            )}
 
             {/* ===== TAB EMAIL ATTIVITÀ ===== */}
-            {mainTab === 'email_attivita' && (() => {
-              const ricevuteAtt = emailsAttivita.filter(e => e.direzione !== 'inviata')
-              const inviateAtt = emailsAttivita.filter(e => e.direzione === 'inviata')
-              const dirEmailsAtt = emailDir === 'inviate' ? inviateAtt : ricevuteAtt
-              return (
-              <>
-                {/* Direction tabs */}
-                <div className="flex border-b border-gray-100">
-                  {[
-                    { key: 'ricevute', label: 'In arrivo', count: ricevuteAtt.length },
-                    { key: 'inviate', label: 'Inviate', count: inviateAtt.length },
-                  ].map(d => (
-                    <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailFilter('tutte') }}
-                      className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
-                        emailDir === d.key ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                      }`}>
-                      {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
-                    </button>
-                  ))}
-                </div>
-                {/* Sub-filters */}
-                <div className="flex gap-1 px-4 pt-3 pb-2">
-                  {[
-                    { key: 'tutte', label: 'Tutte', count: dirEmailsAtt.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
-                    { key: 'rilevanti', label: 'Rilevanti', count: dirEmailsAtt.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
-                    { key: 'di_contesto', label: 'Di contesto', count: dirEmailsAtt.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
-                    { key: 'bloccanti', label: 'Bloccanti', count: dirEmailsAtt.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
-                  ].map(f => (
-                    <button
-                      key={f.key}
-                      onClick={() => setEmailFilter(f.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        emailFilter === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailFilter === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
-                    </button>
-                  ))}
-                </div>
-                {(() => {
-                  const filtered = emailFilter === 'rilevanti' ? dirEmailsAtt.filter(e => e.rilevanza === 'rilevante')
-                    : emailFilter === 'di_contesto' ? dirEmailsAtt.filter(e => e.rilevanza === 'di_contesto')
-                    : emailFilter === 'bloccanti' ? dirEmailsAtt.filter(e => e.is_bloccante)
-                    : dirEmailsAtt
-                  if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email in questa categoria</p>
-                  return (
-                    <div className="divide-y divide-gray-100">
-                      {filtered.map(e => (
-                        <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-orange-50/50 border-l-4 border-l-orange-400' : ''}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => toggleEmail(e.id)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                {expandedEmails[e.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                              </button>
-                              <p className="text-sm font-medium">
-                                {e.oggetto}
-                                {e.is_bloccante && <span className="ml-2 text-xs text-orange-600 font-medium">BLOCCANTE</span>}
-                                {e.rilevanza === 'rilevante' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-purple-600 font-medium"><Star size={11} /> RILEVANTE</span>}
-                                {e.rilevanza === 'di_contesto' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-slate-500 font-medium"><Info size={11} /> DI CONTESTO</span>}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                          </div>
-                          <p className="text-xs text-gray-500 ml-6">{e.mittente} → {e.destinatario}</p>
-                          {e.attivita_nome && (
-                            <p className="text-xs text-orange-600 font-medium ml-6 mt-1">Attività: {e.attivita_nome}</p>
-                          )}
-                          {e.thread_count > 1 && (
-                            <Link
-                              to={`/admin/emails?cliente_id=${project.cliente_id || ''}&progetto_id=${project.id}&attivita_id=${e.attivita_id || ''}`}
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 ml-6 mt-1"
-                            >
-                              <ExternalLink size={12} /> Vai al thread ({e.thread_count} messaggi)
-                            </Link>
-                          )}
-                          {expandedEmails[e.id] && e.corpo && (
-                            <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-              </>
-              )
-            })()}
+            {mainTab === 'email_attivita' && (
+              <EmailBox
+                emails={emailsAttivita}
+                direction={emailDir}
+                onDirectionChange={setEmailDir}
+                filter={emailFilter}
+                onFilterChange={setEmailFilter}
+                expandedEmails={expandedEmails}
+                onToggleExpand={toggleEmail}
+                showActivityInfo
+                threadUrl={(e) => `/admin/emails?cliente_id=${project.cliente_id || ''}&progetto_id=${project.id}&attivita_id=${e.attivita_id || ''}`}
+              />
+            )}
           </div>
 
           {/* Internal Notes */}

@@ -4,6 +4,7 @@ import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, Chevr
 import { activities, users, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ActivityDataBox from '../../components/ActivityDataBox'
+import EmailBox from '../../components/EmailBox'
 
 const actStatoColors = {
   da_fare: 'bg-gray-100 text-gray-700',
@@ -67,7 +68,7 @@ export default function ActivityDetail() {
   const [noteSblocca, setNoteSblocca] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [notesOrder, setNotesOrder] = useState('vecchi')
-  const [emailTab, setEmailTab] = useState('tutte')
+  const [emailFilter, setEmailFilter] = useState('tutte')
   const [emailDir, setEmailDir] = useState('ricevute')
   const [showEmails, setShowEmails] = useState(false)
   const [expandedEmails, setExpandedEmails] = useState({})
@@ -127,7 +128,7 @@ export default function ActivityDetail() {
       const bloccante = (data.emails || []).find(e => e.is_bloccante)
       if (bloccante) {
         setShowEmails(true)
-        setEmailTab('bloccanti')
+        setEmailFilter('bloccanti')
         setEmailDir(bloccante.direzione === 'inviata' ? 'inviate' : 'ricevute')
       }
       if (data.progetto?.cliente_id) {
@@ -295,92 +296,27 @@ export default function ActivityDetail() {
             </div>
           )}
 
-          {/* Email Attività — stile ProjectDetail */}
+          {/* Email Attività */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            {(() => {
-              const allEmails = activity.emails || []
-              const ricevute = allEmails.filter(e => e.direzione !== 'inviata')
-              const inviate = allEmails.filter(e => e.direzione === 'inviata')
-              const dirEmails = emailDir === 'inviate' ? inviate : ricevute
-              return (
-                <>
-                  {/* Header with title + Invia Mail */}
-                  <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Mail size={18} className="text-blue-500" />
-                      <h2 className="text-base font-semibold text-blue-600">Email Attività</h2>
-                      <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">{allEmails.length}</span>
-                    </div>
-                    <Link to={`/admin/send-mail?cliente_id=${prog.cliente_id || ''}&progetto_id=${projectId}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
-                      <Send size={14} /> Invia Mail
-                    </Link>
-                  </div>
-                  {/* Direction tabs */}
-                  <div className="flex border-b border-gray-100">
-                    {[
-                      { key: 'ricevute', label: 'In arrivo', count: ricevute.length },
-                      { key: 'inviate', label: 'Inviate', count: inviate.length },
-                    ].map(d => (
-                      <button key={d.key} onClick={() => { setEmailDir(d.key); setEmailTab('tutte') }}
-                        className={`flex-1 px-3 py-2.5 text-sm font-medium text-center cursor-pointer transition-colors ${
-                          emailDir === d.key ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                        }`}>
-                        {d.label} <span className="ml-1 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5">{d.count}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {/* Sub-filters */}
-                  <div className="flex gap-1 px-4 pt-3 pb-2">
-                    {[
-                      { key: 'tutte', label: 'Tutte', count: dirEmails.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
-                      { key: 'rilevanti', label: 'Rilevanti', count: dirEmails.filter(e => e.rilevanza === 'rilevante').length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
-                      { key: 'contesto', label: 'Di contesto', count: dirEmails.filter(e => e.rilevanza === 'di_contesto').length, active: 'bg-slate-200 text-slate-800', counter: 'bg-slate-300' },
-                      { key: 'bloccanti', label: 'Bloccanti', count: dirEmails.filter(e => e.is_bloccante).length, active: 'bg-orange-100 text-orange-800', counter: 'bg-orange-200' },
-                    ].map(f => (
-                      <button key={f.key} onClick={() => setEmailTab(f.key)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                          emailTab === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}>
-                        {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailTab === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {(() => {
-                    const filtered = emailTab === 'rilevanti' ? dirEmails.filter(e => e.rilevanza === 'rilevante')
-                      : emailTab === 'contesto' ? dirEmails.filter(e => e.rilevanza === 'di_contesto')
-                      : emailTab === 'bloccanti' ? dirEmails.filter(e => e.is_bloccante)
-                      : dirEmails
-                    if (filtered.length === 0) return <p className="p-4 text-sm text-gray-400">Nessuna email in questa categoria</p>
-                    return (
-                      <div className="divide-y divide-gray-100">
-                        {filtered.map(e => (
-                          <div key={e.id} className={`p-4 ${e.is_bloccante ? 'bg-orange-50/50 border-l-4 border-l-orange-400' : ''}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => toggleEmailExpand(e.id)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                  {expandedEmails[e.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                </button>
-                                <p className="text-sm font-medium">
-                                  {e.oggetto}
-                                  {e.is_bloccante && <span className="ml-2 text-xs text-orange-600 font-medium">BLOCCANTE</span>}
-                                  {e.rilevanza === 'rilevante' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-purple-600 font-medium"><Star size={11} /> RILEVANTE</span>}
-                                  {e.rilevanza === 'di_contesto' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-slate-500 font-medium"><Info size={11} /> DI CONTESTO</span>}
-                                </p>
-                              </div>
-                              <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString('it-IT')}</p>
-                            </div>
-                            <p className="text-xs text-gray-500 ml-6">{e.mittente} → {e.destinatario}</p>
-                            {expandedEmails[e.id] && e.corpo && (
-                              <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  })()}
-                </>
-              )
-            })()}
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Mail size={18} className="text-blue-500" />
+                <h2 className="text-base font-semibold text-blue-600">Email Attività</h2>
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">{(activity.emails || []).length}</span>
+              </div>
+              <Link to={`/admin/send-mail?cliente_id=${prog.cliente_id || ''}&progetto_id=${projectId}&attivita_id=${activityId}`} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+                <Send size={14} /> Invia Mail
+              </Link>
+            </div>
+            <EmailBox
+              emails={activity.emails || []}
+              direction={emailDir}
+              onDirectionChange={setEmailDir}
+              filter={emailFilter}
+              onFilterChange={setEmailFilter}
+              expandedEmails={expandedEmails}
+              onToggleExpand={toggleEmailExpand}
+            />
           </div>
 
           {/* Notes */}
