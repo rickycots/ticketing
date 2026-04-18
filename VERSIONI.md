@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.12.00-0418 — 18 Aprile 2026
+- Nuovo componente riutilizzabile `components/NotesBox.jsx` (props: notes, showBloccante, showSblocca, canSaveKB, onAdd)
+- ProjectDetail: aggiunto box "Note Progetto" con inserimento nota, bloccante/sblocca e salva in KB
+- Note progetto bloccanti: `is_bloccante=1` + `progetto.blocco='lato_admin'`; sblocca → azzera bloccanti + `blocco='nessuno'`
+- DB: nuova colonna `note_interne.is_bloccante` (Node.js migration + PHP lazy)
+- Gestione Progetto: "Fermo lato admin" ora disabled/grigio con suffisso "(automatico)" — impostabile solo tramite note bloccanti
+- Endpoint `POST /api/projects/:id/notes` (Node.js + PHP) con supporto salva_in_kb / is_bloccante / sblocca
+
 ## V5.11.02-0418 — 18 Aprile 2026
 - ProjectDetail sidebar "Gestione" → "Gestione Progetto"
 - Stato progetto: rimosso "Annullato"; "Completato" disabled+grigio se ci sono attività non completate

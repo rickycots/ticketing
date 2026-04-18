@@ -410,6 +410,7 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
         [$project['id']]
     );
 
+    try { Database::execute('ALTER TABLE note_interne ADD COLUMN is_bloccante TINYINT(1) NOT NULL DEFAULT 0'); } catch (\Throwable $e) {}
     $note = Database::fetchAll(
         "SELECT n.*, u.nome as utente_nome
          FROM note_interne n
@@ -452,6 +453,41 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
     try { $project['attivita_programmate'] = Database::fetchAll('SELECT * FROM attivita_programmate WHERE progetto_id = ? ORDER BY data_pianificata ASC', [$project['id']]); } catch (\Exception $e) { $project['attivita_programmate'] = []; }
 
     Response::json($project);
+});
+
+// POST /api/projects/:id/notes — add project note
+$router->post('/projects/:id/notes', [Auth::class, 'authenticateToken'], function($req) {
+    $testo = $req->body['testo'] ?? '';
+    $salva_in_kb = !empty($req->body['salva_in_kb']);
+    $is_bloccante = !empty($req->body['is_bloccante']) ? 1 : 0;
+    $sblocca = !empty($req->body['sblocca']);
+    if (!$testo || !trim($testo)) Response::error('Il testo della nota è obbligatorio', 400);
+
+    $project = Database::fetchOne('SELECT id, cliente_id, nome FROM progetti WHERE id = ?', [$req->params['id']]);
+    if (!$project) Response::error('Progetto non trovato', 404);
+
+    if ($req->user['ruolo'] === 'tecnico') {
+        $assigned = Database::fetchOne('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?', [$project['id'], $req->user['id']]);
+        if (!$assigned) Response::error('Accesso non consentito', 403);
+    }
+
+    try { Database::execute('ALTER TABLE note_interne ADD COLUMN is_bloccante TINYINT(1) NOT NULL DEFAULT 0'); } catch (\Throwable $e) {}
+
+    Database::execute('INSERT INTO note_interne (progetto_id, utente_id, testo, is_bloccante) VALUES (?, ?, ?, ?)', [$project['id'], $req->user['id'], trim($testo), $is_bloccante]);
+
+    if ($is_bloccante) {
+        Database::execute("UPDATE progetti SET blocco = 'lato_admin' WHERE id = ?", [$project['id']]);
+    } elseif ($sblocca) {
+        Database::execute("UPDATE note_interne SET is_bloccante = 0 WHERE progetto_id = ? AND is_bloccante = 1", [$project['id']]);
+        Database::execute("UPDATE progetti SET blocco = 'nessuno' WHERE id = ? AND blocco = 'lato_admin'", [$project['id']]);
+    }
+
+    if ($salva_in_kb && $project['cliente_id']) {
+        $titolo = 'Nota progetto — ' . $project['nome'];
+        Database::execute('INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)', [$project['cliente_id'], $titolo, trim($testo)]);
+    }
+
+    Response::success();
 });
 
 // POST /api/projects/:id/chat — send chat message

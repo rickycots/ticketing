@@ -5,6 +5,7 @@ import { projects, activities, users, clients } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ProjectDataBox from '../../components/ProjectDataBox'
 import EmailBox from '../../components/EmailBox'
+import NotesBox from '../../components/NotesBox'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -861,26 +862,18 @@ export default function ProjectDetail() {
             )}
           </div>
 
-          {/* Internal Notes */}
-          {project.note && project.note.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <StickyNote size={18} className="text-yellow-500" />
-                <h2 className="text-lg font-semibold">Note Interne</h2>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {project.note.map(n => (
-                  <div key={n.id} className="p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium text-gray-700">{n.utente_nome}</p>
-                      <p className="text-xs text-gray-400">{new Date(n.created_at).toLocaleString('it-IT')}</p>
-                    </div>
-                    <p className="text-sm text-gray-600">{n.testo}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Project Notes */}
+          <NotesBox
+            title="Note Progetto"
+            notes={project.note || []}
+            canSaveKB={isAdmin || currentUser.abilitato_ai}
+            showBloccante
+            showSblocca={project.blocco === 'lato_admin'}
+            onAdd={async (testo, { salva_in_kb, is_bloccante, sblocca }) => {
+              await projects.addNote(id, testo, salva_in_kb, is_bloccante, sblocca)
+              load()
+            }}
+          />
         </div>
 
         {/* Sidebar */}
@@ -914,7 +907,9 @@ export default function ProjectDetail() {
                     className={selectCls}
                   >
                     <option value="nessuno">Nessun blocco</option>
-                    <option value="lato_admin">Fermo lato admin</option>
+                    <option value="lato_admin" disabled style={grayOpt}>
+                      Fermo lato admin (automatico)
+                    </option>
                     <option value="lato_cliente" disabled style={grayOpt}>
                       Fermo lato cliente (automatico)
                     </option>

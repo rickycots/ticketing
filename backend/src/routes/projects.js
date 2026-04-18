@@ -341,7 +341,7 @@ router.get('/:id', authenticateToken, (req, res) => {
   `).all(project.id);
 
   const note = db.prepare(`
-    SELECT n.*, u.nome as utente_nome
+    SELECT n.id, n.progetto_id, n.utente_id, n.testo, n.created_at, COALESCE(n.is_bloccante, 0) as is_bloccante, u.nome as utente_nome
     FROM note_interne n
     LEFT JOIN utenti u ON n.utente_id = u.id
     WHERE n.progetto_id = ?
@@ -373,6 +373,36 @@ router.get('/:id', authenticateToken, (req, res) => {
   const referenti = getProjectReferenti(project.id);
 
   res.json({ ...project, avanzamento, attivita, emails, note, chat, tecnici, referenti, attivita_programmate: scheduledAll });
+});
+
+// POST /api/projects/:id/notes — add project note
+router.post('/:id/notes', authenticateToken, (req, res) => {
+  const { testo, salva_in_kb, is_bloccante, sblocca } = req.body;
+  if (!testo || !testo.trim()) return res.status(400).json({ error: 'Il testo della nota è obbligatorio' });
+
+  const project = db.prepare('SELECT id, cliente_id, nome FROM progetti WHERE id = ?').get(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Progetto non trovato' });
+
+  if (req.user.ruolo === 'tecnico') {
+    const assigned = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(project.id, req.user.id);
+    if (!assigned) return res.status(403).json({ error: 'Accesso non consentito' });
+  }
+
+  db.prepare('INSERT INTO note_interne (progetto_id, utente_id, testo, is_bloccante) VALUES (?, ?, ?, ?)').run(project.id, req.user.id, testo.trim(), is_bloccante ? 1 : 0);
+
+  if (is_bloccante) {
+    db.prepare("UPDATE progetti SET blocco = 'lato_admin' WHERE id = ?").run(project.id);
+  } else if (sblocca) {
+    db.prepare('UPDATE note_interne SET is_bloccante = 0 WHERE progetto_id = ? AND is_bloccante = 1').run(project.id);
+    db.prepare("UPDATE progetti SET blocco = 'nessuno' WHERE id = ? AND blocco = 'lato_admin'").run(project.id);
+  }
+
+  if (salva_in_kb && project.cliente_id) {
+    const titolo = `Nota progetto — ${project.nome}`;
+    db.prepare('INSERT INTO schede_cliente (cliente_id, titolo, contenuto) VALUES (?, ?, ?)').run(project.cliente_id, titolo, testo.trim());
+  }
+
+  res.json({ success: true });
 });
 
 // POST /api/projects/:id/chat — send chat message

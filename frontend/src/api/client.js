@@ -115,6 +115,8 @@ export const projects = {
   create: (data) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+  addNote: (id, testo, salva_in_kb = false, is_bloccante = false, sblocca = false) =>
+    request(`/projects/${id}/notes`, { method: 'POST', body: JSON.stringify({ testo, salva_in_kb, is_bloccante, sblocca }) }),
   sendChat: (id, testo) =>
     request(`/projects/${id}/chat`, { method: 'POST', body: JSON.stringify({ testo }) }),
   deleteChat: (id, messageId) =>

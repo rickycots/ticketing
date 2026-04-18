@@ -235,6 +235,9 @@ function runMigrations() {
 
   // Add is_bloccante to note_attivita
   try { db.exec('ALTER TABLE note_attivita ADD COLUMN is_bloccante INTEGER NOT NULL DEFAULT 0'); } catch(e) {}
+
+  // Add is_bloccante to note_interne (for project-level blocking notes)
+  try { db.exec('ALTER TABLE note_interne ADD COLUMN is_bloccante INTEGER NOT NULL DEFAULT 0'); } catch(e) {}
 }
 runMigrations();
 
