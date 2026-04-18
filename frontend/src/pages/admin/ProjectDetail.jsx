@@ -885,9 +885,12 @@ export default function ProjectDetail() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {isAdmin && (
+          {isAdmin && (() => {
+            const hasUncompleted = (project.attivita || []).some(a => a.stato !== 'completata')
+            const grayOpt = { backgroundColor: '#f3f4f6', color: '#9ca3af' }
+            return (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <h3 className="text-sm font-semibold mb-3">Gestione</h3>
+              <h3 className="text-sm font-semibold mb-3">Gestione Progetto</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Stato progetto</label>
@@ -898,8 +901,9 @@ export default function ProjectDetail() {
                   >
                     <option value="attivo">Attivo</option>
                     <option value="in_pausa">In pausa</option>
-                    <option value="completato">Completato</option>
-                    <option value="annullato">Annullato</option>
+                    <option value="completato" disabled={hasUncompleted} style={hasUncompleted ? grayOpt : undefined}>
+                      Completato{hasUncompleted ? ' (attività non completate)' : ''}
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -911,12 +915,15 @@ export default function ProjectDetail() {
                   >
                     <option value="nessuno">Nessun blocco</option>
                     <option value="lato_admin">Fermo lato admin</option>
-                    <option value="lato_cliente">Fermo lato cliente</option>
+                    <option value="lato_cliente" disabled style={grayOpt}>
+                      Fermo lato cliente (automatico)
+                    </option>
                   </select>
                 </div>
               </div>
             </div>
-          )}
+            )
+          })()}
 
           {/* Chat Progetto */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">

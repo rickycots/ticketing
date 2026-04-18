@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.11.02-0418 — 18 Aprile 2026
+- ProjectDetail sidebar "Gestione" → "Gestione Progetto"
+- Stato progetto: rimosso "Annullato"; "Completato" disabled+grigio se ci sono attività non completate
+- Blocco: "Fermo lato cliente" disabled+grigio (stato automatico impostato dal sistema)
+
 ## V5.11.01-0418 — 18 Aprile 2026
 - ProjectDetail: HelpTip accanto al bollino rosso attività programmate con testo esplicativo
 
