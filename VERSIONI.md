@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.11.01-0418 — 18 Aprile 2026
+- ProjectDetail: HelpTip accanto al bollino rosso attività programmate con testo esplicativo
+
 ## V5.11.00-0418 — 18 Aprile 2026
 - ProjectDetail: nelle card delle attività, bollino rosso in basso a destra con il numero di attività programmate future (data_pianificata >= oggi); cliccabile verso il dettaglio attività
 

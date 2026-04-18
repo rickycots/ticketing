@@ -812,13 +812,16 @@ export default function ProjectDetail() {
                             )}
                           </div>
                           {futureScheduledCount > 0 && (
-                            <Link
-                              to={`/admin/projects/${id}/activities/${a.id}`}
-                              title={`${futureScheduledCount} attività programmate future`}
-                              className="absolute bottom-2 right-2 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm hover:bg-red-600"
-                            >
-                              {futureScheduledCount}
-                            </Link>
+                            <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+                              <HelpTip size={13} text="Il bollino indica che sono presenti attività programmate" />
+                              <Link
+                                to={`/admin/projects/${id}/activities/${a.id}`}
+                                title={`${futureScheduledCount} attività programmate future`}
+                                className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm hover:bg-red-600"
+                              >
+                                {futureScheduledCount}
+                              </Link>
+                            </div>
                           )}
                         </div>
                       )
