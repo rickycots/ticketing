@@ -591,8 +591,11 @@ export default function ProjectDetail() {
                         in_attesa_dep: 'border-l-4 border-l-gray-300',
                       }
 
+                      const today = new Date().toISOString().slice(0, 10)
+                      const futureScheduledCount = (project.attivita_programmate || []).filter(s => Number(s.attivita_id) === Number(a.id) && s.data_pianificata >= today).length
+
                       return (
-                        <div key={a.id} className={`p-4 ${statoBorder[displayStato] || ''} ${isCompleted ? 'bg-green-50/40' : isWaitingDep ? 'bg-gray-50/40' : ''}`} style={a._depth ? { marginLeft: `${a._depth * 2}rem` } : undefined}>
+                        <div key={a.id} className={`relative p-4 ${statoBorder[displayStato] || ''} ${isCompleted ? 'bg-green-50/40' : isWaitingDep ? 'bg-gray-50/40' : ''}`} style={a._depth ? { marginLeft: `${a._depth * 2}rem` } : undefined}>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                               {!a.dipende_da ? (
@@ -808,6 +811,15 @@ export default function ProjectDetail() {
                               </div>
                             )}
                           </div>
+                          {futureScheduledCount > 0 && (
+                            <Link
+                              to={`/admin/projects/${id}/activities/${a.id}`}
+                              title={`${futureScheduledCount} attività programmate future`}
+                              className="absolute bottom-2 right-2 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-sm hover:bg-red-600"
+                            >
+                              {futureScheduledCount}
+                            </Link>
+                          )}
                         </div>
                       )
                     })

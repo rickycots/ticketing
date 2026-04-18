@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.11.00-0418 — 18 Aprile 2026
+- ProjectDetail: nelle card delle attività, bollino rosso in basso a destra con il numero di attività programmate future (data_pianificata >= oggi); cliccabile verso il dettaglio attività
+
 ## V5.10.15-0418 — 18 Aprile 2026
 - Nuovo componente condiviso `components/EmailBox.jsx`: estratto box email da ProjectDetail (Email Progetto + Email Attività) e ActivityDetail per ridurre duplicazione
 - Corpo email ora renderizzato come HTML sanitizzato (DOMPurify) se contiene tag HTML, altrimenti come testo; aggiunte regole CSS `.email-body-html` per formattazione (liste, mark/evidenziazione, link, blockquote, table)
