@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.13.03-0420 — 20 Aprile 2026
+- ClientProjectDetail box email: filtri Ordine (Ultime/Prime prima) + Direzione (Tutte / Da Assistenza / Dalla tua Azienda) con contatori
+- Badge colorato per email: DA ASSISTENZA (viola) / DALLA TUA AZIENDA (teal)
+- Backend Node.js `GET /api/projects/client/:clienteId/:projectId`: ora restituisce l'array `emails` (parità con PHP)
+
 ## V5.13.02-0420 — 20 Aprile 2026
 - EmailBody plaintext: rilevamento automatico catena di risposte/inoltri e splitting in segmenti visivamente separati
 - Marker rilevati: "Il ... ha scritto:" / "On ... wrote:", "-----Messaggio originale/Original Message/Inoltrato/Forwarded Message-----", blocchi header (3+ righe Da:/From:/A:/To:/Oggetto:/Subject:/Inviato:/Sent:/Data:/Date:/Cc:)

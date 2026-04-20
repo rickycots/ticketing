@@ -243,10 +243,15 @@ router.get('/client/:clienteId/:projectId', authenticateClientToken, (req, res) 
     ).get(project.email_bloccante_id);
   }
 
+  const emails = db.prepare(
+    'SELECT * FROM email WHERE progetto_id = ? ORDER BY data_ricezione DESC'
+  ).all(project.id);
+
   res.json({
     ...project,
     avanzamento,
     attivita,
+    emails,
     email_bloccante_oggetto: emailBloccante ? emailBloccante.oggetto : null,
     email_bloccante_corpo: emailBloccante ? emailBloccante.corpo : null,
     email_bloccante_data: emailBloccante ? emailBloccante.data_ricezione : null,

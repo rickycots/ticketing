@@ -61,6 +61,8 @@ export default function ClientProjectDetail() {
   const [expandedAllegati, setExpandedAllegati] = useState(false)
   const [expandedEmails, setExpandedEmails] = useState({})
   const [expandedReferenti, setExpandedReferenti] = useState(false)
+  const [emailSort, setEmailSort] = useState('ultime')
+  const [emailDir, setEmailDir] = useState('tutte')
   const [allegatiData, setAllegatiData] = useState([])
   const [loadingAllegati, setLoadingAllegati] = useState(false)
   const clientUser = JSON.parse(sessionStorage.getItem('clientUser') || '{}')
@@ -201,43 +203,88 @@ export default function ClientProjectDetail() {
 
 
       {/* Email list */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
-          <Mail size={18} className="text-blue-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Email Progetto</h2>
-          <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full px-1.5 py-0.5">{(project.emails || []).length}</span>
-        </div>
-        {(!project.emails || project.emails.length === 0) ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Nessuna email associata a questo progetto</div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {(project.emails || []).map(e => (
-              <div key={e.id} className={`p-4 ${!!e.is_bloccante ? 'bg-orange-50/50 border-l-4 border-l-orange-400' : ''}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setExpandedEmails(prev => ({ ...prev, [e.id]: !prev[e.id] }))} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                      {expandedEmails[e.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </button>
-                    <p className="text-sm font-medium">
-                      {e.oggetto}
-                      {!!e.is_bloccante && <span className="ml-2 text-xs text-orange-600 font-medium">BLOCCANTE</span>}
-                      {e.rilevanza === 'rilevante' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-purple-600 font-medium"><Star size={11} /> RILEVANTE</span>}
-                      {e.rilevanza === 'di_contesto' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-slate-500 font-medium"><Info size={11} /> DI CONTESTO</span>}
-                    </p>
-                  </div>
-                  <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString(getDateLocale())}</p>
-                </div>
-                <p className="text-xs text-gray-500 ml-6">{e.mittente}</p>
-                {expandedEmails[e.id] && e.corpo && (
-                  <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg">
-                    <EmailBody corpo={e.corpo} />
-                  </div>
-                )}
+      {(() => {
+        const allEmails = project.emails || []
+        const daAssistenza = allEmails.filter(e => e.direzione === 'inviata')
+        const daAzienda = allEmails.filter(e => e.direzione !== 'inviata')
+        const base = emailDir === 'assistenza' ? daAssistenza : emailDir === 'azienda' ? daAzienda : allEmails
+        const sorted = [...base].sort((a, b) => {
+          const da = new Date(a.data_ricezione).getTime()
+          const db = new Date(b.data_ricezione).getTime()
+          return emailSort === 'ultime' ? db - da : da - db
+        })
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+              <Mail size={18} className="text-blue-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Email Progetto</h2>
+              <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full px-1.5 py-0.5">{allEmails.length}</span>
+            </div>
+            {allEmails.length > 0 && (
+              <div className="px-4 py-2 border-b border-gray-100 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-500 mr-1">Ordine:</span>
+                {[
+                  { key: 'ultime', label: 'Ultime prima' },
+                  { key: 'prime', label: 'Prime prima' },
+                ].map(o => (
+                  <button key={o.key} onClick={() => setEmailSort(o.key)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                      emailSort === o.key ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}>{o.label}</button>
+                ))}
+                <span className="text-xs font-medium text-gray-500 ml-3 mr-1">Direzione:</span>
+                {[
+                  { key: 'tutte', label: 'Tutte', count: allEmails.length, active: 'bg-blue-100 text-blue-800', counter: 'bg-blue-200' },
+                  { key: 'assistenza', label: 'Da Assistenza', count: daAssistenza.length, active: 'bg-purple-100 text-purple-800', counter: 'bg-purple-200' },
+                  { key: 'azienda', label: 'Dalla tua Azienda', count: daAzienda.length, active: 'bg-teal-100 text-teal-800', counter: 'bg-teal-200' },
+                ].map(f => (
+                  <button key={f.key} onClick={() => setEmailDir(f.key)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                      emailDir === f.key ? f.active : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}>
+                    {f.label} <span className={`ml-1 px-1 py-0.5 rounded text-xs ${emailDir === f.key ? f.counter : 'bg-gray-200'}`}>{f.count}</span>
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
+            {sorted.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 text-sm">Nessuna email in questa categoria</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {sorted.map(e => (
+                  <div key={e.id} className={`p-4 ${!!e.is_bloccante ? 'bg-orange-50/50 border-l-4 border-l-orange-400' : ''}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setExpandedEmails(prev => ({ ...prev, [e.id]: !prev[e.id] }))} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                          {expandedEmails[e.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </button>
+                        <p className="text-sm font-medium">
+                          {e.oggetto}
+                          {e.direzione === 'inviata' ? (
+                            <span className="ml-2 text-xs text-purple-600 font-medium">DA ASSISTENZA</span>
+                          ) : (
+                            <span className="ml-2 text-xs text-teal-600 font-medium">DALLA TUA AZIENDA</span>
+                          )}
+                          {!!e.is_bloccante && <span className="ml-2 text-xs text-orange-600 font-medium">BLOCCANTE</span>}
+                          {e.rilevanza === 'rilevante' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-purple-600 font-medium"><Star size={11} /> RILEVANTE</span>}
+                          {e.rilevanza === 'di_contesto' && <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-slate-500 font-medium"><Info size={11} /> DI CONTESTO</span>}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400">{new Date(e.data_ricezione).toLocaleString(getDateLocale())}</p>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-6">{e.mittente}</p>
+                    {expandedEmails[e.id] && e.corpo && (
+                      <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg">
+                        <EmailBody corpo={e.corpo} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        )
+      })()}
     </div>
   )
 }
