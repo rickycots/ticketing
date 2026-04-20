@@ -1,19 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Star, Info, ExternalLink } from 'lucide-react'
-import DOMPurify from 'dompurify'
-
-function looksLikeHtml(s) {
-  return typeof s === 'string' && /<\/?(p|div|br|span|strong|em|mark|b|i|u|a|ul|ol|li|h[1-6]|table|tr|td|th|img|blockquote|pre|code)\b/i.test(s)
-}
-
-function renderBody(corpo) {
-  if (!corpo) return null
-  if (looksLikeHtml(corpo)) {
-    const clean = DOMPurify.sanitize(corpo, { FORBID_TAGS: ['script', 'style', 'iframe'], FORBID_ATTR: ['onerror', 'onload', 'onclick'] })
-    return <div className="email-body-html text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: clean }} />
-  }
-  return <div className="text-sm text-gray-700 whitespace-pre-wrap">{corpo}</div>
-}
+import EmailBody from './EmailBody'
 
 export default function EmailBox({
   emails = [],
@@ -100,7 +87,7 @@ export default function EmailBox({
                 )}
                 {expandedEmails[e.id] && e.corpo && (
                   <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg">
-                    {renderBody(e.corpo)}
+                    <EmailBody corpo={e.corpo} />
                   </div>
                 )}
               </div>

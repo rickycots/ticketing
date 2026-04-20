@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, AlertTriangle, Mail, CheckCircle2, Clock, Wrench, Lock, CalendarClock, ChevronRight, ChevronDown, Paperclip, FileText, Download, Users, Star, Info } from 'lucide-react'
 import { clientProjects } from '../../api/client'
 import ProjectDataBox from '../../components/ProjectDataBox'
+import EmailBody from '../../components/EmailBody'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
 const statoColors = {
@@ -173,9 +174,9 @@ export default function ClientProjectDetail() {
                 <p className="text-xs text-gray-400 mb-2">{t('sentOn')} {formatDate(project.email_bloccante_data)}</p>
               )}
               {project.email_bloccante_corpo && (
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3 mt-2">
-                  {project.email_bloccante_corpo}
-                </p>
+                <div className="border-t border-gray-100 pt-3 mt-2">
+                  <EmailBody corpo={project.email_bloccante_corpo} className="leading-relaxed" />
+                </div>
               )}
             </div>
           )}
@@ -228,7 +229,9 @@ export default function ClientProjectDetail() {
                 </div>
                 <p className="text-xs text-gray-500 ml-6">{e.mittente}</p>
                 {expandedEmails[e.id] && e.corpo && (
-                  <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</div>
+                  <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg">
+                    <EmailBody corpo={e.corpo} />
+                  </div>
                 )}
               </div>
             ))}

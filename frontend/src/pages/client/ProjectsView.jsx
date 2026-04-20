@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FolderKanban, AlertTriangle, Wrench, CalendarClock, ChevronDown, ChevronUp, Mail, ChevronRight, Paperclip, FileText, Download, Users, LayoutList, List } from 'lucide-react'
 import { clientProjects } from '../../api/client'
+import EmailBody from '../../components/EmailBody'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 
 function formatDate(dateStr) {
@@ -489,7 +490,7 @@ export default function ProjectsView() {
                         </p>
                       )}
                       <div className="mt-3 pt-3 border-t border-gray-100">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{p.email_bloccante_corpo}</p>
+                        <EmailBody corpo={p.email_bloccante_corpo} className="leading-relaxed" />
                       </div>
                     </div>
                   </div>

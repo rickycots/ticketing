@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, Mail, Phone, User, Plus, X, ChevronDown, ChevronR
 import { projects, activities, users as usersApi, clients as clientsApi } from '../../api/client'
 import GanttChart from '../../components/GanttChart'
 import ProjectDataBox from '../../components/ProjectDataBox'
+import EmailBody from '../../components/EmailBody'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -343,7 +344,9 @@ export default function ProjectGantt() {
                       <p className="text-xs text-orange-600 font-medium ml-6 mt-1">Attività: {e.attivita_nome}</p>
                     )}
                     {expandedEmails[e.id] && e.corpo && (
-                      <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</div>
+                      <div className="mt-2 ml-6 p-3 bg-gray-50 rounded-lg">
+                        <EmailBody corpo={e.corpo} />
+                      </div>
                     )}
                   </div>
                 ))}

@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.13.00-0420 — 20 Aprile 2026
+- Nuovo componente condiviso `components/EmailBody.jsx`: rendering uniforme del corpo email con DOMPurify + detection HTML estesa (qualsiasi tag + entità codificate)
+- `preprocessHtml`: rimozione wrapper `<!DOCTYPE>`, `<html>`, `<head>`, `<body>`, `<meta>`, `<link>` per evitare rendering grezzo di email con markup di pagina intera
+- DOMPurify: bloccati anche `object`, `embed` e handler `onmouseover/onfocus/onblur` oltre a script/style/iframe
+- `EmailBox` (admin ProjectDetail, ActivityDetail) refactorato per usare `EmailBody`
+- Lato client: `ClientProjectDetail` (corpo email + email bloccante), `ProjectsView` (email bloccante), `TicketDetail` (entrambe le viste thread) ora usano `EmailBody`
+- `ProjectGantt` (admin): corpo email con `EmailBody` per coerenza
+
 ## V5.12.00-0418 — 18 Aprile 2026
 - Nuovo componente riutilizzabile `components/NotesBox.jsx` (props: notes, showBloccante, showSblocca, canSaveKB, onAdd)
 - ProjectDetail: aggiunto box "Note Progetto" con inserimento nota, bloccante/sblocca e salva in KB

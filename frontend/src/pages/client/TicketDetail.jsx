@@ -4,6 +4,7 @@ import { ArrowLeft, Send, AlertTriangle, Wrench, CheckCircle, Archive, FileDown,
 import { clientTickets } from '../../api/client'
 import { t, getDateLocale } from '../../i18n/clientTranslations'
 import HelpTip from '../../components/HelpTip'
+import EmailBody from '../../components/EmailBody'
 
 const prioritaColors = {
   urgente: 'bg-red-100 text-red-800',
@@ -267,7 +268,7 @@ export default function ClientTicketDetail() {
                         {new Date(e.data_ricezione).toLocaleString(getDateLocale())}
                       </p>
                     </div>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{e.corpo}</p>
+                    <EmailBody corpo={e.corpo} className="text-gray-600" />
                     {allegati.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
                         {allegati.map((a, i) => (
@@ -309,7 +310,7 @@ export default function ClientTicketDetail() {
                     </button>
                     {isExpanded && (
                       <div className={`px-10 pb-3 ${isAdmin ? 'bg-blue-50/50' : 'bg-amber-50/50'}`}>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{e.corpo}</p>
+                        <EmailBody corpo={e.corpo} />
                         {allegati.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
                             {allegati.map((a, i) => (
