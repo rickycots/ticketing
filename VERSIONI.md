@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.13.02-0420 — 20 Aprile 2026
+- EmailBody plaintext: rilevamento automatico catena di risposte/inoltri e splitting in segmenti visivamente separati
+- Marker rilevati: "Il ... ha scritto:" / "On ... wrote:", "-----Messaggio originale/Original Message/Inoltrato/Forwarded Message-----", blocchi header (3+ righe Da:/From:/A:/To:/Oggetto:/Subject:/Inviato:/Sent:/Data:/Date:/Cc:)
+- Ogni segmento successivo: separatore con etichetta "Messaggio precedente", label marker in italic grigio, testo con bordo sinistro per nidificazione
+
 ## V5.13.01-0420 — 20 Aprile 2026
 - EmailBody: fix overflow corpo email che usciva dal container
 - CSS `.email-body-html`: `overflow-wrap: anywhere` + `word-break: break-word` + `max-width: 100%` su tutti i figli
