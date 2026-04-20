@@ -27,7 +27,11 @@ export default function EmailBody({ corpo, className = '' }) {
       FORBID_TAGS: ['script', 'style', 'iframe', 'meta', 'link', 'object', 'embed'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
     })
-    return <div className={`email-body-html text-sm text-gray-700 ${className}`} dangerouslySetInnerHTML={{ __html: clean }} />
+    return (
+      <div className="email-body-scroll">
+        <div className={`email-body-html text-sm text-gray-700 ${className}`} dangerouslySetInnerHTML={{ __html: clean }} />
+      </div>
+    )
   }
-  return <div className={`text-sm text-gray-700 whitespace-pre-wrap ${className}`}>{corpo}</div>
+  return <div className={`text-sm text-gray-700 whitespace-pre-wrap break-words ${className}`}>{corpo}</div>
 }

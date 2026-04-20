@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.13.01-0420 — 20 Aprile 2026
+- EmailBody: fix overflow corpo email che usciva dal container
+- CSS `.email-body-html`: `overflow-wrap: anywhere` + `word-break: break-word` + `max-width: 100%` su tutti i figli
+- Link: `word-break: break-all` per URL lunghi; tabelle con `table-layout: auto` + max-width; celle/pre/code con break-word
+- Nuovo wrapper `.email-body-scroll` con `overflow-x: auto` come safety-net per contenuti troppo larghi
+- Rendering plaintext: aggiunto `break-words`
+
 ## V5.13.00-0420 — 20 Aprile 2026
 - Nuovo componente condiviso `components/EmailBody.jsx`: rendering uniforme del corpo email con DOMPurify + detection HTML estesa (qualsiasi tag + entità codificate)
 - `preprocessHtml`: rimozione wrapper `<!DOCTYPE>`, `<html>`, `<head>`, `<body>`, `<meta>`, `<link>` per evitare rendering grezzo di email con markup di pagina intera

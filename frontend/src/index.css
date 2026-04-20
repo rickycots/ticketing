@@ -106,6 +106,8 @@
 }
 
 /* Email body HTML rendering (EmailBox) */
+.email-body-html { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.email-body-html * { max-width: 100%; box-sizing: border-box; }
 .email-body-html p { margin: 0 0 0.5rem 0; }
 .email-body-html p:last-child { margin-bottom: 0; }
 .email-body-html ul, .email-body-html ol { margin: 0.5rem 0; padding-left: 1.5rem; list-style: revert; }
@@ -115,14 +117,15 @@
 .email-body-html em, .email-body-html i { font-style: italic; }
 .email-body-html u { text-decoration: underline; }
 .email-body-html mark { background-color: #fef08a; padding: 0 0.125rem; }
-.email-body-html a { color: #2563eb; text-decoration: underline; }
+.email-body-html a { color: #2563eb; text-decoration: underline; word-break: break-all; }
 .email-body-html a:hover { color: #1d4ed8; }
 .email-body-html blockquote { border-left: 3px solid #d1d5db; padding-left: 0.75rem; margin: 0.5rem 0; color: #4b5563; }
-.email-body-html table { border-collapse: collapse; margin: 0.5rem 0; }
-.email-body-html td, .email-body-html th { border: 1px solid #e5e7eb; padding: 0.25rem 0.5rem; }
+.email-body-html table { border-collapse: collapse; margin: 0.5rem 0; table-layout: auto; max-width: 100%; }
+.email-body-html td, .email-body-html th { border: 1px solid #e5e7eb; padding: 0.25rem 0.5rem; word-break: break-word; }
 .email-body-html img { max-width: 100%; height: auto; }
-.email-body-html pre { background: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; font-family: ui-monospace, monospace; font-size: 0.85em; }
+.email-body-html pre { background: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; font-family: ui-monospace, monospace; font-size: 0.85em; white-space: pre-wrap; word-break: break-word; }
 .email-body-html code { background: #f3f4f6; padding: 0 0.25rem; border-radius: 0.25rem; font-family: ui-monospace, monospace; font-size: 0.85em; }
+.email-body-scroll { max-width: 100%; overflow-x: auto; }
 
 /* Marquee scrolling animation */
 @keyframes marquee {
