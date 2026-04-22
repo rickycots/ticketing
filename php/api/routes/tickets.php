@@ -508,6 +508,78 @@ $router->post('/tickets', [Auth::class, 'authenticateClientToken'], function($re
     Response::created($newTicket);
 });
 
+// POST /api/tickets/from-email/:emailId — crea ticket a partire da una mail (admin only)
+$router->post('/tickets/from-email/:emailId', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $emailId = (int)$req->params['emailId'];
+    $email = Database::fetchOne('SELECT * FROM email WHERE id = ?', [$emailId]);
+    if (!$email) Response::error('Email non trovata', 404);
+    if ($email['tipo'] === 'ticket' && $email['ticket_id']) {
+        Response::error('Questa email è già collegata a un ticket', 400);
+    }
+
+    $clienteId = (int)($req->body['cliente_id'] ?? 0);
+    if (!$clienteId) Response::error('cliente_id obbligatorio', 400);
+    $oggetto = trim($req->body['oggetto'] ?? ($email['oggetto'] ?? ''));
+    $descrizione = $req->body['descrizione'] ?? ($email['corpo'] ?? '');
+    $categoria = $req->body['categoria'] ?? 'altro';
+    $priorita = $req->body['priorita'] ?? 'media';
+    $utentePortaleId = !empty($req->body['utente_portale_id']) ? (int)$req->body['utente_portale_id'] : null;
+    if (!$oggetto) Response::error('oggetto obbligatorio', 400);
+
+    $cliente = Database::fetchOne('SELECT * FROM clienti WHERE id = ?', [$clienteId]);
+    if (!$cliente) Response::error('Cliente non trovato', 404);
+
+    $codice = generateTicketCode();
+    $admin = Database::fetchOne("SELECT id FROM utenti WHERE ruolo='admin' AND attivo=1 LIMIT 1");
+    $assegnatoA = $admin ? (int)$admin['id'] : null;
+    $creatoreEmail = $email['mittente'] ?? null;
+
+    $dataEvasione = null;
+    if (!empty($cliente['sla_reazione']) && $cliente['sla_reazione'] !== 'nb') {
+        $days = $cliente['sla_reazione'] === '1g' ? 1 : 3;
+        $dataEvasione = date('Y-m-d', strtotime("+{$days} days"));
+    }
+
+    Database::execute(
+        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione]
+    );
+    $ticketId = (int)Database::lastInsertId();
+
+    $threadId = "thread-{$codice}";
+    Database::execute(
+        "UPDATE email SET tipo = 'ticket', ticket_id = ?, thread_id = ? WHERE id = ?",
+        [$ticketId, $threadId, $emailId]
+    );
+
+    // Auto-reply al mittente da ticketing@
+    if ($creatoreEmail) {
+        $subjectReply = "[TICKET #{$codice}] Re: {$oggetto}";
+        $content = '<p>Gentile Cliente,</p>' .
+            "<p>abbiamo aperto il ticket <strong>{$codice}</strong> per la tua richiesta.</p>" .
+            '<p>Per proseguire puoi <strong>accedere al portale</strong> o <strong>rispondere a questa mail</strong>.</p>' .
+            '<p>Ci occuperemo della tua richiesta nel più breve tempo possibile.</p>' .
+            '<p>Cordiali saluti,<br>Assistenza STM Domotica</p>';
+        try { Mailer::sendTicketing($creatoreEmail, $subjectReply, Mailer::wrapEmailTemplate($content)); } catch (\Throwable $e) { error_log('[from-email] auto-reply fail: ' . $e->getMessage()); }
+    }
+
+    // Notifica utente portale (opzionale)
+    if ($utentePortaleId) {
+        $portalUser = Database::fetchOne('SELECT id, email FROM utenti_cliente WHERE id = ? AND cliente_id = ?', [$utentePortaleId, $clienteId]);
+        if ($portalUser) {
+            $mittenteMsg = $creatoreEmail ?: 'email diretta';
+            $content = "<p>Ciao,</p>" .
+                "<p>è stato aperto un nuovo ticket <strong>{$codice}</strong> originato da <strong>{$mittenteMsg}</strong>.</p>" .
+                "<p>Oggetto: <em>{$oggetto}</em></p>" .
+                "<p>Accedi al portale per seguirne l'evoluzione.</p>";
+            try { Mailer::sendTicketing($portalUser['email'], "Nuovo ticket {$codice}", Mailer::wrapEmailTemplate($content)); } catch (\Throwable $e) { error_log('[from-email] portal notify fail: ' . $e->getMessage()); }
+        }
+    }
+
+    $ticket = Database::fetchOne('SELECT * FROM ticket WHERE id = ?', [$ticketId]);
+    Response::json(['ticket' => $ticket, 'codice' => $codice]);
+});
+
 // PUT /api/tickets/:id
 $router->put('/tickets/:id', [Auth::class, 'authenticateToken'], function($req) {
     $id = $req->params['id'];

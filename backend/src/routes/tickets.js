@@ -430,6 +430,83 @@ ${secondaryBlock}`);
   res.status(201).json(db.prepare('SELECT * FROM ticket WHERE id = ?').get(result.lastInsertRowid));
 });
 
+// POST /api/tickets/from-email/:emailId — create ticket from existing email (admin only)
+router.post('/from-email/:emailId', authenticateToken, async (req, res) => {
+  if (req.user.ruolo !== 'admin') return res.status(403).json({ error: 'Solo admin' });
+  const emailId = Number(req.params.emailId);
+  const email = db.prepare('SELECT * FROM email WHERE id = ?').get(emailId);
+  if (!email) return res.status(404).json({ error: 'Email non trovata' });
+  if (email.tipo === 'ticket' && email.ticket_id) {
+    return res.status(400).json({ error: 'Questa email è già collegata a un ticket' });
+  }
+
+  const cliente_id = Number(req.body.cliente_id || 0);
+  if (!cliente_id) return res.status(400).json({ error: 'cliente_id obbligatorio' });
+  const oggetto = (req.body.oggetto || email.oggetto || '').trim();
+  const descrizione = req.body.descrizione ?? email.corpo ?? '';
+  const categoria = req.body.categoria || 'altro';
+  const priorita = req.body.priorita || 'media';
+  const utentePortaleId = req.body.utente_portale_id ? Number(req.body.utente_portale_id) : null;
+
+  if (!oggetto) return res.status(400).json({ error: 'oggetto obbligatorio' });
+
+  const cliente = db.prepare('SELECT * FROM clienti WHERE id = ?').get(cliente_id);
+  if (!cliente) return res.status(404).json({ error: 'Cliente non trovato' });
+
+  const codice = generateTicketCode();
+  const admin = db.prepare("SELECT id FROM utenti WHERE ruolo='admin' AND attivo=1 LIMIT 1").get();
+  const assegnato_a = admin ? admin.id : null;
+  const creatore_email = email.mittente || null;
+
+  // SLA
+  let data_evasione = null;
+  if (cliente.sla_reazione && cliente.sla_reazione !== 'nb') {
+    const now = new Date();
+    const days = cliente.sla_reazione === '1g' ? 1 : 3;
+    now.setDate(now.getDate() + days);
+    data_evasione = now.toISOString().slice(0, 10);
+  }
+
+  const info = db.prepare(
+    `INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione);
+  const ticketId = info.lastInsertRowid;
+
+  const threadId = `thread-${codice}`;
+  db.prepare(`UPDATE email SET tipo = 'ticket', ticket_id = ?, thread_id = ? WHERE id = ?`)
+    .run(ticketId, threadId, emailId);
+
+  // Auto-reply to sender (from ticketing@)
+  if (creatore_email) {
+    try {
+      const subjectReply = `[TICKET #${codice}] Re: ${oggetto}`;
+      const content = `<p>Gentile Cliente,</p>
+<p>abbiamo aperto il ticket <strong>${codice}</strong> per la tua richiesta.</p>
+<p>Per proseguire puoi <strong>accedere al portale</strong> o <strong>rispondere a questa mail</strong>.</p>
+<p>Ci occuperemo della tua richiesta nel più breve tempo possibile.</p>
+<p>Cordiali saluti,<br>Assistenza STM Domotica</p>`;
+      await sendTicketingEmail(creatore_email, subjectReply, wrapEmailTemplate(content));
+    } catch (e) { console.error('[from-email] auto-reply failed:', e.message); }
+  }
+
+  // Optional: notify a specific portal user
+  if (utentePortaleId) {
+    const portalUser = db.prepare('SELECT id, email FROM utenti_cliente WHERE id = ? AND cliente_id = ?').get(utentePortaleId, cliente_id);
+    if (portalUser) {
+      try {
+        const content = `<p>Ciao,</p>
+<p>è stato aperto un nuovo ticket <strong>${codice}</strong> originato da <strong>${creatore_email || 'email diretta'}</strong>.</p>
+<p>Oggetto: <em>${oggetto}</em></p>
+<p>Accedi al portale per seguirne l'evoluzione.</p>`;
+        await sendTicketingEmail(portalUser.email, `Nuovo ticket ${codice}`, wrapEmailTemplate(content));
+      } catch (e) { console.error('[from-email] portal notify failed:', e.message); }
+    }
+  }
+
+  const ticket = db.prepare('SELECT * FROM ticket WHERE id = ?').get(ticketId);
+  res.json({ ticket, codice });
+});
+
 // PUT /api/tickets/:id — update (admin, auth)
 router.put('/:id', authenticateToken, (req, res) => {
   const { stato, priorita, assegnato_a, progetto_id } = req.body;

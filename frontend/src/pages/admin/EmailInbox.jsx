@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save } from 'lucide-react'
-import { emails, projects, activities, clients as clientsApi } from '../../api/client'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save, Ticket as TicketIcon } from 'lucide-react'
+import { emails, projects, activities, clients as clientsApi, tickets as ticketsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
 import EmailBody from '../../components/EmailBody'
@@ -54,6 +54,13 @@ export default function EmailInbox() {
   const [showReply, setShowReply] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
+
+  // Create Ticket from Email state
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [ticketForm, setTicketForm] = useState({ oggetto: '', descrizione: '', categoria: 'assistenza', priorita: 'media', cliente_id: '', utente_portale_id: '' })
+  const [creatingTicket, setCreatingTicket] = useState(false)
+  const [portalUsers, setPortalUsers] = useState([])
+  const [senderIsPortalUser, setSenderIsPortalUser] = useState(null) // null = unknown, true/false after check
 
   useEffect(() => {
     projects.list({ limit: 1000 }).then(res => setProjectList(res.data || [])).catch(console.error)
@@ -214,6 +221,58 @@ export default function EmailInbox() {
       loadEmails()
     } catch (err) { console.error(err) }
     finally { setSending(false) }
+  }
+
+  function openTicketModal() {
+    if (!selected) return
+    setTicketForm({
+      oggetto: selected.oggetto || '',
+      descrizione: selected.corpo || '',
+      categoria: 'assistenza',
+      priorita: 'media',
+      cliente_id: selected.cliente_id ? String(selected.cliente_id) : '',
+      utente_portale_id: '',
+    })
+    setPortalUsers([])
+    setSenderIsPortalUser(null)
+    setShowTicketModal(true)
+  }
+
+  // When cliente_id is selected in the modal, load portal users and check sender match
+  useEffect(() => {
+    if (!showTicketModal || !ticketForm.cliente_id) { setPortalUsers([]); setSenderIsPortalUser(null); return }
+    clientsApi.getUsers(ticketForm.cliente_id).then(list => {
+      const users = (list || []).filter(u => u.attivo)
+      setPortalUsers(users)
+      const senderEmail = (selected?.mittente || '').toLowerCase()
+      const match = users.some(u => (u.email || '').toLowerCase() === senderEmail)
+      setSenderIsPortalUser(match)
+    }).catch(() => { setPortalUsers([]); setSenderIsPortalUser(null) })
+  }, [ticketForm.cliente_id, showTicketModal, selected?.mittente])
+
+  async function handleCreateTicketFromEmail(e) {
+    e.preventDefault()
+    if (!selected || !ticketForm.cliente_id) return alert('Seleziona un cliente')
+    setCreatingTicket(true)
+    try {
+      const payload = {
+        cliente_id: Number(ticketForm.cliente_id),
+        oggetto: ticketForm.oggetto,
+        descrizione: ticketForm.descrizione,
+        categoria: ticketForm.categoria,
+        priorita: ticketForm.priorita,
+      }
+      if (!senderIsPortalUser && ticketForm.utente_portale_id) {
+        payload.utente_portale_id = Number(ticketForm.utente_portale_id)
+      }
+      const res = await ticketsApi.createFromEmail(selected.id, payload)
+      setShowTicketModal(false)
+      const detail = await emails.get(selected.id)
+      setSelected(detail)
+      loadEmails()
+      alert(`Ticket ${res.codice} creato con successo`)
+    } catch (err) { alert(err.message || 'Errore creazione ticket') }
+    finally { setCreatingTicket(false) }
   }
 
   async function handleReply(e, replyAll = false) {
@@ -673,6 +732,25 @@ export default function EmailInbox() {
                   </dl>
                 </div>
 
+                {/* Crea Ticket da email */}
+                {!selected.ticket_id && (
+                  <div className="border-t border-gray-100 pt-4 mb-4">
+                    <button
+                      onClick={openTicketModal}
+                      className="inline-flex items-center gap-2 bg-orange-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-700 cursor-pointer"
+                    >
+                      <TicketIcon size={16} /> Crea Ticket da questa email
+                    </button>
+                  </div>
+                )}
+                {selected.ticket_id && (
+                  <div className="border-t border-gray-100 pt-4 mb-4">
+                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
+                      <TicketIcon size={14} /> Email già collegata a un ticket
+                    </div>
+                  </div>
+                )}
+
                 {/* Assign to client */}
                 <div className="border-t border-gray-100 pt-4 mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -857,6 +935,102 @@ export default function EmailInbox() {
           )}
         </div>
       </div>
+
+      {/* Modal: crea ticket da email */}
+      {showTicketModal && selected && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => !creatingTicket && setShowTicketModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="font-semibold text-sm inline-flex items-center gap-2">
+                <TicketIcon size={16} className="text-orange-600" /> Crea Ticket da email
+              </h3>
+              <button onClick={() => setShowTicketModal(false)} disabled={creatingTicket} className="p-1 rounded hover:bg-gray-100 cursor-pointer disabled:opacity-50">
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateTicketFromEmail} className="p-4 space-y-3">
+              <p className="text-xs text-gray-500">
+                Mittente: <span className="font-medium text-gray-700">{selected.mittente}</span>
+              </p>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cliente *</label>
+                <select required value={ticketForm.cliente_id} onChange={e => setTicketForm(f => ({ ...f, cliente_id: e.target.value, utente_portale_id: '' }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                  <option value="">— Seleziona cliente —</option>
+                  {clientList.map(c => <option key={c.id} value={c.id}>{c.nome_azienda}</option>)}
+                </select>
+              </div>
+
+              {ticketForm.cliente_id && senderIsPortalUser === false && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                  <p className="text-xs text-amber-800">
+                    Il mittente <strong>{selected.mittente}</strong> non è un utente del portale di questo cliente.
+                    Seleziona l'utente del portale a cui <strong>notificare</strong> l'apertura del ticket:
+                  </p>
+                  <select value={ticketForm.utente_portale_id} onChange={e => setTicketForm(f => ({ ...f, utente_portale_id: e.target.value }))}
+                    className="w-full rounded-lg border border-amber-300 px-2 py-1.5 text-sm bg-white">
+                    <option value="">— Nessuna notifica aggiuntiva —</option>
+                    {portalUsers.map(u => <option key={u.id} value={u.id}>{u.nome}{u.cognome ? ` ${u.cognome}` : ''} — {u.email}</option>)}
+                  </select>
+                </div>
+              )}
+              {ticketForm.cliente_id && senderIsPortalUser === true && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-700">
+                  Il mittente è già un utente del portale: riceverà le notifiche automaticamente.
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Oggetto *</label>
+                <input type="text" required value={ticketForm.oggetto} onChange={e => setTicketForm(f => ({ ...f, oggetto: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Categoria *</label>
+                  <select required value={ticketForm.categoria} onChange={e => setTicketForm(f => ({ ...f, categoria: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="assistenza">Assistenza</option>
+                    <option value="bug">Bug</option>
+                    <option value="richiesta_info">Richiesta Info</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Priorità</label>
+                  <select value={ticketForm.priorita} onChange={e => setTicketForm(f => ({ ...f, priorita: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="bassa">Bassa</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione</label>
+                <textarea rows={5} value={ticketForm.descrizione} onChange={e => setTicketForm(f => ({ ...f, descrizione: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none" />
+              </div>
+
+              <p className="text-[11px] text-gray-400 italic leading-snug">
+                Al salvataggio verrà inviata una mail automatica al mittente da <code>ticketing@stmdomotica.it</code> con il testo: <em>"procedi dal portale o rispondi a questa mail"</em>.
+              </p>
+
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={creatingTicket || !ticketForm.cliente_id || !ticketForm.oggetto} className="inline-flex items-center gap-2 bg-orange-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50 cursor-pointer">
+                  <TicketIcon size={14} /> {creatingTicket ? 'Creazione...' : 'Crea Ticket'}
+                </button>
+                <button type="button" onClick={() => setShowTicketModal(false)} disabled={creatingTicket} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 disabled:opacity-50 cursor-pointer">
+                  Annulla
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

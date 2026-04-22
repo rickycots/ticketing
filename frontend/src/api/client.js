@@ -96,6 +96,7 @@ export const tickets = {
   },
   get: (id) => request(`/tickets/${id}`),
   create: (data) => request('/tickets', { method: 'POST', body: JSON.stringify(data) }),
+  createFromEmail: (emailId, data) => request(`/tickets/from-email/${emailId}`, { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/tickets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   clientList: (clienteId) => request(`/tickets/client/${clienteId}`),
   clientGet: (clienteId, ticketId) => request(`/tickets/client/${clienteId}/${ticketId}`),

@@ -1,5 +1,20 @@
 # Storico Versioni
 
+## V5.18.00-0422 — 22 Aprile 2026 (release maggiore)
+### Crea Ticket da email su assistenzatecnica@
+- Nuovo endpoint `POST /api/tickets/from-email/:emailId` (Node + PHP, admin only):
+  - Crea ticket con codice `TK-YYYY-NNNN`
+  - Aggancia la mail sorgente al ticket (`tipo='ticket'`, `ticket_id`, `thread_id='thread-{codice}'`)
+  - Invia auto-reply al mittente da `ticketing@` con testo: *"abbiamo aperto il ticket {codice}. Per proseguire puoi accedere al portale o rispondere a questa mail."*
+  - Se specificato, notifica anche un utente del portale (mail informativa con link al ticket)
+- **Perché funziona il round-trip**: l'auto-reply viene inviata da `ticketing@` col subject `[TICKET #TK-...]` → se il cliente risponde, la reply arriva su `ticketing@`, il cron IMAP la riconosce dal tag e la aggancia automaticamente al thread del ticket (chat admin del ticket)
+- **Frontend** `EmailInbox.jsx`:
+  - Bottone arancione "Crea Ticket da questa email" sopra la tendina Cliente (nascosto se la mail è già un ticket)
+  - Modal di conferma con: Cliente, Oggetto, Categoria (assistenza/bug/richiesta_info/altro), Priorità (bassa/media/alta), Descrizione — tutti pre-compilati dai dati email
+  - Check automatico: se il mittente dell'email non è tra gli utenti del portale del cliente selezionato, mostra popup ambra con select "utente portale da notificare"
+  - Feedback inline: verde se il mittente è già utente portale, ambra altrimenti
+- API client: `tickets.createFromEmail(emailId, data)`
+
 ## V5.17.02-0422 — 22 Aprile 2026
 - Anagrafica: colonna "Telefono" compattata in "TEL" (3 caratteri) — icona verde cliccabile `tel:` con tooltip al mouseover che mostra il numero
 - Anagrafica: nuova matita accanto al cestino per modificare i dati della persona via popup modale
