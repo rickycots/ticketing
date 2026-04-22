@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Users, Search, Mail, Phone, Building2, Download, Trash2 } from 'lucide-react'
+import { Users, Search, Mail, Phone, Building2, Download, Trash2, Pencil, X as XIcon } from 'lucide-react'
 import { anagrafica, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import Pagination from '../../components/Pagination'
@@ -25,6 +25,9 @@ export default function Anagrafica() {
   const [statusFilter, setStatusFilter] = useState('')
   const [deletingKey, setDeletingKey] = useState(null)
   const [page, setPage] = useState(1)
+  const [editRow, setEditRow] = useState(null)
+  const [editForm, setEditForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '', azienda: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
@@ -87,6 +90,51 @@ export default function Anagrafica() {
     a.download = `anagrafica-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  function openEdit(r) {
+    setEditRow(r)
+    setEditForm({
+      nome: r.nome || '',
+      cognome: r.cognome || '',
+      email: r.email || '',
+      telefono: r.telefono || '',
+      ruolo: r.ruolo || '',
+      azienda: r.azienda || '',
+    })
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault()
+    if (!editRow) return
+    setSavingEdit(true)
+    try {
+      const r = editRow
+      if (r.status === 'utente_portale') {
+        if (!r.cliente_id) throw new Error('cliente_id mancante')
+        await clientsApi.updateUser(r.cliente_id, r.id, {
+          nome: editForm.nome,
+          cognome: editForm.cognome,
+          email: editForm.email,
+        })
+      } else if (r.status === 'ref_interno') {
+        await anagrafica.updateRefInterno(r.id, {
+          nome: editForm.nome, cognome: editForm.cognome, email: editForm.email,
+          telefono: editForm.telefono, ruolo: editForm.ruolo,
+        })
+      } else if (r.status === 'ref_esterno') {
+        await anagrafica.updateRefEsternoByEmail(r.email, {
+          nome: editForm.nome, cognome: editForm.cognome, email: editForm.email,
+          telefono: editForm.telefono, ruolo: editForm.ruolo, azienda: editForm.azienda,
+        })
+      }
+      setEditRow(null)
+      loadRows()
+    } catch (err) {
+      alert(err.message || 'Errore durante salvataggio')
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   async function handleDelete(r) {
@@ -177,12 +225,12 @@ export default function Anagrafica() {
               <tr>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Persona</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefono</th>
+                <th className="text-center px-2 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-14">TEL</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Azienda</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ruolo</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Contesto</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                {isAdmin && <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-10"></th>}
+                {isAdmin && <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-20"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -206,11 +254,13 @@ export default function Anagrafica() {
                         </a>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-600">
-                      {r.telefono && (
-                        <span className="inline-flex items-center gap-1">
-                          <Phone size={12} className="text-gray-400" /> {r.telefono}
-                        </span>
+                    <td className="px-2 py-2.5 text-center">
+                      {r.telefono ? (
+                        <a href={`tel:${r.telefono}`} title={r.telefono} className="inline-flex items-center justify-center p-1 rounded text-green-600 hover:bg-green-50 cursor-pointer">
+                          <Phone size={14} />
+                        </a>
+                      ) : (
+                        <span className="text-gray-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-gray-600">
@@ -241,11 +291,18 @@ export default function Anagrafica() {
                       </span>
                     </td>
                     {isAdmin && (
-                      <td className="px-4 py-2.5 text-right">
+                      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => openEdit(r)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors"
+                          title="Modifica dati"
+                        >
+                          <Pencil size={15} />
+                        </button>
                         <button
                           onClick={() => handleDelete(r)}
                           disabled={deletingKey === key}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 cursor-pointer transition-colors"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 cursor-pointer transition-colors ml-1"
                           title="Elimina da tutti i contesti"
                         >
                           <Trash2 size={15} />
@@ -272,6 +329,71 @@ export default function Anagrafica() {
       <p className="text-xs text-gray-400 mt-3">
         Totale: {filtered.length} {statusFilter ? `(filtrati da ${rows.length})` : ''}
       </p>
+
+      {/* Edit modal */}
+      {editRow && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => !savingEdit && setEditRow(null)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="font-semibold text-sm">
+                Modifica {editRow.status === 'utente_portale' ? 'utente portale' : editRow.status === 'ref_interno' ? 'referente interno' : 'referente esterno'}
+              </h3>
+              <button onClick={() => setEditRow(null)} disabled={savingEdit} className="p-1 rounded hover:bg-gray-100 cursor-pointer disabled:opacity-50">
+                <XIcon size={16} className="text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                  <input type="text" required value={editForm.nome} onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Cognome</label>
+                  <input type="text" value={editForm.cognome} onChange={e => setEditForm(f => ({ ...f, cognome: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email *</label>
+                <input type="email" required value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+              </div>
+              {(editRow.status === 'ref_interno' || editRow.status === 'ref_esterno') && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Telefono</label>
+                      <input type="text" value={editForm.telefono} onChange={e => setEditForm(f => ({ ...f, telefono: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Ruolo</label>
+                      <input type="text" value={editForm.ruolo} onChange={e => setEditForm(f => ({ ...f, ruolo: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+                    </div>
+                  </div>
+                  {editRow.status === 'ref_esterno' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Azienda</label>
+                      <input type="text" value={editForm.azienda} onChange={e => setEditForm(f => ({ ...f, azienda: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+                    </div>
+                  )}
+                </>
+              )}
+              {editRow.status === 'ref_esterno' && (editRow.contesti?.length || 0) > 1 && (
+                <p className="text-xs text-amber-600 italic bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                  Nota: questo referente esterno è presente in {editRow.contesti.length} contesti. La modifica si applicherà a tutti.
+                </p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button type="submit" disabled={savingEdit} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
+                  {savingEdit ? 'Salvataggio...' : 'Salva'}
+                </button>
+                <button type="button" onClick={() => setEditRow(null)} disabled={savingEdit} className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 disabled:opacity-50 cursor-pointer">
+                  Annulla
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

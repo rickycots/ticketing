@@ -181,12 +181,42 @@ router.delete('/anagrafica/ref-interno/:id', authenticateToken, requireAdmin, (r
   res.json({ ok: true });
 });
 
+// PUT /api/anagrafica/ref-interno/:id — update campi anagrafica del referente interno
+router.put('/anagrafica/ref-interno/:id', authenticateToken, requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM referenti_progetto WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+  const { nome, cognome, email, telefono, ruolo } = req.body || {};
+  db.prepare(`
+    UPDATE referenti_progetto
+    SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email),
+        telefono = COALESCE(?, telefono), ruolo = COALESCE(?, ruolo)
+    WHERE id = ?
+  `).run(nome ?? null, cognome ?? null, email ?? null, telefono ?? null, ruolo ?? null, id);
+  const row = db.prepare('SELECT * FROM referenti_progetto WHERE id = ?').get(id);
+  res.json(row);
+});
+
 // DELETE /api/anagrafica/ref-esterno?email=... — bulk delete by email (all contexts)
 router.delete('/anagrafica/ref-esterno', authenticateToken, requireAdmin, (req, res) => {
   const email = (req.query.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ error: 'email richiesta' });
   const info = db.prepare('DELETE FROM referenti_esterni WHERE LOWER(email) = ?').run(email);
   res.json({ ok: true, deleted: info.changes });
+});
+
+// PUT /api/anagrafica/ref-esterno?email=... — bulk update all records with same email
+router.put('/anagrafica/ref-esterno', authenticateToken, requireAdmin, (req, res) => {
+  const oldEmail = (req.query.email || '').trim().toLowerCase();
+  if (!oldEmail) return res.status(400).json({ error: 'email richiesta' });
+  const { nome, cognome, email, telefono, ruolo, azienda } = req.body || {};
+  const info = db.prepare(`
+    UPDATE referenti_esterni
+    SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email),
+        telefono = COALESCE(?, telefono), ruolo = COALESCE(?, ruolo), azienda = COALESCE(?, azienda)
+    WHERE LOWER(email) = ?
+  `).run(nome ?? null, cognome ?? null, email ?? null, telefono ?? null, ruolo ?? null, azienda ?? null, oldEmail);
+  res.json({ ok: true, updated: info.changes });
 });
 
 module.exports = router;

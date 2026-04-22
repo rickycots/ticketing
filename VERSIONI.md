@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V5.17.02-0422 — 22 Aprile 2026
+- Anagrafica: colonna "Telefono" compattata in "TEL" (3 caratteri) — icona verde cliccabile `tel:` con tooltip al mouseover che mostra il numero
+- Anagrafica: nuova matita accanto al cestino per modificare i dati della persona via popup modale
+- Modal con campi condizionali per tipo: utente portale (nome/cognome/email), ref interno (+ telefono/ruolo), ref esterno (+ azienda)
+- Ref. esterno multi-contesto: avviso nel modal che la modifica si applica a tutti i contesti
+- Nuovi endpoint bulk admin-only:
+  - `PUT /anagrafica/ref-interno/:id` (Node + PHP)
+  - `PUT /anagrafica/ref-esterno?email=...` (Node + PHP) — aggiorna tutti i record con stessa email
+
 ## V5.17.01-0422 — 22 Aprile 2026
 - Anagrafica: chip Contesto con stile differenziato (progetto in blu medium, attività in corsivo grigio dopo `·`)
 - Anagrafica: colonna Email sempre su una riga per esteso (rimosso `break-all`)

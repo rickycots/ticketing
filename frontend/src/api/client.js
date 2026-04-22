@@ -336,8 +336,12 @@ export const referentiEsterni = {
 export const anagrafica = {
   list: () => request('/anagrafica'),
   deleteRefInterno: (id) => request(`/anagrafica/ref-interno/${id}`, { method: 'DELETE' }),
+  updateRefInterno: (id, data) =>
+    request(`/anagrafica/ref-interno/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRefEsternoByEmail: (email) =>
     request(`/anagrafica/ref-esterno?email=${encodeURIComponent(email)}`, { method: 'DELETE' }),
+  updateRefEsternoByEmail: (email, data) =>
+    request(`/anagrafica/ref-esterno?email=${encodeURIComponent(email)}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // AI Assistente

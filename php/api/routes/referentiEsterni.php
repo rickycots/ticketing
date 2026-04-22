@@ -254,6 +254,29 @@ $router->delete('/anagrafica/ref-interno/:id', [Auth::class, 'authenticateToken'
     Response::json(['ok' => true]);
 });
 
+// PUT /anagrafica/ref-interno/:id — update campi anagrafica (admin only)
+$router->put('/anagrafica/ref-interno/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $id = (int)$req->params['id'];
+    $existing = Database::fetchOne('SELECT * FROM referenti_progetto WHERE id = ?', [$id]);
+    if (!$existing) Response::error('Non trovato', 404);
+    Database::execute(
+        "UPDATE referenti_progetto
+         SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email),
+             telefono = COALESCE(?, telefono), ruolo = COALESCE(?, ruolo)
+         WHERE id = ?",
+        [
+            $req->body['nome'] ?? null,
+            $req->body['cognome'] ?? null,
+            $req->body['email'] ?? null,
+            array_key_exists('telefono', $req->body) ? ($req->body['telefono'] ?: null) : null,
+            array_key_exists('ruolo', $req->body) ? ($req->body['ruolo'] ?: null) : null,
+            $id,
+        ]
+    );
+    $row = Database::fetchOne('SELECT * FROM referenti_progetto WHERE id = ?', [$id]);
+    Response::json($row);
+});
+
 // DELETE /anagrafica/ref-esterno?email=... — bulk delete per email (admin only)
 $router->delete('/anagrafica/ref-esterno', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
     ensureReferentiEsterniTable();
@@ -261,4 +284,27 @@ $router->delete('/anagrafica/ref-esterno', [Auth::class, 'authenticateToken'], [
     if (!$email) Response::error('email richiesta', 400);
     $stmt = Database::execute('DELETE FROM referenti_esterni WHERE LOWER(email) = ?', [$email]);
     Response::json(['ok' => true, 'deleted' => $stmt->rowCount()]);
+});
+
+// PUT /anagrafica/ref-esterno?email=... — bulk update (admin only)
+$router->put('/anagrafica/ref-esterno', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    ensureReferentiEsterniTable();
+    $oldEmail = strtolower(trim($req->query['email'] ?? ''));
+    if (!$oldEmail) Response::error('email richiesta', 400);
+    $stmt = Database::execute(
+        "UPDATE referenti_esterni
+         SET nome = COALESCE(?, nome), cognome = COALESCE(?, cognome), email = COALESCE(?, email),
+             telefono = COALESCE(?, telefono), ruolo = COALESCE(?, ruolo), azienda = COALESCE(?, azienda)
+         WHERE LOWER(email) = ?",
+        [
+            $req->body['nome'] ?? null,
+            $req->body['cognome'] ?? null,
+            $req->body['email'] ?? null,
+            array_key_exists('telefono', $req->body) ? ($req->body['telefono'] ?: null) : null,
+            array_key_exists('ruolo', $req->body) ? ($req->body['ruolo'] ?: null) : null,
+            array_key_exists('azienda', $req->body) ? ($req->body['azienda'] ?: null) : null,
+            $oldEmail,
+        ]
+    );
+    Response::json(['ok' => true, 'updated' => $stmt->rowCount()]);
 });
