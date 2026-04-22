@@ -1,5 +1,15 @@
 # Storico Versioni
 
+## V5.15.00-0422 — 22 Aprile 2026 (release maggiore)
+### Fix PWA cache refresh e routing SPA
+- **Service Worker** (`sw.js`): bump cache name `stm-portal-v1` → `v2`, forza tutti i client PWA a scaricare la nuova versione al prossimo caricamento
+- Handler `activate` esteso: cancella tutte le cache vecchie prima di `clients.claim()` (prima si accumulavano indefinitamente)
+- Handler `fetch` più restrittivo: ora skippa anche risorse **cross-origin** (es. Google Fonts) evitando che il SW intercetti/cachi richieste esterne
+- **`.htaccess`** produzione:
+  - CSP `connect-src` esteso a `fonts.googleapis.com` e `fonts.gstatic.com` per compatibilità con il nuovo SW
+  - Routing SPA: esclude `index.html` e `/` dal pass-through diretto — ora vanno sempre attraverso `index.php` (che serve `_app.html` con header no-cache), garantendo che il frontend non venga servito stale da cache Aruba
+- **Effetto**: al prossimo caricamento PWA il client riscarica il bundle aggiornato automaticamente. Non sarà più necessario Ctrl+Shift+R manuale dopo ogni deploy.
+
 ## V5.14.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Referenti Esterni e Anagrafica Unificata
 - Nuova entità **Referenti Esterni**: contatti terzi (non appartenenti all'azienda cliente) collegabili a un singolo progetto o a una singola attività
