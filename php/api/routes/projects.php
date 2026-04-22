@@ -84,7 +84,7 @@ function hasProjectUpdates($progettoId, $utenteId) {
     $emailNew = Database::fetchOne(
         "SELECT 1 FROM email
          WHERE (progetto_id = ? OR attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?))
-           AND COALESCE(created_at, data_ricezione) > ?
+           AND data_ricezione > ?
          LIMIT 1",
         [$progettoId, $progettoId, $since]
     );

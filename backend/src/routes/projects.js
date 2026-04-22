@@ -88,7 +88,7 @@ function hasProjectUpdates(progettoId, utenteId) {
   const emailNew = db.prepare(`
     SELECT 1 FROM email
     WHERE (progetto_id = ? OR attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?))
-      AND COALESCE(created_at, data_ricezione) > ?
+      AND data_ricezione > ?
     LIMIT 1
   `).get(progettoId, progettoId, since);
   if (emailNew) return true;

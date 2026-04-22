@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.19.01-0422 — 22 Aprile 2026
+- Hotfix: `GET /api/projects` restituiva HTTP 500 — la query `hasProjectUpdates` referenziava `email.created_at` inesistente (tabella `email` ha solo `data_ricezione`). Corretto in PHP + Node.
+
 ## V5.19.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Badge "UPD" per progetti con aggiornamenti nuovi
 - Nuova tabella `progetto_letture(utente_id, progetto_id, last_seen_at)` con lazy migration PHP + Node
