@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { Users, Search, Mail, Phone, Building2, Download, Trash2 } from 'lucide-react'
 import { anagrafica, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
+import Pagination from '../../components/Pagination'
+
+const PAGE_SIZE = 15
 
 const statusConfig = {
   utente_portale: { label: 'Utente portale', color: 'bg-purple-100 text-purple-800' },
@@ -21,6 +24,7 @@ export default function Anagrafica() {
   const [filter, setFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [deletingKey, setDeletingKey] = useState(null)
+  const [page, setPage] = useState(1)
 
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
@@ -46,6 +50,15 @@ export default function Anagrafica() {
       return hay.includes(q)
     })
   }, [rows, filter, statusFilter])
+
+  // Reset page when filter/search changes
+  useEffect(() => { setPage(1) }, [filter, statusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page]
+  )
 
   const counts = useMemo(() => ({
     tutti: rows.length,
@@ -177,7 +190,7 @@ export default function Anagrafica() {
                 <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-6 text-center text-gray-400">Caricamento...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-6 text-center text-gray-400">Nessun risultato</td></tr>
-              ) : filtered.map((r) => {
+              ) : paginated.map((r) => {
                 const cfg = statusConfig[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-700' }
                 const key = personKey(r)
                 const contesti = r.contesti || []
@@ -186,9 +199,9 @@ export default function Anagrafica() {
                     <td className="px-4 py-2.5">
                       <div className="font-medium text-gray-900">{r.nome} {r.cognome}</div>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       {r.email && (
-                        <a href={`mailto:${r.email}`} className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 break-all">
+                        <a href={`mailto:${r.email}`} className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800">
                           <Mail size={12} className="shrink-0" /> {r.email}
                         </a>
                       )}
@@ -208,14 +221,15 @@ export default function Anagrafica() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-gray-600">{r.ruolo || ''}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5 max-w-[240px]">
                       {contesti.length === 0 ? (
                         <span className="text-xs text-gray-400 italic">Non assegnato</span>
                       ) : (
-                        <div className="flex flex-wrap gap-1 max-w-[340px]">
+                        <div className="flex flex-wrap gap-1">
                           {contesti.map((c, i) => (
-                            <span key={i} className="inline-flex items-center bg-blue-50 text-blue-700 text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap">
-                              {c.progetto}{c.attivita ? ` · ${c.attivita}` : ''}
+                            <span key={i} className="inline-flex items-baseline gap-1 bg-blue-50 text-[11px] px-2 py-0.5 rounded-full break-words">
+                              <span className="text-blue-700 font-medium">{c.progetto}</span>
+                              {c.attivita && <span className="italic text-gray-500">· {c.attivita}</span>}
                             </span>
                           ))}
                         </div>
@@ -244,6 +258,15 @@ export default function Anagrafica() {
             </tbody>
           </table>
         </div>
+        {filtered.length > PAGE_SIZE && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={filtered.length}
+            limit={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <p className="text-xs text-gray-400 mt-3">

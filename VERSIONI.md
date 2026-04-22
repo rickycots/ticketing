@@ -1,5 +1,11 @@
 # Storico Versioni
 
+## V5.17.01-0422 — 22 Aprile 2026
+- Anagrafica: chip Contesto con stile differenziato (progetto in blu medium, attività in corsivo grigio dopo `·`)
+- Anagrafica: colonna Email sempre su una riga per esteso (rimosso `break-all`)
+- Anagrafica: colonna Contesto con `max-w-[240px]` — i chip vanno a capo, la colonna non straborda
+- Anagrafica: paginazione a 15 righe per pagina; il paginator appare solo se i risultati filtrati sono >15; reset automatico a pagina 1 al cambio di filtro/ricerca
+
 ## V5.17.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Anagrafica: aggregazione contesti + eliminazione persona
 - **Endpoint `/anagrafica` ristrutturato**: ora restituisce per ogni persona un array `contesti` con l'elenco dei progetti/attività a cui è associata (Node + PHP)
