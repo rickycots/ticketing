@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { MessageCircle, Bell } from 'lucide-react'
+import HelpTip from './HelpTip'
 
 const statoColors = {
   chiuso: 'bg-green-100 text-green-800',
@@ -65,6 +66,10 @@ export default function ProjectMiniBox({ project: p, to, isAdmin = false, getTec
               return diff < 3 ? 'bg-green-500' : diff < 7 ? 'bg-yellow-500' : 'bg-gray-400'
             })()}`} />
             Aggiornato: {new Date(p.updated_at).toLocaleDateString('it-IT')}
+            <HelpTip
+              size={11}
+              text={"Data dell'ultima modifica al progetto (campo updated_at: cambia quando si modificano stato, blocco, dati o tecnici assegnati). Colori del pallino: verde = meno di 3 giorni fa, giallo = tra 3 e 7 giorni fa, grigio = oltre 7 giorni fa. Per nuove email/note rispetto alla tua ultima visita, vedi il badge UPD."}
+            />
           </span>
           {p.data_scadenza && (
             <span className="inline-flex items-center gap-1">

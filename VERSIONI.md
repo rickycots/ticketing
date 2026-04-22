@@ -1,5 +1,8 @@
 # Storico Versioni
 
+## V5.19.02-0422 — 22 Aprile 2026
+- ProjectMiniBox: aggiunto HelpTip accanto a "Aggiornato:" con spiegazione del campo `updated_at` e dei colori del pallino (verde <3gg, giallo 3-7gg, grigio >7gg). Visibile sia admin sia tecnico in tutte le liste progetti.
+
 ## V5.19.01-0422 — 22 Aprile 2026
 - Hotfix: `GET /api/projects` restituiva HTTP 500 — la query `hasProjectUpdates` referenziava `email.created_at` inesistente (tabella `email` ha solo `data_ricezione`). Corretto in PHP + Node.
 
