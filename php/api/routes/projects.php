@@ -57,6 +57,68 @@ function chatNonLette($progettoId, $utenteId) {
     return $row ? (int)$row['cnt'] : 0;
 }
 
+// Lazy migration for progetto_letture
+function ensureProgettoLettureTable() {
+    static $checked = false;
+    if ($checked) return;
+    try {
+        Database::execute("CREATE TABLE IF NOT EXISTS progetto_letture (
+            utente_id INT NOT NULL,
+            progetto_id INT NOT NULL,
+            last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (utente_id, progetto_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (\Throwable $e) {}
+    $checked = true;
+}
+
+// Ritorna true se ci sono email/note nuove su progetto o sue attività dopo last_seen_at
+function hasProjectUpdates($progettoId, $utenteId) {
+    ensureProgettoLettureTable();
+    $row = Database::fetchOne(
+        'SELECT last_seen_at FROM progetto_letture WHERE utente_id = ? AND progetto_id = ?',
+        [$utenteId, $progettoId]
+    );
+    $since = $row ? $row['last_seen_at'] : '1970-01-01 00:00:00';
+
+    $emailNew = Database::fetchOne(
+        "SELECT 1 FROM email
+         WHERE (progetto_id = ? OR attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?))
+           AND COALESCE(created_at, data_ricezione) > ?
+         LIMIT 1",
+        [$progettoId, $progettoId, $since]
+    );
+    if ($emailNew) return true;
+
+    $noteProgetto = Database::fetchOne(
+        'SELECT 1 FROM note_interne WHERE progetto_id = ? AND created_at > ? LIMIT 1',
+        [$progettoId, $since]
+    );
+    if ($noteProgetto) return true;
+
+    $noteAttivita = Database::fetchOne(
+        "SELECT 1 FROM note_attivita
+         WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?) AND created_at > ? LIMIT 1",
+        [$progettoId, $since]
+    );
+    if ($noteAttivita) return true;
+
+    return false;
+}
+
+// Upsert last_seen_at per utente sul progetto
+function markProjectSeen($progettoId, $utenteId) {
+    ensureProgettoLettureTable();
+    try {
+        Database::execute(
+            "INSERT INTO progetto_letture (utente_id, progetto_id, last_seen_at)
+             VALUES (?, ?, CURRENT_TIMESTAMP)
+             ON DUPLICATE KEY UPDATE last_seen_at = CURRENT_TIMESTAMP",
+            [$utenteId, $progettoId]
+        );
+    } catch (\Throwable $e) {}
+}
+
 // --- Client routes (must be before /:id) ---
 
 // GET /api/projects/client/:clienteId — projects for client portal
@@ -323,6 +385,7 @@ $router->get('/projects', [Auth::class, 'authenticateToken'], function($req) {
         $p['tecnici'] = getProjectTecnici($p['id']);
         $p['referenti'] = getProjectReferenti($p['id']);
         $p['chat_non_lette'] = chatNonLette($p['id'], $req->user['id']);
+        $p['has_updates'] = hasProjectUpdates($p['id'], $req->user['id']);
         $data[] = $p;
     }
 
@@ -358,6 +421,9 @@ $router->get('/projects/:id', [Auth::class, 'authenticateToken'], function($req)
         );
         if (!$visible) Response::error('Accesso non consentito', 403);
     }
+
+    // Aggiorna timestamp ultima visita (reset badge UPD nella lista)
+    markProjectSeen($project['id'], $req->user['id']);
 
     $attivitaRaw = Database::fetchAll(
         "SELECT a.*, u.nome as assegnato_nome, u.ruolo as assegnato_ruolo

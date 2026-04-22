@@ -77,6 +77,48 @@ function chatNonLette(progettoId, utenteId) {
   return row ? row.cnt : 0;
 }
 
+// Ritorna true se ci sono email/note nuove (dopo last_seen_at) su progetto o sue attività
+function hasProjectUpdates(progettoId, utenteId) {
+  const sinceRow = db.prepare(
+    'SELECT last_seen_at FROM progetto_letture WHERE utente_id = ? AND progetto_id = ?'
+  ).get(utenteId, progettoId);
+  const since = sinceRow ? sinceRow.last_seen_at : '1970-01-01';
+
+  // Email su progetto o sue attività
+  const emailNew = db.prepare(`
+    SELECT 1 FROM email
+    WHERE (progetto_id = ? OR attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?))
+      AND COALESCE(created_at, data_ricezione) > ?
+    LIMIT 1
+  `).get(progettoId, progettoId, since);
+  if (emailNew) return true;
+
+  // Note interne (progetto-level)
+  const noteProgetto = db.prepare(`
+    SELECT 1 FROM note_interne WHERE progetto_id = ? AND created_at > ? LIMIT 1
+  `).get(progettoId, since);
+  if (noteProgetto) return true;
+
+  // Note attività
+  const noteAttivita = db.prepare(`
+    SELECT 1 FROM note_attivita
+    WHERE attivita_id IN (SELECT id FROM attivita WHERE progetto_id = ?) AND created_at > ?
+    LIMIT 1
+  `).get(progettoId, since);
+  if (noteAttivita) return true;
+
+  return false;
+}
+
+// Upsert last_seen_at per l'utente su un progetto
+function markProjectSeen(progettoId, utenteId) {
+  db.prepare(`
+    INSERT INTO progetto_letture (utente_id, progetto_id, last_seen_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(utente_id, progetto_id) DO UPDATE SET last_seen_at = datetime('now')
+  `).run(utenteId, progettoId);
+}
+
 // GET /api/projects — list projects (admin: all, tecnico: only visible)
 router.get('/', authenticateToken, (req, res) => {
   const { cliente_id, stato } = req.query;
@@ -134,6 +176,7 @@ router.get('/', authenticateToken, (req, res) => {
       num_attivita: activities.length,
       tecnici: getProjectTecnici(p.id),
       chat_non_lette: chatNonLette(p.id, req.user.id),
+      has_updates: hasProjectUpdates(p.id, req.user.id),
     };
   });
 
@@ -303,6 +346,9 @@ router.get('/:id', authenticateToken, (req, res) => {
     const visible = db.prepare('SELECT 1 FROM progetto_tecnici WHERE progetto_id = ? AND utente_id = ?').get(req.params.id, req.user.id);
     if (!visible) return res.status(403).json({ error: 'Accesso non consentito' });
   }
+
+  // Aggiorna timestamp ultima visita (reset badge UPD nella lista)
+  try { markProjectSeen(project.id, req.user.id); } catch (e) { /* ignore */ }
 
   const attivitaRaw = db.prepare(`
     SELECT a.*, u.nome as assegnato_nome, u.ruolo as assegnato_ruolo

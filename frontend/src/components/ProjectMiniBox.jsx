@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Bell } from 'lucide-react'
 
 const statoColors = {
   chiuso: 'bg-green-100 text-green-800',
@@ -38,6 +38,14 @@ export default function ProjectMiniBox({ project: p, to, isAdmin = false, getTec
               <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
                 {p.chat_non_lette}
               </span>
+            </span>
+          )}
+          {p.has_updates && (
+            <span
+              title="Nuove email o note dall'ultima visita"
+              className="inline-flex items-center gap-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full px-1.5 py-0.5"
+            >
+              <Bell size={10} /> UPD
             </span>
           )}
         </div>

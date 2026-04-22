@@ -345,7 +345,6 @@ export default function ProjectDataBox({
                       <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
                       <p className="text-xs text-gray-500">
                         {r.email}{r.telefono ? ` · ${r.telefono}` : ''}{r.azienda ? ` · ${r.azienda}` : ''}
-                        {r.attivita_nome && <span className="ml-2 text-amber-600 italic">(attività: {r.attivita_nome})</span>}
                       </p>
                     </div>
                     {r.ruolo && <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>}

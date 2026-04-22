@@ -224,6 +224,16 @@ function runMigrations() {
   db.exec('CREATE INDEX IF NOT EXISTS idx_ref_est_progetto ON referenti_esterni(progetto_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_ref_est_attivita ON referenti_esterni(attivita_id)');
 
+  // progetto_letture: tracking ultima visita progetto per utente
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS progetto_letture (
+      utente_id INTEGER NOT NULL,
+      progetto_id INTEGER NOT NULL,
+      last_seen_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (utente_id, progetto_id)
+    )
+  `);
+
   // Create impostazioni table (key-value settings store)
   db.exec(`
     CREATE TABLE IF NOT EXISTS impostazioni (

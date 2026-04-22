@@ -1,5 +1,14 @@
 # Storico Versioni
 
+## V5.19.00-0422 — 22 Aprile 2026 (release maggiore)
+### Badge "UPD" per progetti con aggiornamenti nuovi
+- Nuova tabella `progetto_letture(utente_id, progetto_id, last_seen_at)` con lazy migration PHP + Node
+- Endpoint `GET /api/projects` arricchito con campo `has_updates: boolean` per ogni progetto: true se esistono email o note (interne di progetto + di attività) create dopo `last_seen_at` per l'utente loggato, su progetto o sue attività
+- Endpoint `GET /api/projects/:id` ora fa upsert automatico di `last_seen_at = NOW()` → il badge si azzera all'apertura del ProjectDetail
+- Primo accesso a un progetto mai aperto → tutto considerato nuovo (since = 1970-01-01)
+- **Frontend** `ProjectMiniBox`: nuovo badge arancione "🔔 UPD" accanto al badge chat quando `has_updates === true`. Visibile in ProjectList, Timeline, ClientDashboard e ovunque usi ProjectMiniBox
+- Sia email ricevute sia inviate contribuiscono al segnale; le chat hanno già il loro badge dedicato e non contribuiscono a UPD
+
 ## V5.18.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Crea Ticket da email su assistenzatecnica@
 - Nuovo endpoint `POST /api/tickets/from-email/:emailId` (Node + PHP, admin only):
