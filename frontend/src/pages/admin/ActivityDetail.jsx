@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send, Paperclip, Upload, Download, Star, Info } from 'lucide-react'
-import { activities, users, clients as clientsApi } from '../../api/client'
+import { activities, users, clients as clientsApi, referentiEsterni } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ActivityDataBox from '../../components/ActivityDataBox'
 import EmailBox from '../../components/EmailBox'
@@ -55,6 +55,7 @@ export default function ActivityDetail() {
   const [showScheduledForm, setShowScheduledForm] = useState(false)
   const [schedForm, setSchedForm] = useState({ nota: '', data_pianificata: '', referenti_ids: '' })
   const [projectReferenti, setProjectReferenti] = useState([])
+  const [refEsterniAct, setRefEsterniAct] = useState([])
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [selectedDay, setSelectedDay] = useState(null)
@@ -143,9 +144,31 @@ export default function ActivityDetail() {
     finally { setLoading(false) }
   }
 
+  function loadRefEsterni() {
+    referentiEsterni.listForProject(projectId)
+      .then(list => setRefEsterniAct((Array.isArray(list) ? list : []).filter(r => Number(r.attivita_id) === Number(activityId))))
+      .catch(() => setRefEsterniAct([]))
+  }
+
+  async function handleCreateRefEsternoAct(form) {
+    if (!form.nome || !form.email) return
+    try {
+      await referentiEsterni.createForActivity(projectId, activityId, form)
+      loadRefEsterni()
+    } catch (err) { alert(err.message) }
+  }
+  async function handleDeleteRefEsternoAct(id) {
+    if (!confirm('Eliminare questo referente esterno?')) return
+    try {
+      await referentiEsterni.remove(id)
+      loadRefEsterni()
+    } catch (err) { alert(err.message) }
+  }
+
   useEffect(() => {
     loadActivity()
     loadScheduled()
+    loadRefEsterni()
     if (isAdmin) users.list().then(list => setUserList(list.filter(u => u.ruolo === 'tecnico' && u.attivo))).catch(() => {})
   }, [projectId, activityId])
 
@@ -287,6 +310,10 @@ export default function ActivityDetail() {
             onRemoveReferente={handleRemoveReferenteAct}
             onCreateAndAssignReferente={handleCreateAndAssignReferenteAct}
             canEditReferenti={isAdmin}
+            refEsterni={refEsterniAct}
+            onCreateRefEsterno={handleCreateRefEsternoAct}
+            onDeleteRefEsterno={handleDeleteRefEsternoAct}
+            canEditRefEsterni={isAdmin}
           />
 
           {/* Blocking email warning */}
@@ -416,7 +443,7 @@ export default function ActivityDetail() {
                 ) : (
                   <button onClick={() => handleFieldChange('stato', 'completata')}
                     className="w-full text-xs px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer text-left">
-                    Segna come completata
+                    Stato Attiva: Clicca per Completare
                   </button>
                 )}
               </div>

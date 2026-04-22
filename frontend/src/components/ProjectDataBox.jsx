@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Paperclip, Users, UserCog, ChevronRight, Trash2, Plus, Upload, Download, X, User, FileText, Pencil, Check } from 'lucide-react'
+import { Paperclip, Users, UserCog, ChevronRight, Trash2, Plus, Upload, Download, X, User, FileText, Pencil, Check, UserPlus } from 'lucide-react'
 
 const projectStatusConfig = {
   chiuso: { label: 'Chiuso', classes: 'bg-green-100 text-green-800', dot: 'bg-green-500' },
@@ -64,8 +64,13 @@ export default function ProjectDataBox({
   onCreateActivity,
   // Update project
   onUpdateProject,
+  // Referenti esterni (livello progetto)
+  refEsterni = [],
+  onCreateRefEsterno,
+  onDeleteRefEsterno,
+  canEditRefEsterni = false,
 }) {
-  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'referenti' | 'tecnici' | null
+  const [openPanel, setOpenPanel] = useState(null) // 'descrizione' | 'allegati' | 'referenti' | 'tecnici' | 'ref_esterni' | null
   const [editingName, setEditingName] = useState(false)
   const [editName, setEditName] = useState('')
   const [showNewActivity, setShowNewActivity] = useState(false)
@@ -74,6 +79,8 @@ export default function ProjectDataBox({
   const [showAddRef, setShowAddRef] = useState(false)
   const [showNewRefForm, setShowNewRefForm] = useState(false)
   const [newRefForm, setNewRefForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '' })
+  const [showNewExtForm, setShowNewExtForm] = useState(false)
+  const [newExtForm, setNewExtForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '', azienda: '' })
 
   if (!project) return null
 
@@ -176,6 +183,13 @@ export default function ProjectDataBox({
             <Users size={14} className={openPanel === 'referenti' ? 'text-teal-500' : ''} />
             <span className="font-medium">Referenti</span>
             <span className="bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{(project.referenti || []).length}</span>
+          </button>
+          <button onClick={() => { setOpenPanel(openPanel === 'ref_esterni' ? null : 'ref_esterni') }}
+            className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer ${openPanel === 'ref_esterni' ? 'text-amber-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <ChevronRight size={14} className={`transition-transform ${openPanel === 'ref_esterni' ? 'rotate-90' : ''}`} />
+            <UserPlus size={14} className={openPanel === 'ref_esterni' ? 'text-amber-500' : ''} />
+            <span className="font-medium">Ref. Esterni</span>
+            <span className="bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{refEsterni.length}</span>
           </button>
           {(isAdmin || (project.tecnici || []).length > 0) && (
             <button onClick={() => { setOpenPanel(openPanel === 'tecnici' ? null : 'tecnici') }}
@@ -309,6 +323,68 @@ export default function ProjectDataBox({
                       <button onClick={() => setShowAddRef(false)} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer">Chiudi</button>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Expanded ref esterni */}
+        {openPanel === 'ref_esterni' && (
+          <div className="mt-3 bg-amber-50 rounded-lg border border-amber-200 overflow-hidden">
+            {refEsterni.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-gray-400 italic">Nessun referente esterno assegnato al progetto</p>
+            ) : (
+              <div className="divide-y divide-amber-100">
+                {refEsterni.map(r => (
+                  <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-amber-700">{(r.nome?.[0] || '').toUpperCase()}{(r.cognome?.[0] || '').toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{r.nome} {r.cognome}</p>
+                      <p className="text-xs text-gray-500">
+                        {r.email}{r.telefono ? ` · ${r.telefono}` : ''}{r.azienda ? ` · ${r.azienda}` : ''}
+                        {r.attivita_nome && <span className="ml-2 text-amber-600 italic">(attività: {r.attivita_nome})</span>}
+                      </p>
+                    </div>
+                    {r.ruolo && <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{r.ruolo}</span>}
+                    {canEditRefEsterni && onDeleteRefEsterno && (
+                      <button onClick={() => onDeleteRefEsterno(r.id)} className="text-gray-400 hover:text-red-600 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors shrink-0" title="Elimina">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {canEditRefEsterni && (
+              <div className="border-t border-amber-200 p-3">
+                {!showNewExtForm ? (
+                  <button onClick={() => setShowNewExtForm(true)} className="flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 cursor-pointer">
+                    <Plus size={14} /> Aggiungi referente esterno
+                  </button>
+                ) : (
+                  <form onSubmit={e => {
+                    e.preventDefault()
+                    if (onCreateRefEsterno) onCreateRefEsterno(newExtForm)
+                    setNewExtForm({ nome: '', cognome: '', email: '', telefono: '', ruolo: '', azienda: '' })
+                    setShowNewExtForm(false)
+                  }} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-gray-700">Nuovo referente esterno</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Nome *" value={newExtForm.nome} onChange={e => setNewExtForm(f => ({ ...f, nome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" required />
+                      <input type="text" placeholder="Cognome" value={newExtForm.cognome} onChange={e => setNewExtForm(f => ({ ...f, cognome: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                      <input type="email" placeholder="Email *" value={newExtForm.email} onChange={e => setNewExtForm(f => ({ ...f, email: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" required />
+                      <input type="text" placeholder="Telefono" value={newExtForm.telefono} onChange={e => setNewExtForm(f => ({ ...f, telefono: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                      <input type="text" placeholder="Azienda" value={newExtForm.azienda} onChange={e => setNewExtForm(f => ({ ...f, azienda: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                      <input type="text" placeholder="Ruolo" value={newExtForm.ruolo} onChange={e => setNewExtForm(f => ({ ...f, ruolo: e.target.value }))} className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700 cursor-pointer">Crea</button>
+                      <button type="button" onClick={() => setShowNewExtForm(false)} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs hover:bg-gray-200 cursor-pointer">Annulla</button>
+                    </div>
+                  </form>
                 )}
               </div>
             )}

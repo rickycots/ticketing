@@ -81,6 +81,9 @@ app.use('/api/clients/:clienteId/schede', require('./routes/knowledgeBase'));
 // Repository routes
 app.use('/api/repository', require('./routes/repository'));
 
+// Referenti esterni + Anagrafica (unified routes mounted at /api)
+app.use('/api', require('./routes/referentiEsterni'));
+
 // AI routes — stricter rate limit
 app.use('/api/ai', aiLimiter, require('./routes/ai'));
 

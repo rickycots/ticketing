@@ -1,5 +1,32 @@
 # Storico Versioni
 
+## V5.14.00-0422 — 22 Aprile 2026 (release maggiore)
+### Referenti Esterni e Anagrafica Unificata
+- Nuova entità **Referenti Esterni**: contatti terzi (non appartenenti all'azienda cliente) collegabili a un singolo progetto o a una singola attività
+- Nuova tabella `referenti_esterni` (campi: progetto_id/attivita_id esclusivi, nome, cognome, email, telefono, ruolo, azienda)
+- DB migration lazy (PHP: `ensureReferentiEsterniTable`, Node.js: migration in `database.js`) + schema in `001_schema.sql`
+- Endpoint CRUD: `GET/POST /projects/:id/referenti-esterni`, `POST /projects/:id/activities/:aid/referenti-esterni`, `PUT/DELETE /referenti-esterni/:id` (sia PHP sia Node.js)
+- Permessi: admin + tecnici assegnati al progetto
+- `ActivityDataBox` e `ProjectDataBox`: nuovo toggle "Ref. Esterni" (ambra) a fianco di "Referenti" con lista + form inline add/delete
+- `ActivityDetail`: carica solo i ref esterni legati all'attività specifica (no ereditarietà dal progetto)
+- `ProjectDetail`: mostra tutti i ref esterni del progetto (sia progetto-level sia activity-level, con indicazione "(attività: X)")
+- `SendMail`: i ref esterni vengono proposti nei destinatari con badge ambra. Scope coerente: da attività solo quelli dell'attività, da progetto solo quelli a livello progetto
+- Testo corsivo sotto campo destinatari aggiornato con menzione "Ref. Esterni"
+
+### Nuova pagina Anagrafica
+- Pagina `/admin/anagrafica`: elenco unificato di utenti portale, referenti interni e referenti esterni
+- Endpoint `GET /anagrafica` (admin + tecnici) con join su clienti/progetti/attività
+- Filtri rapidi per tipologia (Utenti portale / Ref. interni / Ref. esterni) + ricerca full-text (nome, email, azienda, ruolo, progetto, attività)
+- Export CSV della vista filtrata con separatore `;` e BOM UTF-8 per Excel
+
+### Ristrutturazione Sidebar admin
+- Rimosse label testuali per voci Utenti, Comunicazioni, AI Assistente: ora sono in una **riga di icone compatte** sopra Repository (con tooltip su hover)
+- Aggiunta nuova icona "Anagrafica" (Contact) nella stessa riga
+- Repository resta l'unica voce testuale della sezione bottom
+
+### Stato attività
+- `ActivityDetail`: pulsante di completamento ora etichettato "Stato Attiva: Clicca per Completare" (prima "Segna come completata")
+
 ## V5.13.06-0422 — 22 Aprile 2026
 - SendMail (`/admin/send-mail`): aggiunto pulsante "Annulla" accanto a "Invia Email"
 - Ritorno contestuale: se si arriva da un'attività torna all'attività, se da un progetto torna al progetto, altrimenti `navigate(-1)`

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Mail, StickyNote, Trash2, Users, ChevronRight, ChevronDown, MessageCircle, Send, Paperclip, ExternalLink, Lock, BellRing, Building2, Phone, User, Star, Info, FileText, Download, Upload, X, UserCog, AlertTriangle } from 'lucide-react'
-import { projects, activities, users, clients } from '../../api/client'
+import { projects, activities, users, clients, referentiEsterni } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import ProjectDataBox from '../../components/ProjectDataBox'
 import EmailBox from '../../components/EmailBox'
@@ -69,6 +69,29 @@ export default function ProjectDetail() {
   const [overdueEndIds, setOverdueEndIds] = useState(new Set())
   const [overdueStartIds, setOverdueStartIds] = useState(new Set())
   const [showOverduePopup, setShowOverduePopup] = useState(false)
+  const [refEsterni, setRefEsterni] = useState([])
+
+  function loadRefEsterni() {
+    if (!id) return
+    referentiEsterni.listForProject(id)
+      .then(list => setRefEsterni(Array.isArray(list) ? list : []))
+      .catch(() => setRefEsterni([]))
+  }
+
+  async function handleCreateRefEsternoProj(form) {
+    if (!form.nome || !form.email) return
+    try {
+      await referentiEsterni.createForProject(id, form)
+      loadRefEsterni()
+    } catch (err) { alert(err.message) }
+  }
+  async function handleDeleteRefEsternoProj(refId) {
+    if (!confirm('Eliminare questo referente esterno?')) return
+    try {
+      await referentiEsterni.remove(refId)
+      loadRefEsterni()
+    } catch (err) { alert(err.message) }
+  }
   const chatEndRef = useRef(null)
   const navigate = useNavigate()
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -178,6 +201,7 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     load()
+    loadRefEsterni()
     if (isAdmin) users.list().then(setUserList).catch(() => {})
   }, [id])
 
@@ -407,6 +431,10 @@ export default function ProjectDetail() {
             onCreateAndAssignRef={async (form) => { await handleCreateAndAssign(form) }}
             tecnici={tecnici}
             onTecnicoToggle={handleTecnicoToggle}
+            refEsterni={refEsterni}
+            onCreateRefEsterno={handleCreateRefEsternoProj}
+            onDeleteRefEsterno={handleDeleteRefEsternoProj}
+            canEditRefEsterni={isAdmin || canEdit}
           />
 
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Send, Paperclip, X, CheckCircle } from 'lucide-react'
-import { emails, projects as projectsApi, clients } from '../../api/client'
+import { emails, projects as projectsApi, clients, referentiEsterni } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 
 export default function SendMail() {
@@ -122,6 +122,28 @@ export default function SendMail() {
       }).catch(() => {})
     }
   }, [projectDetail?.cliente_id])
+
+  // Load referenti esterni: scope = attività se preAttivita, altrimenti progetto-level only
+  useEffect(() => {
+    const pid = form.progetto_id
+    if (!pid) return
+    referentiEsterni.listForProject(pid).then(list => {
+      const all = Array.isArray(list) ? list : []
+      const scoped = preAttivita
+        ? all.filter(r => Number(r.attivita_id) === Number(preAttivita))
+        : all.filter(r => r.progetto_id && !r.attivita_id)
+      const extContacts = scoped.filter(r => r.email).map(r => ({
+        email: r.email,
+        label: `${r.nome} ${r.cognome || ''}`.trim() + (r.azienda ? ` — ${r.azienda}` : ''),
+        tipo: 'Ref. Esterno',
+      }))
+      setContacts(prev => {
+        const existing = new Set(prev.map(c => c.email.toLowerCase()))
+        const news = extContacts.filter(c => !existing.has(c.email.toLowerCase()))
+        return [...prev, ...news]
+      })
+    }).catch(() => {})
+  }, [form.progetto_id, preAttivita])
 
   function toggleEmail(email) {
     setSelectedEmails(prev =>
@@ -249,7 +271,7 @@ export default function SendMail() {
         {/* Recipients */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Destinatari * {selectedEmails.length > 0 && <span className="text-blue-600">({selectedEmails.length})</span>}</label>
-          <p className="text-xs text-gray-400 italic mb-2">Seleziona cliente e progetto per vedere i destinatari disponibili; <em className="text-gray-500">Solo i Referenti se si arriva da una attività.</em></p>
+          <p className="text-xs text-gray-400 italic mb-2">Seleziona cliente e progetto per vedere i destinatari disponibili (Referenti, Ref. Esterni, Utenti portale); <em className="text-gray-500">Solo i Referenti e Ref. Esterni dell'attività se si arriva da una attività.</em></p>
           {!form.progetto_id ? (
             <p className="text-sm text-gray-400 italic">Seleziona un progetto per continuare</p>
           ) : contacts.length === 0 ? (
@@ -262,7 +284,10 @@ export default function SendMail() {
                   <span className="font-medium text-gray-800">{c.label}</span>
                   <span className="text-gray-400">{c.email}</span>
                   <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    c.tipo === 'Referente' ? 'bg-blue-50 text-blue-600' : c.tipo === 'Cliente' ? 'bg-green-50 text-green-600' : 'bg-purple-50 text-purple-600'
+                    c.tipo === 'Referente' ? 'bg-blue-50 text-blue-600'
+                      : c.tipo === 'Cliente' ? 'bg-green-50 text-green-600'
+                      : c.tipo === 'Ref. Esterno' ? 'bg-amber-50 text-amber-700'
+                      : 'bg-purple-50 text-purple-600'
                   }`}>{c.tipo}</span>
                 </label>
               ))}

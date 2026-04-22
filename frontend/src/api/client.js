@@ -320,6 +320,23 @@ export const comunicazioni = {
   remove: (id) => request(`/comunicazioni/${id}`, { method: 'DELETE' }),
 };
 
+// Referenti Esterni (contatti esterni legati a progetto o attività)
+export const referentiEsterni = {
+  listForProject: (projectId) => request(`/projects/${projectId}/referenti-esterni`),
+  createForProject: (projectId, data) =>
+    request(`/projects/${projectId}/referenti-esterni`, { method: 'POST', body: JSON.stringify(data) }),
+  createForActivity: (projectId, activityId, data) =>
+    request(`/projects/${projectId}/activities/${activityId}/referenti-esterni`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) =>
+    request(`/referenti-esterni/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id) => request(`/referenti-esterni/${id}`, { method: 'DELETE' }),
+};
+
+// Anagrafica unificata (utenti portale + ref interni + ref esterni)
+export const anagrafica = {
+  list: () => request('/anagrafica'),
+};
+
 // AI Assistente
 export const ai = {
   ticketAssist: (ticket_id, domanda) =>

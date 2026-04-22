@@ -266,6 +266,22 @@ CREATE TABLE IF NOT EXISTS progetto_referenti (
   FOREIGN KEY (referente_id) REFERENCES referenti_progetto(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Referenti esterni (contatti esterni all'azienda cliente, legati a progetto o attività)
+CREATE TABLE IF NOT EXISTS referenti_esterni (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  progetto_id INT DEFAULT NULL,
+  attivita_id INT DEFAULT NULL,
+  nome VARCHAR(255) NOT NULL,
+  cognome VARCHAR(255) DEFAULT '',
+  email VARCHAR(191) NOT NULL,
+  telefono VARCHAR(50) DEFAULT NULL,
+  ruolo VARCHAR(100) DEFAULT NULL,
+  azienda VARCHAR(255) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ref_est_progetto (progetto_id),
+  INDEX idx_ref_est_attivita (attivita_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Lettura comunicazioni per utente
 CREATE TABLE IF NOT EXISTS comunicazioni_lette (
   utente_cliente_id INT NOT NULL,

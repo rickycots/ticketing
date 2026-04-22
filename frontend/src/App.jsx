@@ -20,6 +20,7 @@ import AdminAiChat from './pages/admin/AdminAiChat'
 import UserList from './pages/admin/UserList'
 import Repository from './pages/admin/Repository'
 import ComunicazioniList from './pages/admin/ComunicazioniList'
+import Anagrafica from './pages/admin/Anagrafica'
 import SendMail from './pages/admin/SendMail'
 import TicketForm from './pages/client/TicketForm'
 import ClientTicketList from './pages/client/TicketList'
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="clients/:id/dashboard" element={<AdminOnly><ClientDashboard /></AdminOnly>} />
         <Route path="users" element={<AdminOnly><UserList /></AdminOnly>} />
         <Route path="comunicazioni" element={<AdminOnly><ComunicazioniList /></AdminOnly>} />
+        <Route path="anagrafica" element={<Anagrafica />} />
         <Route path="ai" element={<AdminAiChat />} />
       </Route>
 

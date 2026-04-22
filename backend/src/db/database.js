@@ -206,6 +206,24 @@ function runMigrations() {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_attivita_referenti_act ON attivita_referenti(attivita_id)');
 
+  // Create referenti_esterni (contatti esterni all'azienda cliente, legati a progetto o attività)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS referenti_esterni (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      progetto_id INTEGER DEFAULT NULL,
+      attivita_id INTEGER DEFAULT NULL,
+      nome TEXT NOT NULL,
+      cognome TEXT DEFAULT '',
+      email TEXT NOT NULL,
+      telefono TEXT DEFAULT NULL,
+      ruolo TEXT DEFAULT NULL,
+      azienda TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ref_est_progetto ON referenti_esterni(progetto_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_ref_est_attivita ON referenti_esterni(attivita_id)');
+
   // Create impostazioni table (key-value settings store)
   db.exec(`
     CREATE TABLE IF NOT EXISTS impostazioni (

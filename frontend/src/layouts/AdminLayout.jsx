@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X, List } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X, List, Contact } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
 
@@ -14,13 +14,17 @@ const allNavItems = [
   { to: '/admin/emails', icon: Mail, label: 'Email', adminOnly: true },
   { to: '/admin/send-mail', icon: Send, label: 'Invia Mail' },
   { to: '/admin/clients', icon: Users, label: 'Clienti', adminOnly: true },
+]
+
+// Icone-solo in barra compatta sopra Repository
+const iconOnlyNavItems = [
   { to: '/admin/users', icon: UserCog, label: 'Utenti', adminOnly: true },
-  { separator: true, adminOnly: true },
   { to: '/admin/comunicazioni', icon: Megaphone, label: 'Comunicazioni', adminOnly: true },
+  { to: '/admin/ai', icon: Sparkles, label: 'AI Assistente' },
+  { to: '/admin/anagrafica', icon: Contact, label: 'Anagrafica' },
 ]
 
 const bottomNavItems = [
-  { to: '/admin/ai', icon: Sparkles, label: 'AI Assistente' },
   { to: '/admin/repository', icon: BookOpen, label: 'Repository', adminOnly: true },
 ]
 
@@ -61,6 +65,10 @@ export default function AdminLayout() {
     return item
   })
   const bottomItems = bottomNavItems.filter(item => {
+    if (item.adminOnly && user.ruolo !== 'admin') return false
+    return true
+  })
+  const iconItems = iconOnlyNavItems.filter(item => {
     if (item.adminOnly && user.ruolo !== 'admin') return false
     if (item.to === '/admin/ai' && user.ruolo !== 'admin' && !user.abilitato_ai) return false
     return true
@@ -322,9 +330,31 @@ export default function AdminLayout() {
           )})}
         </nav>
 
-        {/* Bottom nav items (separated) */}
+        {/* Icon-only nav row (Utenti, Comunicazioni, AI, Anagrafica) */}
+        {iconItems.length > 0 && (
+          <div className={`px-3 pt-2 border-t ${sidebarTheme.border} flex items-center justify-around gap-1`}>
+            {iconItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                title={label}
+                className={({ isActive }) =>
+                  `p-2 rounded-lg transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : `text-gray-300 ${sidebarTheme.hover} hover:text-white`
+                  }`
+                }
+              >
+                <Icon size={20} />
+              </NavLink>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom nav items (Repository) */}
         {bottomItems.length > 0 && (
-          <div className={`px-3 pb-2 border-t ${sidebarTheme.border} pt-2`}>
+          <div className={`px-3 pb-2 border-t ${sidebarTheme.border} pt-2 mt-2`}>
             {bottomItems.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}

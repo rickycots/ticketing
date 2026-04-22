@@ -50,6 +50,7 @@ require_once __DIR__ . '/routes/knowledgeBase.php';
 require_once __DIR__ . '/routes/repository.php';
 require_once __DIR__ . '/routes/ai.php';
 require_once __DIR__ . '/routes/comunicazioni.php';
+require_once __DIR__ . '/routes/referentiEsterni.php';
 
 // Poor man's cron: poll emails every 10 minutes
 // Wrapped in ob to prevent any output from breaking JSON responses
