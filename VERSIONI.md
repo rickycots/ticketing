@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.16.00-0422 — 22 Aprile 2026 (release maggiore)
+### SendMail: fix caricamento Ref. Esterni + raggruppamento destinatari
+- **Fix race condition**: i referenti esterni non comparivano nel box destinatari quando si arrivava da un'attività, perché il reload del progetto sovrascriveva i contacts dopo il caricamento ref esterni
+- Refactor con state separati (`refInterniList`, `refEsterniList`, `utentiPortaleList`) unificati via `useMemo` con dedup per email — elimina la race condition indipendentemente dall'ordine di arrivo delle risposte async
+- **UI raggruppata**: i destinatari sono ora mostrati in sezioni logiche separate da righe sottili: Referenti → Ref. Esterni → Utenti portale
+- Ordine di visualizzazione fisso e prevedibile; se una sezione è vuota, non viene mostrato separatore orfano
+
 ## V5.15.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Fix PWA cache refresh e routing SPA
 - **Service Worker** (`sw.js`): bump cache name `stm-portal-v1` → `v2`, forza tutti i client PWA a scaricare la nuova versione al prossimo caricamento

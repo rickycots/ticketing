@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Send, Paperclip, X, CheckCircle } from 'lucide-react'
 import { emails, projects as projectsApi, clients, referentiEsterni } from '../../api/client'
@@ -12,7 +12,9 @@ export default function SendMail() {
   const [allProjects, setAllProjects] = useState([])
   const [projectDetail, setProjectDetail] = useState(null)
   const [activities, setActivities] = useState([])
-  const [contacts, setContacts] = useState([])
+  const [refInterniList, setRefInterniList] = useState([])
+  const [refEsterniList, setRefEsterniList] = useState([])
+  const [utentiPortaleList, setUtentiPortaleList] = useState([])
   const [selectedEmails, setSelectedEmails] = useState([])
   const [form, setForm] = useState({
     oggetto: '', corpo: '',
@@ -44,17 +46,9 @@ export default function SendMail() {
     if (initialized) return
     if (!preProgetto) { setInitialized(true); return }
 
-    // Load the project directly to get all data (works for both admin and tecnico)
     projectsApi.get(preProgetto).then(p => {
       setProjectDetail(p)
       setActivities(p.attivita || [])
-      const contactsList = []
-      if (p.referenti && p.referenti.length > 0) {
-        p.referenti.forEach(r => {
-          if (r.email) contactsList.push({ email: r.email, label: `${r.nome} ${r.cognome || ''}`.trim(), tipo: 'Referente' })
-        })
-      }
-      setContacts(contactsList)
       const clienteId = preCliente || String(p.cliente_id)
       setForm(f => ({ ...f, cliente_id: clienteId, progetto_id: preProgetto, attivita_id: preAttivita }))
       setInitialized(true)
@@ -69,64 +63,62 @@ export default function SendMail() {
     } else {
       setProjectList([])
     }
-    // Only reset if user manually changed the client (not pre-filled)
     if (!isPreFilled) {
       setForm(f => ({ ...f, progetto_id: '', attivita_id: '' }))
       setProjectDetail(null)
       setActivities([])
-      setContacts([])
       setSelectedEmails([])
     }
   }, [form.cliente_id, allProjects, initialized])
 
-  // When project changes, load detail (skip if already loaded by initialization)
+  // When project changes, load detail (and extract internal referenti)
   useEffect(() => {
     if (!initialized) return
     if (form.progetto_id) {
       projectsApi.get(form.progetto_id).then(p => {
         setProjectDetail(p)
         setActivities(p.attivita || [])
-        const contactsList = []
-        if (p.referenti && p.referenti.length > 0) {
-          p.referenti.forEach(r => {
-            if (r.email) contactsList.push({ email: r.email, label: `${r.nome} ${r.cognome || ''}`.trim(), tipo: 'Referente' })
-          })
-        }
-        setContacts(contactsList)
+        const interni = (p.referenti || []).filter(r => r.email).map(r => ({
+          email: r.email,
+          label: `${r.nome} ${r.cognome || ''}`.trim(),
+          tipo: 'Referente',
+        }))
+        setRefInterniList(interni)
         setSelectedEmails([])
       }).catch(() => {
         setProjectDetail(null)
         setActivities([])
-        setContacts([])
+        setRefInterniList([])
       })
     } else {
       setProjectDetail(null)
       setActivities([])
-      setContacts([])
+      setRefInterniList([])
+      setRefEsterniList([])
+      setUtentiPortaleList([])
       setSelectedEmails([])
     }
-  }, [form.progetto_id])
+  }, [form.progetto_id, initialized])
 
   // Load utenti_cliente (admin only, and NOT when coming from an activity)
   useEffect(() => {
-    if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin' && !preAttivita) {
+    if (preAttivita) { setUtentiPortaleList([]); return }
+    if (projectDetail && projectDetail.cliente_id && user.ruolo === 'admin') {
       clients.getUsers(projectDetail.cliente_id).then(users => {
         const clientContacts = (users || []).filter(u => u.attivo && u.email).map(u => ({
-          email: u.email, label: u.nome, tipo: 'Utente portale'
+          email: u.email, label: u.nome, tipo: 'Utente portale',
         }))
-        setContacts(prev => {
-          const existingEmails = new Set(prev.map(c => c.email.toLowerCase()))
-          const newContacts = clientContacts.filter(c => !existingEmails.has(c.email.toLowerCase()))
-          return [...prev, ...newContacts]
-        })
-      }).catch(() => {})
+        setUtentiPortaleList(clientContacts)
+      }).catch(() => setUtentiPortaleList([]))
+    } else {
+      setUtentiPortaleList([])
     }
-  }, [projectDetail?.cliente_id])
+  }, [projectDetail?.cliente_id, preAttivita])
 
   // Load referenti esterni: scope = attività se preAttivita, altrimenti progetto-level only
   useEffect(() => {
     const pid = form.progetto_id
-    if (!pid) return
+    if (!pid) { setRefEsterniList([]); return }
     referentiEsterni.listForProject(pid).then(list => {
       const all = Array.isArray(list) ? list : []
       const scoped = preAttivita
@@ -137,13 +129,33 @@ export default function SendMail() {
         label: `${r.nome} ${r.cognome || ''}`.trim() + (r.azienda ? ` — ${r.azienda}` : ''),
         tipo: 'Ref. Esterno',
       }))
-      setContacts(prev => {
-        const existing = new Set(prev.map(c => c.email.toLowerCase()))
-        const news = extContacts.filter(c => !existing.has(c.email.toLowerCase()))
-        return [...prev, ...news]
-      })
-    }).catch(() => {})
+      setRefEsterniList(extContacts)
+    }).catch(() => setRefEsterniList([]))
   }, [form.progetto_id, preAttivita])
+
+  // Unified contacts list (deduplicated by email, preserving order: interni → esterni → portale)
+  const contacts = useMemo(() => {
+    const seen = new Set()
+    const out = []
+    for (const c of [...refInterniList, ...refEsterniList, ...utentiPortaleList]) {
+      const key = (c.email || '').toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      out.push(c)
+    }
+    return out
+  }, [refInterniList, refEsterniList, utentiPortaleList])
+
+  // Grouped contacts for UI rendering (with separators between sections)
+  const contactGroups = useMemo(() => {
+    const byType = new Map()
+    for (const c of contacts) {
+      if (!byType.has(c.tipo)) byType.set(c.tipo, [])
+      byType.get(c.tipo).push(c)
+    }
+    const order = ['Referente', 'Ref. Esterno', 'Utente portale']
+    return order.filter(t => byType.has(t)).map(t => ({ tipo: t, items: byType.get(t) }))
+  }, [contacts])
 
   function toggleEmail(email) {
     setSelectedEmails(prev =>
@@ -172,7 +184,9 @@ export default function SendMail() {
       setForm({ oggetto: '', corpo: '', cliente_id: '', progetto_id: '', attivita_id: '', is_bloccante: false })
       setFiles([])
       setSelectedEmails([])
-      setContacts([])
+      setRefInterniList([])
+      setRefEsterniList([])
+      setUtentiPortaleList([])
       setTimeout(() => setSent(false), 3000)
     } catch (err) { alert(err.message) }
     finally { setSending(false) }
@@ -277,19 +291,26 @@ export default function SendMail() {
           ) : contacts.length === 0 ? (
             <p className="text-sm text-gray-400 italic">Nessun contatto trovato per questo progetto</p>
           ) : (
-            <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1.5">
-              {contacts.map(c => (
-                <label key={c.email} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 rounded px-2 py-1">
-                  <input type="checkbox" checked={selectedEmails.includes(c.email)} onChange={() => toggleEmail(c.email)} className="rounded border-gray-300" />
-                  <span className="font-medium text-gray-800">{c.label}</span>
-                  <span className="text-gray-400">{c.email}</span>
-                  <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    c.tipo === 'Referente' ? 'bg-blue-50 text-blue-600'
-                      : c.tipo === 'Cliente' ? 'bg-green-50 text-green-600'
-                      : c.tipo === 'Ref. Esterno' ? 'bg-amber-50 text-amber-700'
-                      : 'bg-purple-50 text-purple-600'
-                  }`}>{c.tipo}</span>
-                </label>
+            <div className="border border-gray-200 rounded-lg p-3 max-h-56 overflow-y-auto">
+              {contactGroups.map((g, gi) => (
+                <div key={g.tipo}>
+                  {gi > 0 && <hr className="my-2 border-gray-200" />}
+                  <div className="space-y-1.5">
+                    {g.items.map(c => (
+                      <label key={c.email} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 rounded px-2 py-1">
+                        <input type="checkbox" checked={selectedEmails.includes(c.email)} onChange={() => toggleEmail(c.email)} className="rounded border-gray-300" />
+                        <span className="font-medium text-gray-800">{c.label}</span>
+                        <span className="text-gray-400">{c.email}</span>
+                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          c.tipo === 'Referente' ? 'bg-blue-50 text-blue-600'
+                            : c.tipo === 'Cliente' ? 'bg-green-50 text-green-600'
+                            : c.tipo === 'Ref. Esterno' ? 'bg-amber-50 text-amber-700'
+                            : 'bg-purple-50 text-purple-600'
+                        }`}>{c.tipo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
