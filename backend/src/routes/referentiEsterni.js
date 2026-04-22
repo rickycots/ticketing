@@ -95,25 +95,48 @@ router.delete('/referenti-esterni/:id', authenticateToken, (req, res) => {
 });
 
 // GET /api/anagrafica — unified roster (admin + tecnico)
-// Returns utenti portale + referenti interni + referenti esterni
+// Returns utenti portale + referenti interni + referenti esterni with aggregated contesti
 router.get('/anagrafica', authenticateToken, (req, res) => {
-  // utenti_cliente (portale)
+  // utenti_cliente (portale) — 1 record per person
   const utentiPortale = db.prepare(`
-    SELECT uc.id, uc.nome, uc.cognome, uc.email, c.nome_azienda as azienda, NULL as ruolo, NULL as telefono
+    SELECT uc.id, uc.nome, COALESCE(uc.cognome, '') as cognome, uc.email,
+           uc.cliente_id, c.nome_azienda as azienda,
+           NULL as ruolo, NULL as telefono
     FROM utenti_cliente uc
     LEFT JOIN clienti c ON uc.cliente_id = c.id
     WHERE uc.attivo = 1
-  `).all().map(u => ({ ...u, status: 'utente_portale' }));
+  `).all().map(u => ({ ...u, status: 'utente_portale', contesti: [] }));
 
-  // referenti interni (referenti_progetto)
-  const refInterni = db.prepare(`
-    SELECT rp.id, rp.nome, rp.cognome, rp.email, rp.telefono, rp.ruolo, c.nome_azienda as azienda
+  // Referenti interni (1 record master) + lista contesti (progetti + attività)
+  const refInterniRaw = db.prepare(`
+    SELECT rp.id, rp.nome, rp.cognome, rp.email, rp.telefono, rp.ruolo,
+           c.nome_azienda as azienda
     FROM referenti_progetto rp
     LEFT JOIN clienti c ON rp.cliente_id = c.id
-  `).all().map(r => ({ ...r, status: 'ref_interno' }));
+  `).all();
 
-  // referenti esterni
-  const refEsterni = db.prepare(`
+  const ctxProgettiStmt = db.prepare(`
+    SELECT p.nome
+    FROM progetti p
+    INNER JOIN progetto_referenti pr ON pr.progetto_id = p.id
+    WHERE pr.referente_id = ?
+  `);
+  const ctxAttivitaStmt = db.prepare(`
+    SELECT a.nome as attivita_nome, p.nome as progetto_nome
+    FROM attivita a
+    JOIN progetti p ON a.progetto_id = p.id
+    INNER JOIN attivita_referenti ar ON ar.attivita_id = a.id
+    WHERE ar.referente_id = ?
+  `);
+
+  const refInterni = refInterniRaw.map(r => {
+    const progetti = ctxProgettiStmt.all(r.id).map(x => ({ progetto: x.nome, attivita: null }));
+    const attivita = ctxAttivitaStmt.all(r.id).map(x => ({ progetto: x.progetto_nome, attivita: x.attivita_nome }));
+    return { ...r, status: 'ref_interno', contesti: [...progetti, ...attivita] };
+  });
+
+  // Referenti esterni — aggregati per email (case-insensitive)
+  const refEsterniRaw = db.prepare(`
     SELECT re.id, re.nome, re.cognome, re.email, re.telefono, re.ruolo, re.azienda,
            re.progetto_id, re.attivita_id,
            p.nome as progetto_nome,
@@ -123,13 +146,47 @@ router.get('/anagrafica', authenticateToken, (req, res) => {
     LEFT JOIN progetti p ON re.progetto_id = p.id
     LEFT JOIN attivita a ON re.attivita_id = a.id
     LEFT JOIN progetti ap ON a.progetto_id = ap.id
-  `).all().map(r => ({
-    ...r,
-    status: 'ref_esterno',
-    progetto_nome: r.progetto_nome || r.attivita_progetto_nome,
-  }));
+  `).all();
+
+  const estMap = new Map();
+  for (const r of refEsterniRaw) {
+    const key = (r.email || '').toLowerCase();
+    if (!key) continue;
+    if (!estMap.has(key)) {
+      estMap.set(key, {
+        ids: [], nome: r.nome, cognome: r.cognome, email: r.email,
+        telefono: r.telefono, ruolo: r.ruolo, azienda: r.azienda,
+        status: 'ref_esterno', contesti: [],
+      });
+    }
+    const agg = estMap.get(key);
+    agg.ids.push(r.id);
+    const progettoNome = r.progetto_nome || r.attivita_progetto_nome;
+    if (progettoNome) agg.contesti.push({ progetto: progettoNome, attivita: r.attivita_nome || null });
+  }
+  const refEsterni = [...estMap.values()];
 
   res.json([...utentiPortale, ...refInterni, ...refEsterni]);
+});
+
+// DELETE /api/anagrafica/ref-interno/:id — cascade junction
+router.delete('/anagrafica/ref-interno/:id', authenticateToken, requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM progetto_referenti WHERE referente_id = ?').run(id);
+    db.prepare('DELETE FROM attivita_referenti WHERE referente_id = ?').run(id);
+    db.prepare('DELETE FROM referenti_progetto WHERE id = ?').run(id);
+  });
+  tx();
+  res.json({ ok: true });
+});
+
+// DELETE /api/anagrafica/ref-esterno?email=... — bulk delete by email (all contexts)
+router.delete('/anagrafica/ref-esterno', authenticateToken, requireAdmin, (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'email richiesta' });
+  const info = db.prepare('DELETE FROM referenti_esterni WHERE LOWER(email) = ?').run(email);
+  res.json({ ok: true, deleted: info.changes });
 });
 
 module.exports = router;

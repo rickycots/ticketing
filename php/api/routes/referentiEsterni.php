@@ -157,29 +157,51 @@ $router->delete('/referenti-esterni/:id', [Auth::class, 'authenticateToken'], fu
 $router->get('/anagrafica', [Auth::class, 'authenticateToken'], function($req) {
     ensureReferentiEsterniTable();
 
-    // Utenti portale
+    // Utenti portale — 1 record per persona, nessun contesto aggiuntivo
     $utentiPortale = Database::fetchAll(
         "SELECT uc.id, uc.nome, COALESCE(uc.cognome, '') as cognome, uc.email,
-                c.nome_azienda as azienda, NULL as ruolo, NULL as telefono
+                uc.cliente_id, c.nome_azienda as azienda,
+                NULL as ruolo, NULL as telefono
          FROM utenti_cliente uc
          LEFT JOIN clienti c ON uc.cliente_id = c.id
          WHERE uc.attivo = 1"
     );
-    foreach ($utentiPortale as &$u) { $u['status'] = 'utente_portale'; }
+    foreach ($utentiPortale as &$u) { $u['status'] = 'utente_portale'; $u['contesti'] = []; }
     unset($u);
 
-    // Referenti interni
-    $refInterni = Database::fetchAll(
+    // Referenti interni (1 record master) + lista contesti (progetti + attività)
+    $refInterniRaw = Database::fetchAll(
         "SELECT rp.id, rp.nome, rp.cognome, rp.email, rp.telefono, rp.ruolo,
                 c.nome_azienda as azienda
          FROM referenti_progetto rp
          LEFT JOIN clienti c ON rp.cliente_id = c.id"
     );
-    foreach ($refInterni as &$r) { $r['status'] = 'ref_interno'; }
-    unset($r);
+    $refInterni = [];
+    foreach ($refInterniRaw as $r) {
+        $progetti = Database::fetchAll(
+            "SELECT p.nome FROM progetti p
+             INNER JOIN progetto_referenti pr ON pr.progetto_id = p.id
+             WHERE pr.referente_id = ?",
+            [$r['id']]
+        );
+        $attivita = Database::fetchAll(
+            "SELECT a.nome as attivita_nome, p.nome as progetto_nome
+             FROM attivita a
+             JOIN progetti p ON a.progetto_id = p.id
+             INNER JOIN attivita_referenti ar ON ar.attivita_id = a.id
+             WHERE ar.referente_id = ?",
+            [$r['id']]
+        );
+        $contesti = [];
+        foreach ($progetti as $p) { $contesti[] = ['progetto' => $p['nome'], 'attivita' => null]; }
+        foreach ($attivita as $a) { $contesti[] = ['progetto' => $a['progetto_nome'], 'attivita' => $a['attivita_nome']]; }
+        $r['status'] = 'ref_interno';
+        $r['contesti'] = $contesti;
+        $refInterni[] = $r;
+    }
 
-    // Referenti esterni
-    $refEsterni = Database::fetchAll(
+    // Referenti esterni — aggregati per email (case-insensitive)
+    $refEsterniRaw = Database::fetchAll(
         "SELECT re.id, re.nome, re.cognome, re.email, re.telefono, re.ruolo, re.azienda,
                 re.progetto_id, re.attivita_id,
                 p.nome as progetto_nome,
@@ -190,14 +212,53 @@ $router->get('/anagrafica', [Auth::class, 'authenticateToken'], function($req) {
          LEFT JOIN attivita a ON re.attivita_id = a.id
          LEFT JOIN progetti ap ON a.progetto_id = ap.id"
     );
-    foreach ($refEsterni as &$r) {
-        $r['status'] = 'ref_esterno';
-        if (empty($r['progetto_nome']) && !empty($r['attivita_progetto_nome'])) {
-            $r['progetto_nome'] = $r['attivita_progetto_nome'];
+    $estMap = [];
+    foreach ($refEsterniRaw as $r) {
+        $key = strtolower($r['email'] ?? '');
+        if (!$key) continue;
+        if (!isset($estMap[$key])) {
+            $estMap[$key] = [
+                'ids' => [], 'nome' => $r['nome'], 'cognome' => $r['cognome'], 'email' => $r['email'],
+                'telefono' => $r['telefono'], 'ruolo' => $r['ruolo'], 'azienda' => $r['azienda'],
+                'status' => 'ref_esterno', 'contesti' => [],
+            ];
         }
-        unset($r['attivita_progetto_nome']);
+        $estMap[$key]['ids'][] = (int)$r['id'];
+        $progettoNome = $r['progetto_nome'] ?: $r['attivita_progetto_nome'];
+        if ($progettoNome) {
+            $estMap[$key]['contesti'][] = [
+                'progetto' => $progettoNome,
+                'attivita' => $r['attivita_nome'] ?: null,
+            ];
+        }
     }
-    unset($r);
+    $refEsterni = array_values($estMap);
 
     Response::json(array_merge($utentiPortale, $refInterni, $refEsterni));
+});
+
+// DELETE /anagrafica/ref-interno/:id — cascata junction + record master (admin only)
+$router->delete('/anagrafica/ref-interno/:id', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    $id = (int)$req->params['id'];
+    $pdo = Database::get();
+    $pdo->beginTransaction();
+    try {
+        Database::execute('DELETE FROM progetto_referenti WHERE referente_id = ?', [$id]);
+        Database::execute('DELETE FROM attivita_referenti WHERE referente_id = ?', [$id]);
+        Database::execute('DELETE FROM referenti_progetto WHERE id = ?', [$id]);
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        Response::error('Errore eliminazione: ' . $e->getMessage(), 500);
+    }
+    Response::json(['ok' => true]);
+});
+
+// DELETE /anagrafica/ref-esterno?email=... — bulk delete per email (admin only)
+$router->delete('/anagrafica/ref-esterno', [Auth::class, 'authenticateToken'], [Auth::class, 'requireAdmin'], function($req) {
+    ensureReferentiEsterniTable();
+    $email = strtolower(trim($req->query['email'] ?? ''));
+    if (!$email) Response::error('email richiesta', 400);
+    $stmt = Database::execute('DELETE FROM referenti_esterni WHERE LOWER(email) = ?', [$email]);
+    Response::json(['ok' => true, 'deleted' => $stmt->rowCount()]);
 });

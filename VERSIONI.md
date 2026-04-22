@@ -1,5 +1,20 @@
 # Storico Versioni
 
+## V5.17.00-0422 — 22 Aprile 2026 (release maggiore)
+### Anagrafica: aggregazione contesti + eliminazione persona
+- **Endpoint `/anagrafica` ristrutturato**: ora restituisce per ogni persona un array `contesti` con l'elenco dei progetti/attività a cui è associata (Node + PHP)
+  - Ref interni: `contesti` popolato via JOIN con `progetto_referenti` + `attivita_referenti`
+  - Ref esterni: aggregati per email (case-insensitive), una sola riga anche con N assegnazioni — la cella mostra tutti i contesti come chip
+  - Utenti portale: `contesti` vuoto (la loro affiliazione è nell'azienda cliente)
+- **Frontend Anagrafica**:
+  - Colonna "Contesto" renderizzata come chip blu (multi-progetto/attività); se vuota mostra "Non assegnato"
+  - Nuova colonna azione con icona **cestino** (solo admin): elimina la persona da TUTTI i contesti con conferma che riporta il numero di assegnazioni
+  - Ricerca estesa: ora cerca anche dentro i nomi di progetti/attività
+- **Nuovi endpoint DELETE** (admin only):
+  - `DELETE /anagrafica/ref-interno/:id` — cascata su `progetto_referenti` + `attivita_referenti` + `referenti_progetto` in transazione
+  - `DELETE /anagrafica/ref-esterno?email=...` — bulk delete di tutti i record con quell'email
+  - Gli utenti portale sono eliminati tramite l'endpoint esistente `DELETE /clients/:cid/users/:uid`
+
 ## V5.16.00-0422 — 22 Aprile 2026 (release maggiore)
 ### SendMail: fix caricamento Ref. Esterni + raggruppamento destinatari
 - **Fix race condition**: i referenti esterni non comparivano nel box destinatari quando si arrivava da un'attività, perché il reload del progetto sovrascriveva i contacts dopo il caricamento ref esterni

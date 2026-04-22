@@ -335,6 +335,9 @@ export const referentiEsterni = {
 // Anagrafica unificata (utenti portale + ref interni + ref esterni)
 export const anagrafica = {
   list: () => request('/anagrafica'),
+  deleteRefInterno: (id) => request(`/anagrafica/ref-interno/${id}`, { method: 'DELETE' }),
+  deleteRefEsternoByEmail: (email) =>
+    request(`/anagrafica/ref-esterno?email=${encodeURIComponent(email)}`, { method: 'DELETE' }),
 };
 
 // AI Assistente
