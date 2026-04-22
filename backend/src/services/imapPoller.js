@@ -66,57 +66,28 @@ function comunicazioneExists(messageId) {
 }
 
 /**
- * Find the best text part number from bodyStructure (text/plain preferred, text/html fallback)
+ * Find the best text part number from bodyStructure.
+ * Prefer text/html (richer content, rendered by EmailBody with DOMPurify),
+ * fallback to text/plain. Clients often send minimal/truncated plaintext
+ * as alternative to rich HTML.
  */
 function findTextPartNum(structure, path) {
   if (!structure) return null;
   if (structure.childNodes && structure.childNodes.length > 0) {
-    let htmlPart = null;
+    let plainPart = null;
     for (let i = 0; i < structure.childNodes.length; i++) {
       const childPath = path ? `${path}.${i + 1}` : `${i + 1}`;
       const result = findTextPartNum(structure.childNodes[i], childPath);
-      if (result && result.type === 'text/plain') return result;
-      if (result && result.type === 'text/html' && !htmlPart) htmlPart = result;
+      if (result && result.type === 'text/html') return result;
+      if (result && result.type === 'text/plain' && !plainPart) plainPart = result;
     }
-    return htmlPart;
+    return plainPart;
   }
   const type = (structure.type || '').toLowerCase();
   if (type === 'text/plain' || type === 'text/html') {
     return { part: path || '1', type };
   }
   return null;
-}
-
-/**
- * Strip HTML to plain text (defensive — output is never rendered as HTML,
- * but we sanitize thoroughly in case the display layer ever changes)
- */
-function stripHtml(html) {
-  return html
-    // Remove script/style blocks entirely (content included)
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    // Remove HTML comments
-    .replace(/<!--[\s\S]*?-->/g, '')
-    // Preserve line breaks
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<\/tr>/gi, '\n')
-    // Remove all remaining tags
-    .replace(/<[^>]+>/g, '')
-    // Decode common entities
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
-    // Collapse excessive whitespace
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
 }
 
 /**
@@ -194,11 +165,7 @@ async function pollMailbox(user, pass, handler) {
             for await (const chunk of downloaded.content) {
               chunks.push(chunk);
             }
-            let raw = Buffer.concat(chunks).toString('utf-8');
-            if (textPart && textPart.type === 'text/html') {
-              raw = stripHtml(raw);
-            }
-            bodyText = raw;
+            bodyText = Buffer.concat(chunks).toString('utf-8');
           }
         } catch (e) {
           // fallback: try part '1.1' for multipart emails

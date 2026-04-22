@@ -185,17 +185,13 @@ function getMessageBody($inbox, int $emailNum): string {
         return imap_fetchbody($inbox, $emailNum, '1') ?: '';
     }
 
-    // Simple message (not multipart)
+    // Simple message (not multipart): keep HTML as-is, frontend EmailBody renders it
     if (empty($structure->parts)) {
         $body = imap_fetchbody($inbox, $emailNum, '1');
-        $body = decodeBody($body, $structure->encoding ?? 0);
-        if (($structure->subtype ?? '') === 'HTML') {
-            $body = stripHtml($body);
-        }
-        return $body;
+        return decodeBody($body, $structure->encoding ?? 0);
     }
 
-    // Multipart: look for text/plain first, then text/html
+    // Multipart: collect plaintext and HTML parts
     $plainBody = '';
     $htmlBody = '';
 
@@ -227,8 +223,10 @@ function getMessageBody($inbox, int $emailNum): string {
         }
     }
 
+    // Prefer HTML (rendered by EmailBody with DOMPurify) — clients often send
+    // minimal/truncated plaintext as alternative to rich HTML
+    if ($htmlBody) return $htmlBody;
     if ($plainBody) return $plainBody;
-    if ($htmlBody) return stripHtml($htmlBody);
     return '';
 }
 
