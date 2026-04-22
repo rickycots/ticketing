@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.21.01-0422 — 22 Aprile 2026
+- EmailInbox: rimosso bottone "Nuova Email" e relativo compose form inline (funzionalità già presente in sidebar "Invia Mail")
+- Guida EmailInbox aggiornata di conseguenza (items rinumerati, aggiunta nota "usa la sidebar per nuova email")
+
 ## V5.21.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Guide visuali in-app estese a 5 pagine principali
 - Nuove guide con bottone "📖 Guida" in alto a destra nelle pagine:

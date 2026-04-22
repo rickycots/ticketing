@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save, Ticket as TicketIcon, BookOpen } from 'lucide-react'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save, Ticket as TicketIcon, BookOpen } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi, tickets as ticketsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
@@ -47,9 +47,6 @@ export default function EmailInbox() {
   const [filterActivityList, setFilterActivityList] = useState([])
 
   // Compose state
-  const [showCompose, setShowCompose] = useState(false)
-  const [composeForm, setComposeForm] = useState({ cliente_id: '', oggetto: '', corpo: '' })
-  const [sending, setSending] = useState(false)
 
   // Reply state
   const [showReply, setShowReply] = useState(false)
@@ -207,25 +204,6 @@ export default function EmailInbox() {
     loadEmails()
   }
 
-  async function handleCompose(e) {
-    e.preventDefault()
-    setSending(true)
-    try {
-      const cliente = clientList.find(c => c.id === Number(composeForm.cliente_id))
-      await emails.create({
-        tipo: 'email_cliente',
-        destinatario: cliente?.email || composeForm.cliente_id,
-        oggetto: composeForm.oggetto,
-        corpo: composeForm.corpo,
-        cliente_id: cliente?.id || null,
-      })
-      setComposeForm({ cliente_id: '', oggetto: '', corpo: '' })
-      setShowCompose(false)
-      loadEmails()
-    } catch (err) { console.error(err) }
-    finally { setSending(false) }
-  }
-
   function openTicketModal() {
     if (!selected) return
     setTicketForm({
@@ -327,15 +305,8 @@ export default function EmailInbox() {
           </p>
         </div>
         <button
-          onClick={() => { setShowCompose(!showCompose); setSelected(null) }}
-          className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
-        >
-          <Plus size={16} />
-          Nuova Email
-        </button>
-        <button
           onClick={() => setShowGuide(true)}
-          className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer ml-2"
+          className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
           title="Guida visuale alla pagina"
         >
           <BookOpen size={16} /> Guida
@@ -413,61 +384,6 @@ export default function EmailInbox() {
           </div>
         ) : null
       })()}
-
-      {/* Compose Form */}
-      {showCompose && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-          <h3 className="font-semibold mb-3">Componi Email</h3>
-          <form onSubmit={handleCompose} className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Destinatario (Cliente) *</label>
-                <select
-                  value={composeForm.cliente_id}
-                  onChange={(e) => setComposeForm(f => ({ ...f, cliente_id: e.target.value }))}
-                  required
-                  className={selectCls}
-                >
-                  <option value="">Seleziona cliente...</option>
-                  {clientList.map(c => (
-                    <option key={c.id} value={c.id}>{c.nome_azienda} — {c.email}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Oggetto *</label>
-                <input
-                  type="text"
-                  value={composeForm.oggetto}
-                  onChange={(e) => setComposeForm(f => ({ ...f, oggetto: e.target.value }))}
-                  required
-                  className={selectCls}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Messaggio *</label>
-              <textarea
-                value={composeForm.corpo}
-                onChange={(e) => setComposeForm(f => ({ ...f, corpo: e.target.value }))}
-                required
-                rows={4}
-                className={`${selectCls} resize-none`}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" disabled={sending}
-                className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
-                <Send size={16} /> {sending ? 'Invio...' : 'Invia Email'}
-              </button>
-              <button type="button" onClick={() => setShowCompose(false)}
-                className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer">
-                Annulla
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-16rem)]">
         {/* Email List */}
