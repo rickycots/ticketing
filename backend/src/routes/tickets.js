@@ -471,10 +471,7 @@ router.post('/from-email/:emailId', authenticateToken, async (req, res) => {
     `INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione);
   const ticketId = info.lastInsertRowid;
-
-  const threadId = `thread-${codice}`;
-  db.prepare(`UPDATE email SET tipo = 'ticket', ticket_id = ?, thread_id = ? WHERE id = ?`)
-    .run(ticketId, threadId, emailId);
+  // NB: non modifichiamo la mail sorgente. La descrizione del ticket diventa il primo messaggio del thread (con mittente = creatore_email). Le risposte del cliente al codice [TICKET #...] verranno auto-agganciate dal cron IMAP su ticketing@.
 
   // Auto-reply to sender (from ticketing@)
   if (creatore_email) {

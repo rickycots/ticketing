@@ -545,12 +545,7 @@ $router->post('/tickets/from-email/:emailId', [Auth::class, 'authenticateToken']
         [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione]
     );
     $ticketId = (int)Database::lastInsertId();
-
-    $threadId = "thread-{$codice}";
-    Database::execute(
-        "UPDATE email SET tipo = 'ticket', ticket_id = ?, thread_id = ? WHERE id = ?",
-        [$ticketId, $threadId, $emailId]
-    );
+    // NB: la mail sorgente resta intatta nell'inbox. La descrizione del ticket diventa il primo messaggio del thread (mittente = creatore_email). Le risposte del cliente al subject [TICKET #...] verranno auto-agganciate dal cron IMAP su ticketing@.
 
     // Auto-reply al mittente da ticketing@
     if ($creatoreEmail) {

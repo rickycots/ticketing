@@ -204,11 +204,33 @@ export default function EmailInbox() {
     loadEmails()
   }
 
+  // Converte HTML in testo pulito con newline coerenti (per precompilare la descrizione)
+  function htmlToPlainText(html) {
+    if (!html) return ''
+    // Se non sembra HTML, ritorna così com'è
+    if (!/<[a-z][\s\S]*>/i.test(html)) return html
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html')
+      doc.querySelectorAll('script, style, head').forEach(el => el.remove())
+      doc.querySelectorAll('br').forEach(el => el.replaceWith('\n'))
+      doc.querySelectorAll('p, div, li, tr, h1, h2, h3, h4, h5, h6').forEach(el => {
+        el.insertAdjacentText('beforeend', '\n')
+      })
+      const text = (doc.body?.textContent || '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+      return text
+    } catch {
+      return html.replace(/<[^>]+>/g, '').trim()
+    }
+  }
+
   function openTicketModal() {
     if (!selected) return
     setTicketForm({
       oggetto: selected.oggetto || '',
-      descrizione: selected.corpo || '',
+      descrizione: htmlToPlainText(selected.corpo || ''),
       categoria: 'assistenza',
       priorita: 'media',
       cliente_id: selected.cliente_id ? String(selected.cliente_id) : '',

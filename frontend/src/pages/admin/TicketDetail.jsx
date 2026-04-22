@@ -212,6 +212,28 @@ export default function TicketDetail() {
             })()}
           </div>
 
+          {/* Primo messaggio del thread: descrizione del ticket (= corpo mail originale o testo form client) */}
+          {ticket.descrizione && ticket.descrizione.trim() && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                <Mail size={18} className="text-amber-500" />
+                <h2 className="text-lg font-semibold">Primo messaggio</h2>
+                <HelpTip text="Contenuto iniziale del ticket. Se il ticket è stato creato da una mail ricevuta su assistenzatecnica@, è il corpo (in testo pulito) della mail originale. Per i ticket aperti dal portale è il testo scritto dal cliente." />
+              </div>
+              <div className="p-4">
+                <div className="bg-amber-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-amber-700">
+                      {ticket.creatore_email || 'Cliente'} <span className="text-xs text-gray-400">(Owner)</span>
+                    </p>
+                    <p className="text-xs text-gray-400">{new Date(ticket.created_at).toLocaleString('it-IT')}</p>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{ticket.descrizione}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Email Thread */}
           {ticket.emails?.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">

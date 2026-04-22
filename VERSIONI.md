@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.21.03-0422 — 22 Aprile 2026
+### Crea Ticket da email: descrizione come primo messaggio del thread (testo pulito)
+- Modal "Crea Ticket": il corpo email viene convertito in testo pulito (via DOMParser, strip HTML preservando newline) e precompila il campo Descrizione (editabile)
+- Backend (Node + PHP): la mail sorgente NON viene più riagganciata al ticket — resta intatta nell'inbox. La descrizione del ticket diventa concettualmente il primo messaggio del thread
+- `creatore_email` salvato come mittente originale della mail → appare come "Owner" del primo messaggio nel ticket
+- TicketDetail: nuovo box "Primo messaggio" in cima al thread che rende `ticket.descrizione` con mittente = creatore_email e data = created_at del ticket. Visibile sia per ticket nati da email sia per ticket aperti dal portale client
+- Round-trip: le risposte del cliente alla mail di notifica arrivano su ticketing@ con tag [TICKET #TK-...] e vengono auto-agganciate al thread (comportamento invariato)
+
 ## V5.21.02-0422 — 22 Aprile 2026
 - EmailInbox: bottone "Crea Ticket da questa email" spostato sotto la select Cliente e disabilitato finché un cliente non è selezionato (con tooltip e hint inline)
 - Guida EmailInbox aggiornata di conseguenza
