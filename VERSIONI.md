@@ -1,5 +1,10 @@
 # Storico Versioni
 
+## V5.13.04-0422 — 22 Aprile 2026
+- EmailInbox admin (`/admin/emails`): ora usa il componente condiviso `EmailBody` per il rendering del corpo email (detail desktop, thread cards, popup mobile)
+- Risolto troncamento HTML nella preview email: applica `preprocessHtml` (rimozione wrapper `<html><body><head>`), DOMPurify, splitting automatico chain risposte/inoltri e CSS `email-body-html` + `email-body-scroll` (overflow-wrap, tabelle/immagini responsive)
+- Rimossa la funzione `sanitizeHtml()` locale obsoleta (sostituita da DOMPurify nel componente condiviso)
+
 ## V5.13.03-0420 — 20 Aprile 2026
 - ClientProjectDetail box email: filtri Ordine (Ultime/Prime prima) + Direzione (Tutte / Da Assistenza / Dalla tua Azienda) con contatori
 - Badge colorato per email: DA ASSISTENZA (viola) / DALLA TUA AZIENDA (teal)

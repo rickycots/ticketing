@@ -4,21 +4,7 @@ import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star
 import { emails, projects, activities, clients as clientsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
-
-// Sanitize HTML to prevent XSS — strips script/style/event handlers
-function sanitizeHtml(html) {
-  if (!html) return ''
-  const doc = new DOMParser().parseFromString(html, 'text/html')
-  doc.querySelectorAll('script, style, iframe, object, embed, form, link').forEach(el => el.remove())
-  doc.querySelectorAll('*').forEach(el => {
-    for (const attr of [...el.attributes]) {
-      if (attr.name.startsWith('on') || attr.value.trim().toLowerCase().startsWith('javascript:')) {
-        el.removeAttribute(attr.name)
-      }
-    }
-  })
-  return doc.body.innerHTML
-}
+import EmailBody from '../../components/EmailBody'
 
 function getDirLabel(e) {
   return e.direzione === 'inviata' ? 'Inviata' : 'Ricevuta'
@@ -533,7 +519,9 @@ export default function EmailInbox() {
                 <p className="text-sm text-gray-500 mb-1">Da: {selected.mittente}</p>
                 <p className="text-sm text-gray-500 mb-1">A: {selected.destinatario}</p>
                 <p className="text-xs text-gray-400 mb-3">{new Date(selected.data_ricezione).toLocaleString('it-IT')}</p>
-                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap mb-4">{selected.corpo}</div>
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <EmailBody corpo={selected.corpo} />
+                </div>
                 {/* Client assign */}
                 <div className="mb-3">
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Cliente</label>
@@ -798,7 +786,7 @@ export default function EmailInbox() {
                       />
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.corpo) }} />
+                    <EmailBody corpo={selected.corpo} />
                   )}
                 </div>
 
@@ -813,7 +801,7 @@ export default function EmailInbox() {
                             <p className="text-xs font-medium">{t.mittente.includes('@stmdomotica.it') ? 'Tu (admin)' : t.mittente}</p>
                             <p className="text-xs text-gray-400">{new Date(t.data_ricezione).toLocaleString('it-IT')}</p>
                           </div>
-                          <p className="text-sm text-gray-600">{t.corpo}</p>
+                          <EmailBody corpo={t.corpo} />
                         </div>
                       ))}
                     </div>
