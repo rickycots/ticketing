@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.13.06-0422 — 22 Aprile 2026
+- SendMail (`/admin/send-mail`): aggiunto pulsante "Annulla" accanto a "Invia Email"
+- Ritorno contestuale: se si arriva da un'attività torna all'attività, se da un progetto torna al progetto, altrimenti `navigate(-1)`
+
 ## V5.13.05-0422 — 22 Aprile 2026
 - IMAP polling (PHP + Node): ora preferisce HTML (renderizzato da `EmailBody` con DOMPurify) invece di plaintext
 - Motivo: i client mail moderni spesso inviano versioni plaintext minimali o "castrate" come alternative multipart, causando email che apparivano troncate nel portale

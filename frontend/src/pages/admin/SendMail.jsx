@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Send, Paperclip, X, CheckCircle } from 'lucide-react'
 import { emails, projects as projectsApi, clients } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 
 export default function SendMail() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [clientList, setClientList] = useState([])
   const [projectList, setProjectList] = useState([])
   const [allProjects, setAllProjects] = useState([])
@@ -159,6 +160,16 @@ export default function SendMail() {
     setFiles(f => f.filter((_, i) => i !== idx))
   }
 
+  function handleCancel() {
+    if (preProgetto && preAttivita) {
+      navigate(`/admin/projects/${preProgetto}/activities/${preAttivita}`)
+    } else if (preProgetto) {
+      navigate(`/admin/projects/${preProgetto}`)
+    } else {
+      navigate(-1)
+    }
+  }
+
   const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
   const selectCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
 
@@ -301,6 +312,9 @@ export default function SendMail() {
           <button type="submit" disabled={sending || selectedEmails.length === 0} className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
             <Send size={16} />
             {sending ? 'Invio in corso...' : 'Invia Email'}
+          </button>
+          <button type="button" onClick={handleCancel} className="bg-gray-100 text-gray-700 rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-gray-200 cursor-pointer">
+            Annulla
           </button>
           <span className="text-xs text-gray-400">Da: assistenzatecnica@stmdomotica.it (Admin del portale riceverà una copia)</span>
         </div>
