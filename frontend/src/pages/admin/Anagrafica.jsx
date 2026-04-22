@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Users, Search, Mail, Phone, Building2, Download, Trash2, Pencil, X as XIcon } from 'lucide-react'
+import { Users, Search, Mail, Phone, Building2, Download, Trash2, Pencil, X as XIcon, BookOpen } from 'lucide-react'
 import { anagrafica, clients as clientsApi } from '../../api/client'
 import HelpTip from '../../components/HelpTip'
 import Pagination from '../../components/Pagination'
+import AnagraficaGuide from '../../components/guides/AnagraficaGuide'
 
 const PAGE_SIZE = 15
 
@@ -28,6 +29,7 @@ export default function Anagrafica() {
   const [editRow, setEditRow] = useState(null)
   const [editForm, setEditForm] = useState({ nome: '', cognome: '', email: '', telefono: '', ruolo: '', azienda: '' })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
   const isAdmin = currentUser.ruolo === 'admin'
@@ -178,7 +180,15 @@ export default function Anagrafica() {
         <p className="text-[11px] text-gray-400 italic leading-snug max-w-[700px]">
           Vista aggregata di tutti i contatti presenti nel sistema. Filtra per tipologia o cerca per nome/email/azienda/contesto.
         </p>
+        <button
+          onClick={() => setShowGuide(true)}
+          className="ml-auto inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+          title="Guida visuale alla pagina"
+        >
+          <BookOpen size={16} /> Guida
+        </button>
       </div>
+      <AnagraficaGuide open={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">

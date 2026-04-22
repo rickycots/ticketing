@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send, Paperclip, Upload, Download, Star, Info } from 'lucide-react'
+import { ArrowLeft, StickyNote, Building2, Phone, User, Mail, ChevronDown, ChevronRight, Lock, ArrowRightLeft, Calendar, Plus, Trash2, X, Pencil, Send, Paperclip, Upload, Download, Star, Info, BookOpen } from 'lucide-react'
 import { activities, users, clients as clientsApi, referentiEsterni } from '../../api/client'
+import ActivityDetailGuide from '../../components/guides/ActivityDetailGuide'
 import HelpTip from '../../components/HelpTip'
 import ActivityDataBox from '../../components/ActivityDataBox'
 import EmailBox from '../../components/EmailBox'
@@ -56,6 +57,7 @@ export default function ActivityDetail() {
   const [schedForm, setSchedForm] = useState({ nota: '', data_pianificata: '', referenti_ids: '' })
   const [projectReferenti, setProjectReferenti] = useState([])
   const [refEsterniAct, setRefEsterniAct] = useState([])
+  const [showGuide, setShowGuide] = useState(false)
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [selectedDay, setSelectedDay] = useState(null)
@@ -265,7 +267,17 @@ export default function ActivityDetail() {
       </Link>
 
       {/* Page title */}
-      <h1 className="text-2xl font-bold mb-1">Dettaglio Attività</h1>
+      <div className="flex items-start justify-between mb-1">
+        <h1 className="text-2xl font-bold">Dettaglio Attività</h1>
+        <button
+          onClick={() => setShowGuide(true)}
+          className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+          title="Guida visuale alla pagina"
+        >
+          <BookOpen size={16} /> Guida
+        </button>
+      </div>
+      <ActivityDetailGuide open={showGuide} onClose={() => setShowGuide(false)} />
       <p className="text-sm text-gray-400 mb-4">
         Progetto Padre: <Link to={`/admin/projects/${projectId}/gantt`} className="text-blue-500 hover:underline">{prog.nome || `#${projectId}`}</Link>
       </p>

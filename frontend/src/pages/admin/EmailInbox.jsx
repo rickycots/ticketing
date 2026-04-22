@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useOutletContext } from 'react-router-dom'
-import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save, Ticket as TicketIcon } from 'lucide-react'
+import { Mail, MailOpen, AlertTriangle, FolderKanban, Plus, Send, Reply, X, Star, Info, Building2, Trash2, Pencil, Save, Ticket as TicketIcon, BookOpen } from 'lucide-react'
 import { emails, projects, activities, clients as clientsApi, tickets as ticketsApi } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
 import EmailBody from '../../components/EmailBody'
+import EmailInboxGuide from '../../components/guides/EmailInboxGuide'
 
 function getDirLabel(e) {
   return e.direzione === 'inviata' ? 'Inviata' : 'Ricevuta'
@@ -54,6 +55,8 @@ export default function EmailInbox() {
   const [showReply, setShowReply] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
+
+  const [showGuide, setShowGuide] = useState(false)
 
   // Create Ticket from Email state
   const [showTicketModal, setShowTicketModal] = useState(false)
@@ -330,7 +333,15 @@ export default function EmailInbox() {
           <Plus size={16} />
           Nuova Email
         </button>
+        <button
+          onClick={() => setShowGuide(true)}
+          className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer ml-2"
+          title="Guida visuale alla pagina"
+        >
+          <BookOpen size={16} /> Guida
+        </button>
       </div>
+      <EmailInboxGuide open={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">

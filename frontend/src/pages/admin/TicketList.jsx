@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Building2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Search, Building2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, BookOpen } from 'lucide-react'
 import { tickets, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
+import TicketListGuide from '../../components/guides/TicketListGuide'
 
 const prioritaColors = {
   urgente: 'bg-red-100 text-red-800',
@@ -30,6 +31,7 @@ const statoLabels = {
 
 export default function TicketList() {
   const [ticketList, setTicketList] = useState([])
+  const [showGuide, setShowGuide] = useState(false)
   const [clientList, setClientList] = useState([])
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
@@ -105,7 +107,15 @@ export default function TicketList() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">{isAdmin ? 'Tickets' : 'Ticket a te assegnati'} <HelpTip text="Gestione ticket di assistenza. I pallini colorati indicano lo stato. Clicca su uno stato per filtrare. La SLA indica i tempi di reazione contrattualizzati col cliente. Solo il cliente può chiudere un ticket; il tecnico può impostare Risolto." /></h1>
+        <button
+          onClick={() => setShowGuide(true)}
+          className="ml-auto inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+          title="Guida visuale alla pagina"
+        >
+          <BookOpen size={16} /> Guida
+        </button>
       </div>
+      <TicketListGuide open={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* Quick filters + Clickable legend with percentages */}
       <div className="flex flex-wrap items-center gap-1.5 lg:gap-3 mb-4">

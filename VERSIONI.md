@@ -1,5 +1,15 @@
 # Storico Versioni
 
+## V5.21.00-0422 — 22 Aprile 2026 (release maggiore)
+### Guide visuali in-app estese a 5 pagine principali
+- Nuove guide con bottone "📖 Guida" in alto a destra nelle pagine:
+  - `/admin/anagrafica` → `AnagraficaGuide` (10 elementi: ricerca, filtri tipologia, export CSV, email, TEL, contesto, status, matita, cestino, paginazione)
+  - `/admin/emails` → `EmailInboxGuide` (10 elementi: filtri rapidi, filtri strutturati, nuova email, lista card, flag lettura, direzione, rilevanza, rispondi, crea ticket, assegnazioni)
+  - `/admin/tickets` → `TicketListGuide` (8 elementi: filtri stato, ricerca, riga, codice, priorità, cliente, SLA, assegnato)
+  - `/admin/projects/:id/activities/:aid` → `ActivityDetailGuide` (11 elementi: header, badge, barra avanzamento, date, toggle descrizione/allegati/tecnici/referenti/ref.esterni/dipendenze, stato attiva)
+- Pattern: ogni guida è un componente `guides/XxxGuide.jsx` che usa `PageGuide` con mock visuale della pagina + pallini rossi numerati + legenda descrittiva
+- `CLAUDE.md` aggiornato con elenco pagine con guida attiva (regola obbligatoria: aggiornare la guida a ogni modifica UI)
+
 ## V5.20.00-0422 — 22 Aprile 2026 (release maggiore)
 ### Guida visuale in-app (prototipo su ProjectList)
 - Nuovo componente riutilizzabile `components/PageGuide.jsx`: drawer laterale con area "screenshot annotato" (pallini numerati rossi sovrapposti al mock del componente) + legenda descrittiva
