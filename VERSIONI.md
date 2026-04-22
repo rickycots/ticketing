@@ -1,5 +1,9 @@
 # Storico Versioni
 
+## V5.21.02-0422 — 22 Aprile 2026
+- EmailInbox: bottone "Crea Ticket da questa email" spostato sotto la select Cliente e disabilitato finché un cliente non è selezionato (con tooltip e hint inline)
+- Guida EmailInbox aggiornata di conseguenza
+
 ## V5.21.01-0422 — 22 Aprile 2026
 - EmailInbox: rimosso bottone "Nuova Email" e relativo compose form inline (funzionalità già presente in sidebar "Invia Mail")
 - Guida EmailInbox aggiornata di conseguenza (items rinumerati, aggiunta nota "usa la sidebar per nuova email")

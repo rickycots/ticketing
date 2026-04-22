@@ -659,25 +659,6 @@ export default function EmailInbox() {
                   </dl>
                 </div>
 
-                {/* Crea Ticket da email */}
-                {!selected.ticket_id && (
-                  <div className="border-t border-gray-100 pt-4 mb-4">
-                    <button
-                      onClick={openTicketModal}
-                      className="inline-flex items-center gap-2 bg-orange-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-700 cursor-pointer"
-                    >
-                      <TicketIcon size={16} /> Crea Ticket da questa email
-                    </button>
-                  </div>
-                )}
-                {selected.ticket_id && (
-                  <div className="border-t border-gray-100 pt-4 mb-4">
-                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
-                      <TicketIcon size={14} /> Email già collegata a un ticket
-                    </div>
-                  </div>
-                )}
-
                 {/* Assign to client */}
                 <div className="border-t border-gray-100 pt-4 mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -695,6 +676,30 @@ export default function EmailInbox() {
                     ))}
                   </select>
                 </div>
+
+                {/* Crea Ticket da email (sotto cliente — disabled se cliente non selezionato) */}
+                {!selected.ticket_id && (
+                  <div className="border-t border-gray-100 pt-4 mb-4">
+                    <button
+                      onClick={openTicketModal}
+                      disabled={!selected.cliente_id}
+                      title={!selected.cliente_id ? 'Seleziona prima un cliente' : 'Crea ticket da questa email'}
+                      className="inline-flex items-center gap-2 bg-orange-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <TicketIcon size={16} /> Crea Ticket da questa email
+                    </button>
+                    {!selected.cliente_id && (
+                      <p className="text-[11px] text-gray-400 italic mt-1">Seleziona un cliente qui sopra per abilitare.</p>
+                    )}
+                  </div>
+                )}
+                {selected.ticket_id && (
+                  <div className="border-t border-gray-100 pt-4 mb-4">
+                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
+                      <TicketIcon size={14} /> Email già collegata a un ticket
+                    </div>
+                  </div>
+                )}
 
                 {/* Assign to project + activity */}
                 <div className="border-t border-gray-100 pt-4 mb-4">

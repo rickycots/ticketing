@@ -9,7 +9,7 @@ const items = [
   { n: 5, title: 'Badge direzione', description: 'Viola = Ricevuta, Verde = Inviata.' },
   { n: 6, title: 'Flag rilevanza/blocco', description: '⚠ arancione = Bloccante (ferma il progetto); ⭐ viola = Rilevante; ℹ grigio = Di contesto.' },
   { n: 7, title: 'Pulsanti Rispondi / Rispondi a tutti', description: 'La risposta viene inviata da ticketing@ con tag [TICKET #TK-...] per essere auto-agganciata al thread.' },
-  { n: 8, title: 'Crea Ticket da email', description: 'Crea un nuovo ticket usando questa email come primo messaggio. Auto-reply automatica al mittente. Se il mittente non è utente portale del cliente, chiede a chi notificare.' },
+  { n: 8, title: 'Crea Ticket da email', description: 'Disponibile sotto la select Cliente (disabilitato finché un cliente non è selezionato). Crea un nuovo ticket usando questa email come primo messaggio. Auto-reply automatica al mittente. Se il mittente non è utente portale del cliente, chiede a chi notificare.' },
   { n: 9, title: 'Assegnazioni', description: 'Associa la mail a un cliente, progetto e attività. Utile per raggruppare in contesto.' },
   { n: 10, title: 'Per inviare una nuova email', description: 'Usa il link "Invia Mail" nella sidebar (non più in questa pagina).' },
 ]
