@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.20.00-0422 — 22 Aprile 2026 (release maggiore)
+### Guida visuale in-app (prototipo su ProjectList)
+- Nuovo componente riutilizzabile `components/PageGuide.jsx`: drawer laterale con area "screenshot annotato" (pallini numerati rossi sovrapposti al mock del componente) + legenda descrittiva
+- Helper `<GuideNumber>` per posizionare in absolute i pallini numerati rossi
+- Prima implementazione: `components/guides/ProjectListGuide.jsx` — mock di `ProjectMiniBox` con 11 elementi annotati (nome, badge chat, badge UPD, stato, cliente, pallino aggiornamento, completamento previsto, barra avanzamento, numero attività, tecnici, banner blocco)
+- `ProjectList.jsx` (admin `/admin/projects`): nuovo bottone "📖 Guida" accanto a "Nuovo Progetto" — apre il drawer della guida
+- Pattern replicabile su altre pagine: basta creare `guides/XxxGuide.jsx` e agganciare il bottone
+
 ## V5.19.02-0422 — 22 Aprile 2026
 - ProjectMiniBox: aggiunto HelpTip accanto a "Aggiornato:" con spiegazione del campo `updated_at` e dei colori del pallino (verde <3gg, giallo 3-7gg, grigio >7gg). Visibile sia admin sia tecnico in tutte le liste progetti.
 

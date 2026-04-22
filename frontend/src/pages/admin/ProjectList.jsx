@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, MessageCircle, Building2, UserPlus, X, Users } from 'lucide-react'
+import { Plus, MessageCircle, Building2, UserPlus, X, Users, BookOpen } from 'lucide-react'
 import { projects, clients as clientsApi, users } from '../../api/client'
 import Pagination from '../../components/Pagination'
 import HelpTip from '../../components/HelpTip'
+import ProjectListGuide from '../../components/guides/ProjectListGuide'
 import ProjectMiniBox from '../../components/ProjectMiniBox'
 
 const statoColors = {
@@ -32,6 +33,7 @@ export default function ProjectList() {
   const [userList, setUserList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [form, setForm] = useState({ cliente_id: '', nome: '', descrizione: '', data_inizio: '', data_scadenza: '', tecnici: [], referenti: [], nuovi_referenti: [], singola_attivita: false })
   const [creating, setCreating] = useState(false)
   const [clientReferenti, setClientReferenti] = useState([])
@@ -145,16 +147,27 @@ export default function ProjectList() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           {isAdmin ? 'Progetti' : <>Progetti di cui hai visibilità <HelpTip text="Per ogni progetto l'admin può scegliere i tecnici abilitati; essi potranno averne visibilità generale ma lavorare solo sulle attività a loro assegnate." /></>}
         </h1>
-        {isAdmin && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowForm(!showForm)}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+            onClick={() => setShowGuide(true)}
+            className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+            title="Guida visuale alla pagina"
           >
-            <Plus size={16} />
-            Nuovo Progetto
+            <BookOpen size={16} /> Guida
           </button>
-        )}
+          {isAdmin && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              <Plus size={16} />
+              Nuovo Progetto
+            </button>
+          )}
+        </div>
       </div>
+
+      <ProjectListGuide open={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* New Project Modal */}
       {showForm && isAdmin && (
