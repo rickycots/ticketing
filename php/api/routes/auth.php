@@ -154,8 +154,16 @@ $router->post('/auth/verify-2fa', function($req) {
 // PUT /api/auth/change-password
 $router->put('/auth/change-password', [Auth::class, 'authenticateToken'], function($req) {
     $password = $req->body['password'] ?? '';
+    $oldPassword = $req->body['oldPassword'] ?? null;
     if (!$password || strlen($password) < 6) {
         Response::error('La password deve avere almeno 6 caratteri', 400);
+    }
+
+    if ($oldPassword !== null) {
+        $user = Database::fetchOne('SELECT password_hash FROM utenti WHERE id = ?', [$req->user['id']]);
+        if (!$user || !password_verify($oldPassword, $user['password_hash'])) {
+            Response::error('Password attuale errata', 401);
+        }
     }
 
     $hash = password_hash($password, PASSWORD_BCRYPT);

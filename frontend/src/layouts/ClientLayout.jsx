@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom'
-import { Ticket, FolderKanban, List, LogOut, Users, Sparkles, BarChart3, ShieldAlert, Megaphone, ChevronDown, Check, CircleCheck, X, AlertTriangle } from 'lucide-react'
+import { Ticket, FolderKanban, List, LogOut, Users, Sparkles, BarChart3, ShieldAlert, Megaphone, ChevronDown, Check, CircleCheck, X, AlertTriangle, KeyRound } from 'lucide-react'
 import { t, getDateLocale } from '../i18n/clientTranslations'
 import { clientAuth } from '../api/client'
 import { APP_VERSION } from '../version'
+import ChangePasswordModal from '../components/ChangePasswordModal'
 
 export default function ClientLayout() {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ export default function ClientLayout() {
   const [commsDismissed, setCommsDismissed] = useState(false)
   const [newVersionAvailable, setNewVersionAvailable] = useState(false)
   const [alerts, setAlerts] = useState({ attivita_bloccate: [], progetti_bloccati: [] })
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   const sidebarThemes = [
     { id: 'gray', bg: 'bg-gray-700', border: 'border-gray-600', hover: 'hover:bg-gray-600', active: 'bg-blue-600', swatch: '#374151' },
@@ -226,12 +228,37 @@ export default function ClientLayout() {
                   <p className="text-xs text-gray-400">{isClientAdmin ? 'Admin' : 'User'}</p>
                 </div>
               </div>
-              <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors cursor-pointer" title={t('logout')}>
-                <LogOut size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowChangePassword(true)} className="text-gray-400 hover:text-white transition-colors cursor-pointer" title={t('changePasswordTitle') || 'Cambia password'}>
+                  <KeyRound size={16} />
+                </button>
+                <button onClick={handleLogout} className="text-gray-400 hover:text-white transition-colors cursor-pointer" title={t('logout')}>
+                  <LogOut size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </aside>
+
+        {showChangePassword && (
+          <ChangePasswordModal
+            mode="client"
+            onClose={() => setShowChangePassword(false)}
+            labels={{
+              title: t('changePasswordTitle') || 'Cambio Password',
+              subtitle: t('changePasswordSubtitleVoluntary') || 'Aggiorna la tua password di accesso',
+              oldLabel: t('currentPassword') || 'Password attuale',
+              newLabel: t('newPassword') || 'Nuova Password',
+              confirmLabel: t('confirmPassword') || 'Conferma Password',
+              save: t('changePasswordButton') || 'Cambia Password',
+              saving: t('saving') || 'Salvataggio...',
+              cancel: t('cancel') || 'Annulla',
+              requirements: t('passwordRequirements') || 'Minimo 6 caratteri',
+              minLengthErr: t('passwordMinLength') || 'La password deve avere almeno 6 caratteri',
+              mismatchErr: t('passwordMismatch') || 'Le password non corrispondono',
+            }}
+          />
+        )}
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto bg-gray-50">

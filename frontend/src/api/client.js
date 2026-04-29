@@ -84,8 +84,8 @@ export const auth = {
   login: (email, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => request('/auth/me'),
-  changePassword: (password) =>
-    request('/auth/change-password', { method: 'PUT', body: JSON.stringify({ password }) }),
+  changePassword: (password, oldPassword) =>
+    request('/auth/change-password', { method: 'PUT', body: JSON.stringify(oldPassword !== undefined ? { password, oldPassword } : { password }) }),
   verify2fa: (temp_token, code) => {
     const base = import.meta.env.VITE_API_BASE || '/api';
     return fetch(`${base}/auth/verify-2fa`, {
@@ -418,8 +418,8 @@ export const clientAuth = {
   comunicazioni: () => clientRequest('/client-auth/comunicazioni'),
   comunicazioniReadAll: () => clientRequest('/client-auth/comunicazioni/read-all', { method: 'PUT' }),
   comunicazioneRead: (id) => clientRequest(`/client-auth/comunicazioni/${id}/read`, { method: 'PUT' }),
-  changePassword: (newPassword) =>
-    clientRequest('/client-auth/change-password', { method: 'POST', body: JSON.stringify({ newPassword }) }),
+  changePassword: (newPassword, oldPassword) =>
+    clientRequest('/client-auth/change-password', { method: 'POST', body: JSON.stringify(oldPassword !== undefined ? { newPassword, oldPassword } : { newPassword }) }),
   verify2fa: (temp_token, code) => {
     const base = import.meta.env.VITE_API_BASE || '/api';
     return fetch(`${base}/client-auth/verify-2fa`, {

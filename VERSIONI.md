@@ -1,5 +1,13 @@
 # Storico Versioni
 
+## V5.23.00-0429 — 29 Aprile 2026 (release maggiore)
+### Cambio password volontario per admin/tecnici e client
+- Nuovo componente riusabile `frontend/src/components/ChangePasswordModal.jsx`: 3 campi (password attuale, nuova, conferma), toggle visibilità, messaggio di successo, supporto label tradotte
+- **Sidebar admin/tecnico** (`AdminLayout.jsx`): icona `KeyRound` accanto al nome utente in basso → apre il modale
+- **Sidebar client** (`ClientLayout.jsx`): stessa icona accanto al nome utente, label tradotte (IT/EN/FR) tramite `clientTranslations.js`
+- **Backend hardening**: gli endpoint `PUT /api/auth/change-password` (admin) e `POST /api/client-auth/change-password` (client) ora accettano un campo `oldPassword` opzionale; se presente lo verificano con bcrypt prima di consentire il cambio. Il flow forzato di primo login (che non passa `oldPassword`) resta invariato
+- Frontend `auth.changePassword(password, oldPassword?)` e `clientAuth.changePassword(newPassword, oldPassword?)`: secondo argomento opzionale, mandato solo se valorizzato
+
 ## V5.22.00-0429 — 29 Aprile 2026 (release maggiore)
 ### Sicurezza utenti admin/tecnico: 2FA + admin editabile + BCC dinamico
 - **Doppia autenticazione (2FA) per admin e tecnici**: nuovo flag per-utente `two_factor`. Al login, se attivo, viene inviato un codice 6 cifre via email noreply (scadenza 10 min, max 3 tentativi, lockout dopo). Mirrorata la logica già usata sul portale cliente

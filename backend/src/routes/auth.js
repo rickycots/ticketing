@@ -165,8 +165,15 @@ router.put('/change-password', (req, res) => {
   let decoded;
   try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token non valido' }); }
 
-  const { password } = req.body;
+  const { password, oldPassword } = req.body;
   if (!password || password.length < 6) return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+
+  if (oldPassword !== undefined) {
+    const user = db.prepare('SELECT password_hash FROM utenti WHERE id = ?').get(decoded.id);
+    if (!user || !bcrypt.compareSync(oldPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Password attuale errata' });
+    }
+  }
 
   const hash = bcrypt.hashSync(password, 10);
   db.prepare('UPDATE utenti SET password_hash = ?, cambio_password = 0 WHERE id = ?').run(hash, decoded.id);

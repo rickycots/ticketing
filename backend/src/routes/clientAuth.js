@@ -234,9 +234,16 @@ router.post('/verify-2fa', (req, res) => {
 
 // POST /api/client-auth/change-password — first login password change
 router.post('/change-password', authenticateClientToken, (req, res) => {
-  const { newPassword } = req.body;
+  const { newPassword, oldPassword } = req.body;
   if (!newPassword || newPassword.length < 6) {
     return res.status(400).json({ error: 'La password deve avere almeno 6 caratteri' });
+  }
+
+  if (oldPassword !== undefined) {
+    const u = db.prepare('SELECT password_hash FROM utenti_cliente WHERE id = ?').get(req.user.id);
+    if (!u || !bcrypt.compareSync(oldPassword, u.password_hash)) {
+      return res.status(401).json({ error: 'Password attuale errata' });
+    }
   }
 
   const hash = bcrypt.hashSync(newPassword, 10);

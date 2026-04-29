@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X, List, Contact } from 'lucide-react'
+import { LayoutDashboard, Ticket, Mail, Send, Users, UserCog, LogOut, MessageCircle, Bell, Check, CheckCheck, BarChart3, BookOpen, Megaphone, Sparkles, FolderKanban, ChevronDown, Menu, X, List, Contact, KeyRound } from 'lucide-react'
 import { auth, projects, notifications, dashboard } from '../api/client'
 import { APP_VERSION } from '../version'
+import ChangePasswordModal from '../components/ChangePasswordModal'
 
 const allNavItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -96,6 +97,7 @@ export default function AdminLayout() {
   const [chatNotifs, setChatNotifs] = useState([])
   const [sidebarCounts, setSidebarCounts] = useState({ tickets_nuovi: 0, email_nuove: 0 })
   const [newVersionAvailable, setNewVersionAvailable] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   // Version check every 60s
   useEffect(() => {
@@ -417,16 +419,29 @@ export default function AdminLayout() {
               <p className="text-sm font-medium">{user.nome || 'Utente'}</p>
               <p className="text-xs text-gray-400">{user.ruolo || ''}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-              title="Esci"
-            >
-              <LogOut size={18} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                title="Cambia password"
+              >
+                <KeyRound size={16} />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                title="Esci"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
+
+      {showChangePassword && (
+        <ChangePasswordModal mode="admin" onClose={() => setShowChangePassword(false)} />
+      )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
