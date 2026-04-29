@@ -70,6 +70,7 @@ function runMigrations() {
     "ALTER TABLE utenti ADD COLUMN two_factor_code TEXT",
     "ALTER TABLE utenti ADD COLUMN two_factor_expires TEXT",
     "ALTER TABLE utenti ADD COLUMN two_factor_attempts INTEGER NOT NULL DEFAULT 0",
+    "UPDATE ticket SET data_evasione = NULL WHERE stato NOT IN ('risolto','chiuso')",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }

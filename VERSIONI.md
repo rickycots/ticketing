@@ -1,5 +1,12 @@
 # Storico Versioni
 
+## V5.24.00-0429 — 29 Aprile 2026 (release maggiore)
+### Fix data_evasione + label stato ticket più chiari
+- **Bug data_evasione**: alla creazione del ticket il backend pre-popolava `data_evasione` con la *data target SLA* (created + 1g/3g), ma la colonna semanticamente è la data di risoluzione effettiva. Ora `data_evasione` resta NULL fino al passaggio di stato → 'risolto', momento in cui viene impostata a `CURDATE()` (comportamento già corretto del PUT). Fix sia in `backend/src/routes/tickets.js` (creazione manuale + da email) sia in `php/api/routes/tickets.php`
+- **Dashboard scadenze tecnico**: la query usava `data_evasione` come deadline SLA → ora calcola dinamicamente la scadenza come `created_at + sla_reazione days` (1g/3g), filtrando solo clienti con SLA contrattualizzata. Aggiornato in `backend/src/routes/dashboard.js` e `php/api/routes/dashboard.php`
+- **Migrazione cleanup**: `UPDATE ticket SET data_evasione = NULL WHERE stato NOT IN ('risolto','chiuso')` aggiunta sia in `database.js` sia in `migrate.php` per ripulire i dati esistenti
+- **Label stato ticket** (`frontend/src/pages/admin/TicketList.jsx`): `Risolto` → `Risolto da STM`, `Chiuso` → `Chiuso dal Cliente` (più espliciti su chi ha eseguito l'azione, sia nei pallini di filtro/legenda sia nei badge di stato)
+
 ## V5.23.00-0429 — 29 Aprile 2026 (release maggiore)
 ### Cambio password volontario per admin/tecnici e client
 - Nuovo componente riusabile `frontend/src/components/ChangePasswordModal.jsx`: 3 campi (password attuale, nuova, conferma), toggle visibilità, messaggio di successo, supporto label tradotte

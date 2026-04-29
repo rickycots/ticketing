@@ -371,19 +371,11 @@ $router->post('/tickets', [Auth::class, 'authenticateClientToken'], function($re
     $assegnatoA = $admin ? $admin['id'] : null;
     $creatoreEmail = $req->user['email'] ?? null;
 
-    // SLA
-    $clienteRow = Database::fetchOne('SELECT sla_reazione FROM clienti WHERE id = ?', [$clienteId]);
-    $dataEvasione = null;
-    if ($clienteRow && $clienteRow['sla_reazione'] && $clienteRow['sla_reazione'] !== 'nb') {
-        $days = $clienteRow['sla_reazione'] === '1g' ? 1 : 3;
-        $dataEvasione = date('Y-m-d', strtotime("+{$days} days"));
-    }
-
     $privato = !empty($req->body['privato']) ? 1 : 0;
 
     Database::execute(
-        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione, $privato]
+        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $privato]
     );
     $ticketId = Database::lastInsertId();
 
@@ -534,15 +526,9 @@ $router->post('/tickets/from-email/:emailId', [Auth::class, 'authenticateToken']
     $assegnatoA = $admin ? (int)$admin['id'] : null;
     $creatoreEmail = $email['mittente'] ?? null;
 
-    $dataEvasione = null;
-    if (!empty($cliente['sla_reazione']) && $cliente['sla_reazione'] !== 'nb') {
-        $days = $cliente['sla_reazione'] === '1g' ? 1 : 3;
-        $dataEvasione = date('Y-m-d', strtotime("+{$days} days"));
-    }
-
     Database::execute(
-        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail, $dataEvasione]
+        'INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [$codice, $clienteId, $oggetto, $descrizione, $categoria, $priorita, $assegnatoA, $creatoreEmail]
     );
     $ticketId = (int)Database::lastInsertId();
     // NB: la mail sorgente resta intatta nell'inbox. La descrizione del ticket diventa il primo messaggio del thread (mittente = creatore_email). Le risposte del cliente al subject [TICKET #...] verranno auto-agganciate dal cron IMAP su ticketing@.

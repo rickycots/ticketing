@@ -25,8 +25,8 @@ const statoLabels = {
   aperto: 'Aperto',
   in_lavorazione: 'In lavorazione',
   in_attesa: 'In attesa',
-  risolto: 'Risolto',
-  chiuso: 'Chiuso',
+  risolto: 'Risolto da STM',
+  chiuso: 'Chiuso dal Cliente',
 }
 
 export default function TicketList() {

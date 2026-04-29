@@ -94,9 +94,11 @@ router.get('/', authenticateToken, (req, res) => {
       INNER JOIN progetto_tecnici pt ON pt.progetto_id = a.progetto_id AND pt.utente_id = ?
       WHERE a.data_scadenza IS NOT NULL AND a.stato != 'completata' AND a.data_scadenza <= date('now', '+30 days')
       UNION ALL
-      SELECT t.id, t.oggetto as nome, t.data_evasione as data_scadenza, t.stato, NULL as progetto_id, NULL as progetto_nome, c.nome_azienda as cliente_nome, 'ticket' as tipo_scadenza
+      SELECT t.id, t.oggetto as nome,
+             date(t.created_at, '+' || (CASE c.sla_reazione WHEN '1g' THEN 1 WHEN '3g' THEN 3 ELSE 0 END) || ' days') as data_scadenza,
+             t.stato, NULL as progetto_id, NULL as progetto_nome, c.nome_azienda as cliente_nome, 'ticket' as tipo_scadenza
       FROM ticket t LEFT JOIN clienti c ON t.cliente_id = c.id
-      WHERE t.assegnato_a = ? AND t.stato IN ('aperto', 'in_lavorazione', 'in_attesa') AND t.data_evasione IS NOT NULL
+      WHERE t.assegnato_a = ? AND t.stato IN ('aperto', 'in_lavorazione', 'in_attesa') AND c.sla_reazione IN ('1g','3g')
       ORDER BY data_scadenza ASC
     `).all(userId, userId);
     tecnicoStats = {

@@ -337,19 +337,9 @@ router.post('/', authenticateClientToken, ticketUpload, validateUploadedFiles, a
   const assegnato_a = admin ? admin.id : null;
   const creatore_email = req.user.email || null;
 
-  // Calculate data_evasione based on client SLA
-  const clienteRow = db.prepare('SELECT sla_reazione FROM clienti WHERE id = ?').get(cliente_id);
-  let data_evasione = null;
-  if (clienteRow && clienteRow.sla_reazione && clienteRow.sla_reazione !== 'nb') {
-    const now = new Date();
-    const days = clienteRow.sla_reazione === '1g' ? 1 : 3;
-    now.setDate(now.getDate() + days);
-    data_evasione = now.toISOString().slice(0, 10);
-  }
-
   const privato = req.body.privato ? 1 : 0;
-  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a, creatore_email, data_evasione, privato);
+  const result = db.prepare(`INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, privato) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(codice, cliente_id, oggetto, descrizione || '', categoria, prio, assegnato_a, creatore_email, privato);
 
   // Build allegati JSON from uploaded files
   const allegati = (req.files || []).map(f => ({
@@ -458,18 +448,9 @@ router.post('/from-email/:emailId', authenticateToken, async (req, res) => {
   const assegnato_a = admin ? admin.id : null;
   const creatore_email = email.mittente || null;
 
-  // SLA
-  let data_evasione = null;
-  if (cliente.sla_reazione && cliente.sla_reazione !== 'nb') {
-    const now = new Date();
-    const days = cliente.sla_reazione === '1g' ? 1 : 3;
-    now.setDate(now.getDate() + days);
-    data_evasione = now.toISOString().slice(0, 10);
-  }
-
   const info = db.prepare(
-    `INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email, data_evasione);
+    `INSERT INTO ticket (codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(codice, cliente_id, oggetto, descrizione, categoria, priorita, assegnato_a, creatore_email);
   const ticketId = info.lastInsertRowid;
   // NB: non modifichiamo la mail sorgente. La descrizione del ticket diventa il primo messaggio del thread (con mittente = creatore_email). Le risposte del cliente al codice [TICKET #...] verranno auto-agganciate dal cron IMAP su ticketing@.
 

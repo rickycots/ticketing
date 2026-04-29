@@ -136,6 +136,7 @@ try {
         "ALTER TABLE utenti ADD COLUMN two_factor_code VARCHAR(6) DEFAULT NULL",
         "ALTER TABLE utenti ADD COLUMN two_factor_expires DATETIME DEFAULT NULL",
         "ALTER TABLE utenti ADD COLUMN two_factor_attempts INT NOT NULL DEFAULT 0",
+        "UPDATE ticket SET data_evasione = NULL WHERE stato NOT IN ('risolto','chiuso')",
         "ALTER TABLE email ADD COLUMN direzione VARCHAR(10) NOT NULL DEFAULT 'ricevuta'",
         "ALTER TABLE email ADD COLUMN inviata_da INT DEFAULT NULL",
         "UPDATE email SET direzione = 'inviata' WHERE mittente LIKE '%@stmdomotica.it' AND direzione = 'ricevuta' AND destinatario NOT LIKE '%@stmdomotica.it'",
