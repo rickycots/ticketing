@@ -75,26 +75,36 @@ async function sendTicketingEmail(to, subject, html, inReplyTo) {
   return { messageId: info.messageId };
 }
 
+function getAdminBcc() {
+  try {
+    const db = require('../db/database').db;
+    const row = db.prepare("SELECT email FROM utenti WHERE ruolo='admin' AND attivo=1 ORDER BY id ASC LIMIT 1").get();
+    if (row && row.email) return row.email;
+  } catch (e) {}
+  return process.env.MAIL_ADMIN_BCC || null;
+}
+
 /**
  * Send email via assistenzatecnica@ transporter
  * @returns {{ messageId: string }}
  */
 async function sendAssistenzaEmail(to, subject, html, inReplyTo) {
+  const adminBcc = getAdminBcc();
   const mailOptions = {
     from: `"Assistenza Tecnica STM" <${ASSISTENZA_USER}>`,
     to,
-    bcc: 'riccardo@stmdomotica.it',
     subject,
     html,
     attachments: [{ filename: 'LogoSTM.png', path: LOGO_PATH, cid: 'logo' }],
   };
+  if (adminBcc) mailOptions.bcc = adminBcc;
   if (inReplyTo) {
     mailOptions.inReplyTo = inReplyTo;
     mailOptions.references = inReplyTo;
   }
 
   if (!mailEnabled) {
-    console.log(`[MAIL SIMULATED] assistenza@ → ${to} (bcc: riccardo@stmdomotica.it) — ${subject}`);
+    console.log(`[MAIL SIMULATED] assistenza@ → ${to} (bcc: ${adminBcc || 'none'}) — ${subject}`);
     return { messageId: `<simulated-${Date.now()}@ticketing.local>` };
   }
 

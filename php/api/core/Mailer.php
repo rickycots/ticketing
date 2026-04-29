@@ -69,8 +69,16 @@ class Mailer {
         return self::send(MAIL_TICKETING_USER, MAIL_TICKETING_PASS, $to, $subject, $html, $inReplyTo);
     }
 
+    private static function getAdminBcc(): ?string {
+        try {
+            $row = Database::fetchOne("SELECT email FROM utenti WHERE ruolo='admin' AND attivo=1 ORDER BY id ASC LIMIT 1");
+            if ($row && !empty($row['email'])) return $row['email'];
+        } catch (\Exception $e) {}
+        return defined('MAIL_ADMIN_BCC') ? MAIL_ADMIN_BCC : null;
+    }
+
     public static function sendAssistenza(string $to, string $subject, string $html, ?string $inReplyTo = null): ?string {
-        return self::send(MAIL_ASSISTENZA_USER, MAIL_ASSISTENZA_PASS, $to, $subject, $html, $inReplyTo, 'riccardo@stmdomotica.it');
+        return self::send(MAIL_ASSISTENZA_USER, MAIL_ASSISTENZA_PASS, $to, $subject, $html, $inReplyTo, self::getAdminBcc());
     }
 
     public static function sendNoreply(string $to, string $subject, string $html): ?string {

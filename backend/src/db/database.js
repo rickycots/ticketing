@@ -66,6 +66,10 @@ function runMigrations() {
     "ALTER TABLE utenti ADD COLUMN gestione_avanzata INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE email ADD COLUMN direzione TEXT NOT NULL DEFAULT 'ricevuta'",
     "ALTER TABLE email ADD COLUMN inviata_da INTEGER REFERENCES utenti(id)",
+    "ALTER TABLE utenti ADD COLUMN two_factor INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE utenti ADD COLUMN two_factor_code TEXT",
+    "ALTER TABLE utenti ADD COLUMN two_factor_expires TEXT",
+    "ALTER TABLE utenti ADD COLUMN two_factor_attempts INTEGER NOT NULL DEFAULT 0",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (e) { /* column already exists */ }

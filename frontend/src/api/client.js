@@ -86,6 +86,18 @@ export const auth = {
   me: () => request('/auth/me'),
   changePassword: (password) =>
     request('/auth/change-password', { method: 'PUT', body: JSON.stringify({ password }) }),
+  verify2fa: (temp_token, code) => {
+    const base = import.meta.env.VITE_API_BASE || '/api';
+    return fetch(`${base}/auth/verify-2fa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ temp_token, code }),
+    }).then(async r => {
+      const data = await r.json();
+      if (!r.ok) throw { message: data.error, locked: data.locked, remaining: data.remaining };
+      return data;
+    });
+  },
 };
 
 // Tickets

@@ -1,5 +1,16 @@
 # Storico Versioni
 
+## V5.22.00-0429 — 29 Aprile 2026 (release maggiore)
+### Sicurezza utenti admin/tecnico: 2FA + admin editabile + BCC dinamico
+- **Doppia autenticazione (2FA) per admin e tecnici**: nuovo flag per-utente `two_factor`. Al login, se attivo, viene inviato un codice 6 cifre via email noreply (scadenza 10 min, max 3 tentativi, lockout dopo). Mirrorata la logica già usata sul portale cliente
+  - DB: nuove colonne `two_factor`, `two_factor_code`, `two_factor_expires`, `two_factor_attempts` su tabella `utenti` (Node SQLite + PHP MySQL)
+  - Backend Node: nuovo endpoint `POST /api/auth/verify-2fa`, login restituisce `require_2fa: true` + `temp_token` se l'utente ha 2FA attiva
+  - Backend PHP: stesso flow con token tipo `2fa_pending_admin` per evitare collisioni col flusso cliente
+  - Frontend `Login.jsx`: nuova modale di verifica codice 6 cifre con UX identica al `ClientLogin`
+  - `UserList.jsx`: checkbox "Doppia autenticazione" in form crea + entrambi i form modifica (estesa e compatta), badge `ShieldCheck` accanto al ruolo nelle card, colonna "2FA" in tabella compatta
+- **Account admin modificabile**: rimosso il guard `u.ruolo !== 'admin'` dal bottone "Modifica" → admin ora può aggiornare nome/email/password del proprio account (e di altri admin) direttamente da `/admin/users`. Disattiva ed Elimina restano bloccati per gli admin per evitare lockout accidentali
+- **BCC mail di assistenza dinamico**: rimosso `riccardo@stmdomotica.it` hardcoded da `backend/src/services/mailer.js` e `php/api/core/Mailer.php`. Nuova funzione `getAdminBcc()` che legge la mail dell'admin attivo dal DB (`SELECT email FROM utenti WHERE ruolo='admin' AND attivo=1 LIMIT 1`), con fallback su env/costante `MAIL_ADMIN_BCC`. Cambiando l'admin in Anagrafica/UserList si aggiornano automaticamente sia le notifiche dirette sia il BCC
+
 ## V5.21.03-0422 — 22 Aprile 2026
 ### Crea Ticket da email: descrizione come primo messaggio del thread (testo pulito)
 - Modal "Crea Ticket": il corpo email viene convertito in testo pulito (via DOMParser, strip HTML preservando newline) e precompila il campo Descrizione (editabile)

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 const { JWT_SECRET } = require('../middleware/auth');
+const { sendNoreplyEmail } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -62,24 +63,97 @@ router.post('/login', (req, res) => {
   // Success — clear lockout
   clearLoginAttempts(ip);
 
+  const userData = {
+    id: user.id,
+    nome: user.nome,
+    email: user.email,
+    ruolo: user.ruolo,
+    cambio_password: user.cambio_password || 0,
+    abilitato_ai: user.abilitato_ai ?? 0,
+    gestione_avanzata: user.gestione_avanzata ?? 0,
+  };
+
+  // 2FA: generate code, send email, return pending
+  if (user.two_factor) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    db.prepare('UPDATE utenti SET two_factor_code = ?, two_factor_expires = ?, two_factor_attempts = 0 WHERE id = ?')
+      .run(code, expires, user.id);
+
+    sendNoreplyEmail(
+      user.email,
+      'Codice di verifica — STM Domotica',
+      `<div style="font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:20px;">
+        <h2 style="color:#333;margin-bottom:10px;">Codice di Verifica</h2>
+        <p style="color:#666;font-size:14px;">Inserisci questo codice per completare l'accesso:</p>
+        <div style="background:#f5f5f5;border-radius:8px;padding:20px;text-align:center;margin:20px 0;">
+          <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1a1a1a;">${code}</span>
+        </div>
+        <p style="color:#999;font-size:12px;">Il codice scade tra 10 minuti. Se non hai richiesto l'accesso, ignora questa email.</p>
+      </div>`
+    ).catch(err => console.error('2FA email error:', err));
+
+    const tempToken = jwt.sign(
+      { id: user.id, tipo: '2fa_pending_admin' },
+      JWT_SECRET,
+      { expiresIn: '10m' }
+    );
+
+    return res.json({ require_2fa: true, temp_token: tempToken, user: userData });
+  }
+
   const token = jwt.sign(
     { id: user.id, nome: user.nome, email: user.email, ruolo: user.ruolo },
     JWT_SECRET,
     { expiresIn: '8h' }
   );
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      nome: user.nome,
-      email: user.email,
-      ruolo: user.ruolo,
-      cambio_password: user.cambio_password || 0,
-      abilitato_ai: user.abilitato_ai ?? 0,
-      gestione_avanzata: user.gestione_avanzata ?? 0
+  res.json({ token, user: userData });
+});
+
+// POST /api/auth/verify-2fa
+router.post('/verify-2fa', (req, res) => {
+  const { temp_token, code } = req.body;
+  if (!temp_token || !code) return res.status(400).json({ error: 'Token e codice sono obbligatori' });
+
+  let decoded;
+  try { decoded = jwt.verify(temp_token, JWT_SECRET); }
+  catch (e) { return res.status(401).json({ error: 'Sessione scaduta. Effettua nuovamente il login.' }); }
+
+  if (decoded.tipo !== '2fa_pending_admin') return res.status(401).json({ error: 'Token non valido' });
+
+  const user = db.prepare('SELECT * FROM utenti WHERE id = ?').get(decoded.id);
+  if (!user) return res.status(401).json({ error: 'Utente non trovato' });
+
+  if (user.two_factor_attempts >= 3) {
+    db.prepare('UPDATE utenti SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?').run(user.id);
+    return res.status(401).json({ error: 'Troppi tentativi errati. Effettua nuovamente il login.', locked: true });
+  }
+
+  if (!user.two_factor_code || !user.two_factor_expires || new Date(user.two_factor_expires) < new Date()) {
+    return res.status(401).json({ error: 'Codice scaduto. Effettua nuovamente il login.', locked: true });
+  }
+
+  if (user.two_factor_code !== code.trim()) {
+    const attempts = user.two_factor_attempts + 1;
+    db.prepare('UPDATE utenti SET two_factor_attempts = ? WHERE id = ?').run(attempts, user.id);
+    if (attempts >= 3) {
+      db.prepare('UPDATE utenti SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?').run(user.id);
+      return res.status(401).json({ error: 'Troppi tentativi errati. Effettua nuovamente il login.', locked: true });
     }
-  });
+    return res.status(400).json({ error: 'Codice errato', remaining: 3 - attempts });
+  }
+
+  db.prepare('UPDATE utenti SET two_factor_code = NULL, two_factor_expires = NULL, two_factor_attempts = 0 WHERE id = ?').run(user.id);
+
+  const token = jwt.sign(
+    { id: user.id, nome: user.nome, email: user.email, ruolo: user.ruolo },
+    JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  res.json({ token });
 });
 
 // PUT /api/auth/change-password — change password (authenticated)
